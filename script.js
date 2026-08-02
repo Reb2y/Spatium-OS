@@ -70,6 +70,7 @@
         const settingsColorPage = document.getElementById('settingsColorPage');
         const settingsWallpaperPage = document.getElementById('settingsWallpaperPage');
         const settingsAnimWallpaperPage = document.getElementById('settingsAnimWallpaperPage');
+        const settingsCursorPage = document.getElementById('settingsCursorPage');
         const settingsTypingSpeedPage = document.getElementById('settingsTypingSpeedPage');
         const settingsFontSizePage = document.getElementById('settingsFontSizePage');
         const settingsAboutPage = document.getElementById('settingsAboutPage');
@@ -77,6 +78,7 @@
         const goToColorPageBtn = document.getElementById('goToColorPageBtn');
         const goToWallpaperPageBtn = document.getElementById('goToWallpaperPageBtn');
         const goToAnimWallpaperPageBtn = document.getElementById('goToAnimWallpaperPageBtn');
+        const goToCursorPageBtn = document.getElementById('goToCursorPageBtn');
         const goToTypingSpeedPageBtn = document.getElementById('goToTypingSpeedPageBtn');
         const goToFontSizePageBtn = document.getElementById('goToFontSizePageBtn');
         const goToAboutPageBtn = document.getElementById('goToAboutPageBtn');
@@ -394,7 +396,8 @@
         function showPage(pageElem) {
             const pages = [
                 settingsMainPage, settingsColorPage, settingsWallpaperPage,
-                settingsAnimWallpaperPage, settingsTypingSpeedPage, settingsFontSizePage, settingsAboutPage
+                settingsAnimWallpaperPage, settingsCursorPage, settingsTypingSpeedPage,
+                settingsFontSizePage, settingsAboutPage
             ];
             pages.forEach(p => { if (p) p.classList.add('hidden'); });
             if (pageElem) pageElem.classList.remove('hidden');
@@ -407,6 +410,7 @@
         if (goToColorPageBtn) goToColorPageBtn.addEventListener('click', () => showPage(settingsColorPage));
         if (goToWallpaperPageBtn) goToWallpaperPageBtn.addEventListener('click', () => showPage(settingsWallpaperPage));
         if (goToAnimWallpaperPageBtn) goToAnimWallpaperPageBtn.addEventListener('click', () => showPage(settingsAnimWallpaperPage));
+        if (goToCursorPageBtn) goToCursorPageBtn.addEventListener('click', () => showPage(settingsCursorPage));
         if (goToTypingSpeedPageBtn) goToTypingSpeedPageBtn.addEventListener('click', () => showPage(settingsTypingSpeedPage));
         if (goToFontSizePageBtn) goToFontSizePageBtn.addEventListener('click', () => showPage(settingsFontSizePage));
         if (goToAboutPageBtn) goToAboutPageBtn.addEventListener('click', () => showPage(settingsAboutPage));
@@ -445,6 +449,21 @@
                     animBgLayer.className = 'anim-bg-layer';
                     animBgLayer.classList.add(`anim-${animWallpaper}`);
                 }
+            });
+        });
+
+        // ЛОГИКА ВЫБОРА КУРСОРОВ
+        document.querySelectorAll('#settingsCursorPage .opt-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('#settingsCursorPage .opt-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                const cursorStyle = e.target.getAttribute('data-cursor');
+                
+                document.body.classList.remove(
+                    'cursor-default', 'cursor-crosshair', 'cursor-arrow',
+                    'cursor-square', 'cursor-dot', 'cursor-block'
+                );
+                document.body.classList.add(`cursor-${cursorStyle}`);
             });
         });
 
@@ -592,7 +611,7 @@
   time               - Текущее время системы
   date               - Текущая дата
   echo               - Вывести свой текст
-  color [знач]       - Сменить цвет (16 цветов / reset)
+  color [название]   - Сменить цвет (color help - список)
   hacker             - Запустить режим хакера
   exit               - Выйти на рабочий стол
   off                - Выключение терминала`,
@@ -645,10 +664,23 @@
         }
 
         function changeTerminalColor(colorParam) {
-            if (applyColorTheme(colorParam)) {
-                printTextTyped(`ЦВЕТОВАЯ СХЕМА ИЗМЕНЕНА: ${colorParam.toUpperCase()}`);
+            const param = colorParam.trim().toLowerCase();
+
+            if (param === 'help' || param === 'помощь' || param === '?') {
+                const availableColors = Object.keys(colorPalette).join(', ');
+                printTextTyped(`ДОСТУПНЫЕ ЦВЕТА:\n${availableColors}\n\nСБРОС:\nreset, clear, сброс\n\nПример: color matrix`);
+                return;
+            }
+
+            if (!param) {
+                printTextTyped('Укажите цвет. Пример: color red или color help');
+                return;
+            }
+
+            if (applyColorTheme(param)) {
+                printTextTyped(`ЦВЕТОВАЯ СХЕМА ИЗМЕНЕНА: ${param.toUpperCase()}`);
             } else {
-                printTextTyped(`Неизвестный цвет: "${colorParam}". Доступно 16 цветов или "reset".`);
+                printTextTyped(`Неизвестный цвет: "${param}". Введите 'color help' для списка всех цветов.`);
             }
         }
 
