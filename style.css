@@ -31,7 +31,7 @@ html, body {
     font-family: var(--font-family);
 }
 
-/* КАСТОМНЫЕ РЕТРО-КУРСОРЫ */
+/* КАСТОМНЫЙ РЕТРО-КУРСОР */
 #custom-cursor, #cursor-follower {
     display: none;
     pointer-events: none;
@@ -44,101 +44,44 @@ html, body {
     }
 }
 
-/* 1. РЕТРО (ПО УМОЛЧАНИЮ) */
-body.cursor-default #custom-cursor {
-    position: fixed; top: 0; left: 0;
+#custom-cursor {
+    position: fixed;
+    top: 0; left: 0;
     width: 10px; height: 10px;
     background-color: var(--crt-color);
-    border-radius: 50%; z-index: 99999;
+    border-radius: 50%;
+    z-index: 99999;
     transform: translate(-50%, -50%);
     transition: transform 0.1s ease, width 0.2s ease, height 0.2s ease, background-color 0.2s ease;
     box-shadow: 0 0 10px var(--crt-color), 0 0 20px var(--crt-glow);
 }
-body.cursor-default #cursor-follower {
-    position: fixed; top: 0; left: 0;
+
+#cursor-follower {
+    position: fixed;
+    top: 0; left: 0;
     width: 28px; height: 28px;
     border: 2px solid var(--crt-color);
-    border-radius: 50%; z-index: 99998;
-    transform: translate(-50%, -50%); opacity: 0.6;
+    border-radius: 50%;
+    z-index: 99998;
+    transform: translate(-50%, -50%);
+    opacity: 0.6;
     transition: width 0.2s ease, height 0.2s ease, opacity 0.2s ease;
     box-shadow: 0 0 8px var(--crt-glow);
 }
 
-/* 2. РЕТРО-ПРИЦЕЛ (CROSSHAIR) */
-body.cursor-crosshair #custom-cursor {
-    position: fixed; top: 0; left: 0;
-    width: 4px; height: 4px;
-    background-color: #fff; z-index: 99999;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 8px var(--crt-color);
-}
-body.cursor-crosshair #cursor-follower {
-    position: fixed; top: 0; left: 0;
-    width: 22px; height: 22px;
-    border: 2px dashed var(--crt-color);
-    border-radius: 50%; z-index: 99998;
-    transform: translate(-50%, -50%); opacity: 0.8;
-    box-shadow: 0 0 10px var(--crt-glow);
-}
-
-/* 3. СТРЕЛКА (ARROW) */
-body.cursor-arrow #custom-cursor {
-    position: fixed; top: 0; left: 0;
-    width: 0; height: 0;
-    border-left: 10px solid var(--crt-color);
-    border-bottom: 14px solid transparent;
-    z-index: 99999; filter: drop-shadow(0 0 5px var(--crt-color));
-}
-body.cursor-arrow #cursor-follower { display: none !important; }
-
-/* 4. НЕОНОВЫЙ КВАДРАТ (SQUARE) */
-body.cursor-square #custom-cursor {
-    position: fixed; top: 0; left: 0;
-    width: 12px; height: 12px;
-    background: transparent;
-    border: 2px solid var(--crt-color);
-    z-index: 99999; transform: translate(-50%, -50%);
-    box-shadow: 0 0 10px var(--crt-glow);
-}
-body.cursor-square #cursor-follower {
-    position: fixed; top: 0; left: 0;
-    width: 26px; height: 26px;
-    background: rgba(51, 255, 51, 0.1);
-    border: 1px solid var(--crt-color);
-    z-index: 99998; transform: translate(-50%, -50%);
-}
-
-/* 5. ТОЧКА-ПРИЗРАК (GHOST DOT) */
-body.cursor-dot #custom-cursor {
-    position: fixed; top: 0; left: 0;
-    width: 8px; height: 8px;
-    background-color: var(--crt-color);
-    border-radius: 50%; z-index: 99999;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 15px var(--crt-color), 0 0 30px var(--crt-glow);
-}
-body.cursor-dot #cursor-follower { display: none !important; }
-
-/* 6. ТЕРМИНАЛ-БЛОК (BLOCK) */
-body.cursor-block #custom-cursor {
-    position: fixed; top: 0; left: 0;
-    width: 12px; height: 20px;
-    background-color: var(--crt-color);
-    z-index: 99999; transform: translate(-50%, -50%);
-    box-shadow: 0 0 8px var(--crt-glow); opacity: 0.85;
-}
-body.cursor-block #cursor-follower { display: none !important; }
-
-/* АНИМАЦИЯ ХОВЕРА И КЛИКА */
 body.hovered #custom-cursor {
-    transform: translate(-50%, -50%) scale(1.3);
+    width: 16px; height: 16px;
+    background-color: #ffffff;
+    box-shadow: 0 0 12px #ffffff, 0 0 25px var(--crt-color);
 }
+
 body.hovered #cursor-follower {
-    transform: translate(-50%, -50%) scale(1.3);
+    width: 40px; height: 40px;
     opacity: 0.9;
 }
+
 body.active #custom-cursor {
-    transform: translate(-50%, -50%) scale(0.7);
+    transform: translate(-50%, -50%) scale(0.6);
 }
 
 /* СПЯЩИЙ РЕЖИМ */
@@ -457,7 +400,7 @@ body.active #custom-cursor {
 
 .icon-box { font-size: 28px; margin-bottom: 8px; }
 
-/* ОКНО НАСТРОЕК */
+/* ОБЩИЕ СТИЛИ ДЛЯ ОКОН */
 .window-container {
     position: absolute;
     top: 10%; left: 20%;
@@ -491,6 +434,142 @@ body.active #custom-cursor {
     max-height: 70vh; overflow-y: auto;
 }
 
+/* СТИЛИ ПРОВОДНИКА / ФАЙЛОВОГО МЕНЕДЖЕРА */
+.files-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px dashed var(--crt-color);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.files-back-btn {
+    font-family: var(--font-family);
+    font-size: calc(9px * var(--font-scale));
+    padding: 6px 10px;
+    background: transparent;
+    color: var(--crt-color);
+    border: 1px solid var(--crt-color);
+    box-shadow: 0 0 5px var(--crt-glow);
+}
+
+.files-back-btn:disabled {
+    opacity: 0.3;
+    border-color: gray;
+    color: gray;
+    box-shadow: none;
+}
+
+.files-path {
+    font-size: calc(10px * var(--font-scale));
+    text-shadow: 0 0 5px var(--crt-glow);
+    word-break: break-all;
+}
+
+.files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 15px;
+}
+
+.file-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 8px;
+    border: 1px dashed transparent;
+    transition: all 0.15s ease;
+}
+
+.file-item:hover {
+    background: rgba(51, 255, 51, 0.15);
+    border-color: var(--crt-color);
+}
+
+.file-icon {
+    font-size: 32px;
+    margin-bottom: 6px;
+}
+
+.file-name {
+    font-size: calc(9px * var(--font-scale));
+    word-break: break-word;
+    text-shadow: 0 0 4px var(--crt-glow);
+}
+
+.files-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    opacity: 0.6;
+    padding: 20px 0;
+}
+
+/* МОДАЛЬНОЕ ОКНО ПАРОЛЯ В СТИЛЕ ТЕРМИНАЛА */
+.modal-dialog {
+    top: 30% !important;
+    left: 30% !important;
+    width: clamp(300px, 40vw, 450px) !important;
+    z-index: 50;
+}
+
+.pass-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.pass-label {
+    font-size: calc(10px * var(--font-scale));
+    text-shadow: 0 0 5px var(--crt-glow);
+}
+
+.crt-input {
+    background: #000;
+    border: 2px solid var(--crt-color);
+    color: var(--crt-color);
+    font-family: var(--font-family);
+    font-size: calc(12px * var(--font-scale));
+    padding: 8px 12px;
+    outline: none;
+    box-shadow: 0 0 8px var(--crt-glow);
+}
+
+.crt-input:focus {
+    background: rgba(51, 255, 51, 0.05);
+}
+
+.pass-modal-btns {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.pass-error-msg {
+    color: #ff3333;
+    font-size: calc(9px * var(--font-scale));
+    text-shadow: 0 0 5px rgba(255, 51, 51, 0.8);
+    animation: textGlitchJitter 0.2s infinite;
+}
+
+/* ПРОСМОТР ИЗОБРАЖЕНИЙ */
+.image-viewer-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+    padding: 10px;
+}
+
+.image-viewer-body img {
+    max-width: 100%;
+    max-height: 50vh;
+    border: 1px solid var(--crt-color);
+    box-shadow: 0 0 10px var(--crt-glow);
+    object-fit: contain;
+}
+
+/* НАСТРОЙКИ */
 .settings-page.hidden { display: none; }
 .settings-menu-list, .settings-opt-list { display: flex; flex-direction: column; gap: 8px; }
 
@@ -686,15 +765,10 @@ body.active #custom-cursor {
 
 .taskbar-time { font-size: calc(12px * var(--font-scale)); }
 
-/* АДАПТИВНОСТЬ ПОД МОБИЛЬНЫЕ УСТРОЙСТВА И СКРЫТИЕ КУРСОРОВ НА СМАРТФОНАХ */
+/* АДАПТИВНОСТЬ ПОД МОБИЛЬНЫЕ УСТРОЙСТВА */
 @media screen and (max-width: 768px) {
     .virtual-keyboard {
-        display: flex;
-    }
-
-    /* СКРЫВАЕМ НАСТРОЙКИ КУРСОРОВ НА МОБИЛКАХ */
-    #goToCursorPageBtn, #settingsCursorPage {
-        display: none !important;
+        display: flex; /* ПОКАЗЫВАЕМ ЭКРАННУЮ КЛАВИАТУРУ НА СМАРТФОНАХ */
     }
 
     .terminal-container {
@@ -705,6 +779,11 @@ body.active #custom-cursor {
     .window-container {
         top: 4vh !important; left: 3vw !important;
         width: 94vw !important; max-height: 85vh;
+    }
+
+    .modal-dialog {
+        top: 15vh !important; left: 3vw !important;
+        width: 94vw !important;
     }
 
     .window-body { max-height: 75vh; padding: 10px; }

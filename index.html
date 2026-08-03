@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="cursor-default">
+<body>
     <!-- Элементы кастомного курсора -->
     <div id="custom-cursor"></div>
     <div id="cursor-follower"></div>
@@ -108,6 +108,47 @@
                 </div>
             </div>
 
+            <!-- ОКНО ФАЙЛОВОГО МЕНЕДЖЕРА -->
+            <div class="window-container hidden" id="filesWindow">
+                <div class="window-header" id="filesHeader">
+                    <span class="window-title" id="filesWindowTitle">📁 Проводник: C:/</span>
+                    <button class="window-close-btn" id="closeFilesBtn">X</button>
+                </div>
+                <div class="window-body">
+                    <div class="files-toolbar">
+                        <button class="files-back-btn" id="filesBackBtn" disabled>◄ Назад</button>
+                        <span class="files-path" id="filesPath">C:/</span>
+                    </div>
+                    <div class="files-grid" id="filesGrid"></div>
+                </div>
+            </div>
+
+            <!-- ОКНО ВВОДА ПАРОЛЯ В СТИЛЕ ТЕРМИНАЛА -->
+            <div class="window-container hidden modal-dialog" id="passwordModal">
+                <div class="window-header">
+                    <span class="window-title">🔒 ЗАЩИЩЕННЫЙ ДОСТУП</span>
+                    <button class="window-close-btn" id="closePassModalBtn">X</button>
+                </div>
+                <div class="window-body pass-modal-body">
+                    <p class="pass-label">&gt; ВВЕДИТЕ ПАРОЛЬ ДОСТУПА:</p>
+                    <input type="password" id="passInput" class="crt-input" autocomplete="off" autofocus placeholder="****">
+                    <div class="pass-modal-btns">
+                        <button class="opt-btn" id="submitPassBtn">ПОДТВЕРДИТЬ</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ОКНО ПРОСМОТРА ИЗОБРАЖЕНИЯ -->
+            <div class="window-container hidden" id="imageViewerWindow">
+                <div class="window-header" id="imageHeader">
+                    <span class="window-title">🖼️ Просмотр: photo.png</span>
+                    <button class="window-close-btn" id="closeImageBtn">X</button>
+                </div>
+                <div class="window-body image-viewer-body">
+                    <img src="img/racia_cherep.png" alt="photo.png" id="viewerImage">
+                </div>
+            </div>
+
             <!-- ОКНО НАСТРОЕК -->
             <div class="window-container hidden" id="settingsWindow">
                 <div class="window-header" id="settingsHeader">
@@ -120,7 +161,6 @@
                             <button class="settings-nav-btn" id="goToColorPageBtn">🎨 Смена цвета &gt;</button>
                             <button class="settings-nav-btn" id="goToWallpaperPageBtn">🖼️ Обои рабочего стола &gt;</button>
                             <button class="settings-nav-btn" id="goToAnimWallpaperPageBtn">✨ Анимированные обои &gt;</button>
-                            <button class="settings-nav-btn" id="goToCursorPageBtn">🖱️ Вид курсора &gt;</button>
                             <button class="settings-nav-btn" id="goToTypingSpeedPageBtn">⚡ Скорость печати &gt;</button>
                             <button class="settings-nav-btn" id="goToFontSizePageBtn">🔤 Размер шрифта &gt;</button>
                             <button class="settings-nav-btn" id="goToAboutPageBtn">💻 О системе &gt;</button>
@@ -182,20 +222,6 @@
                         </div>
                     </div>
 
-                    <!-- НАСТРОЙКИ ВНЕШНЕГО ВИДА КУРСОРОВ -->
-                    <div class="settings-page hidden" id="settingsCursorPage">
-                        <button class="back-btn">&lt; Назад в меню</button>
-                        <div class="setting-title" style="margin-top: 15px;">ВЫБЕРИТЕ СТИЛЬ КУРСОРA (6 Видов):</div>
-                        <div class="settings-opt-list">
-                            <button class="opt-btn active" data-cursor="default">1. Классический Ретро (Точка + Кольцо)</button>
-                            <button class="opt-btn" data-cursor="crosshair">2. Ретро-Прицел (Перекрестие)</button>
-                            <button class="opt-btn" data-cursor="arrow">3. Пиксельная Стрелка</button>
-                            <button class="opt-btn" data-cursor="square">4. Неоновый Квадрат</button>
-                            <button class="opt-btn" data-cursor="dot">5. Точка-Призрак (Со свечением)</button>
-                            <button class="opt-btn" data-cursor="block">6. Терминал-Блок (Сплошной)</button>
-                        </div>
-                    </div>
-
                     <div class="settings-page hidden" id="settingsTypingSpeedPage">
                         <button class="back-btn">&lt; Назад в меню</button>
                         <div class="setting-title" style="margin-top: 15px;">СКОРОСТЬ ВЫВОДА ТЕКСТА:</div>
@@ -241,6 +267,9 @@
                 <div class="start-menu-items">
                     <div class="start-item" id="menuTerminalBtn">
                         <span class="start-icon">&gt;_</span> Терминал
+                    </div>
+                    <div class="start-item" id="menuFolderBtn">
+                        <span class="start-icon">📁</span> Файлы
                     </div>
                     <div class="start-item" id="menuSettingsBtn">
                         <span class="start-icon">⚙️</span> Настройки

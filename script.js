@@ -30,7 +30,7 @@
         document.addEventListener('mousedown', () => document.body.classList.add('active'));
         document.addEventListener('mouseup', () => document.body.classList.remove('active'));
 
-        const interactiveSelector = 'button, a, input, .desktop-icon, .start-item, .cal-day-cell, .cal-nav-btn, .start-btn, .taskbar-time, .window-close-btn, .kb-key';
+        const interactiveSelector = 'button, a, input, .desktop-icon, .start-item, .cal-day-cell, .cal-nav-btn, .start-btn, .taskbar-time, .window-close-btn, .kb-key, .file-item';
         document.addEventListener('mouseover', (e) => {
             if (e.target.closest(interactiveSelector)) {
                 document.body.classList.add('hovered');
@@ -70,7 +70,6 @@
         const settingsColorPage = document.getElementById('settingsColorPage');
         const settingsWallpaperPage = document.getElementById('settingsWallpaperPage');
         const settingsAnimWallpaperPage = document.getElementById('settingsAnimWallpaperPage');
-        const settingsCursorPage = document.getElementById('settingsCursorPage');
         const settingsTypingSpeedPage = document.getElementById('settingsTypingSpeedPage');
         const settingsFontSizePage = document.getElementById('settingsFontSizePage');
         const settingsAboutPage = document.getElementById('settingsAboutPage');
@@ -78,7 +77,6 @@
         const goToColorPageBtn = document.getElementById('goToColorPageBtn');
         const goToWallpaperPageBtn = document.getElementById('goToWallpaperPageBtn');
         const goToAnimWallpaperPageBtn = document.getElementById('goToAnimWallpaperPageBtn');
-        const goToCursorPageBtn = document.getElementById('goToCursorPageBtn');
         const goToTypingSpeedPageBtn = document.getElementById('goToTypingSpeedPageBtn');
         const goToFontSizePageBtn = document.getElementById('goToFontSizePageBtn');
         const goToAboutPageBtn = document.getElementById('goToAboutPageBtn');
@@ -104,6 +102,243 @@
         const calendarDaysGrid = document.getElementById('calendarDaysGrid');
         const calPrevMonth = document.getElementById('calPrevMonth');
         const calNextMonth = document.getElementById('calNextMonth');
+
+        // --- ЭЛЕМЕНТЫ ПРОВОДНИКА И ФАЙЛОВОЙ СИСТЕМЫ ---
+        const openFolderBtn = document.getElementById('openFolderBtn');
+        const menuFolderBtn = document.getElementById('menuFolderBtn');
+        const filesWindow = document.getElementById('filesWindow');
+        const closeFilesBtn = document.getElementById('closeFilesBtn');
+        const filesHeader = document.getElementById('filesHeader');
+        const filesGrid = document.getElementById('filesGrid');
+        const filesPath = document.getElementById('filesPath');
+        const filesBackBtn = document.getElementById('filesBackBtn');
+
+        const passwordModal = document.getElementById('passwordModal');
+        const closePassModalBtn = document.getElementById('closePassModalBtn');
+        const passInput = document.getElementById('passInput');
+        const submitPassBtn = document.getElementById('submitPassBtn');
+        const passError = document.getElementById('passError');
+
+        const imageViewerWindow = document.getElementById('imageViewerWindow');
+        const closeImageBtn = document.getElementById('closeImageBtn');
+        const imageHeader = document.getElementById('imageHeader');
+
+        // ФАЙЛОВАЯ СТРУКТУРА (ЦЕПОЧКА)
+        const fileSystem = {
+            name: "C:",
+            type: "folder",
+            children: [
+                {
+                    name: "НЕ ОТКРЫВАТЬ",
+                    type: "folder",
+                    children: [
+                        {
+                            name: "Я же сказал не открывать!",
+                            type: "folder",
+                            children: [
+                                {
+                                    name: "1234",
+                                    type: "folder",
+                                    protected: true,
+                                    pass: "1234",
+                                    children: [
+                                        {
+                                            name: "photo.png",
+                                            type: "image",
+                                            src: "img/racia_cherep.png"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        let currentDirectory = fileSystem;
+        let pathHistory = [fileSystem];
+        let pendingProtectedFolder = null;
+
+        function renderFiles() {
+            if (!filesGrid) return;
+            filesGrid.innerHTML = '';
+
+            let currentPathString = pathHistory.map(item => item.name).join('/');
+            if (filesPath) filesPath.textContent = currentPathString;
+
+            if (filesBackBtn) {
+                filesBackBtn.disabled = pathHistory.length <= 1;
+            }
+
+            if (!currentDirectory.children || currentDirectory.children.length === 0) {
+                filesGrid.innerHTML = '<div class="files-empty">Папка пуста</div>';
+                return;
+            }
+
+            currentDirectory.children.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'file-item';
+
+                let icon = '📁';
+                if (item.type === 'image') icon = '🖼️';
+
+                itemDiv.innerHTML = `
+                    <div class="file-icon">${icon}</div>
+                    <span class="file-name">${item.name}</span>
+                `;
+
+                itemDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openFileSystemItem(item);
+                });
+
+                filesGrid.appendChild(itemDiv);
+            });
+        }
+
+        function openFileSystemItem(item) {
+            if (item.type === 'folder') {
+                if (item.protected) {
+                    pendingProtectedFolder = item;
+                    openPasswordModal();
+                } else {
+                    currentDirectory = item;
+                    pathHistory.push(item);
+                    renderFiles();
+                }
+            } else if (item.type === 'image') {
+                openImageViewer();
+            }
+        }
+
+        function openPasswordModal() {
+            if (!passwordModal) return;
+            passwordModal.classList.remove('hidden');
+            if (passError) passError.classList.add('hidden'); // Всегда прячем ошибку при открытии
+            if (passInput) {
+                passInput.value = '';
+                setTimeout(() => passInput.focus(), 50);
+            }
+        }
+
+        function closePasswordModal() {
+            if (!passwordModal) return;
+            passwordModal.classList.add('hidden');
+            if (passError) passError.classList.add('hidden');
+            pendingProtectedFolder = null;
+        }
+
+        function handlePasswordSubmit() {
+            if (!pendingProtectedFolder) return;
+            const entered = passInput ? passInput.value.trim() : '';
+            if (entered === pendingProtectedFolder.pass) {
+                const target = pendingProtectedFolder;
+                closePasswordModal();
+                currentDirectory = target;
+                pathHistory.push(target);
+                renderFiles();
+            } else {
+                if (passError) passError.classList.remove('hidden'); // Показываем только при НЕВЕРНОМ пароле
+                if (passInput) {
+                    passInput.value = '';
+                    passInput.focus();
+                }
+            }
+        }
+
+        if (submitPassBtn) submitPassBtn.addEventListener('click', handlePasswordSubmit);
+        if (closePassModalBtn) closePassModalBtn.addEventListener('click', closePasswordModal);
+
+        if (passInput) {
+            // При нажатии Enter отправляем пароль
+            passInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handlePasswordSubmit();
+                }
+            });
+
+            // Прячем ошибку, когда пользователь начинает вводить заново, чтобы не мелькала
+            passInput.addEventListener('input', () => {
+                if (passError && !passError.classList.contains('hidden')) {
+                    passError.classList.add('hidden');
+                }
+            });
+        }
+
+        if (filesBackBtn) {
+            filesBackBtn.addEventListener('click', () => {
+                if (pathHistory.length > 1) {
+                    pathHistory.pop();
+                    currentDirectory = pathHistory[pathHistory.length - 1];
+                    renderFiles();
+                }
+            });
+        }
+
+        function openFilesWindow() {
+            if (startMenu) startMenu.classList.add('hidden');
+            if (filesWindow) filesWindow.classList.remove('hidden');
+            renderFiles();
+        }
+
+        function closeFilesWindow() {
+            if (filesWindow) filesWindow.classList.add('hidden');
+        }
+
+        if (openFolderBtn) openFolderBtn.addEventListener('click', openFilesWindow);
+        if (menuFolderBtn) menuFolderBtn.addEventListener('click', openFilesWindow);
+        if (closeFilesBtn) closeFilesBtn.addEventListener('click', closeFilesWindow);
+
+        function openImageViewer() {
+            if (imageViewerWindow) imageViewerWindow.classList.remove('hidden');
+        }
+
+        function closeImageViewer() {
+            if (imageViewerWindow) imageViewerWindow.classList.add('hidden');
+        }
+
+        if (closeImageBtn) closeImageBtn.addEventListener('click', closeImageViewer);
+
+        // Функция для перемещения окон drag-and-drop
+        function makeWindowDraggable(headerElem, windowElem) {
+            if (!headerElem || !windowElem) return;
+            let isDragging = false;
+            let offsetX = 0, offsetY = 0;
+
+            const startDrag = (clientX, clientY) => {
+                isDragging = true;
+                offsetX = clientX - windowElem.offsetLeft;
+                offsetY = clientY - windowElem.offsetTop;
+            };
+
+            const doDrag = (clientX, clientY) => {
+                if (!isDragging) return;
+                windowElem.style.left = `${clientX - offsetX}px`;
+                windowElem.style.top = `${clientY - offsetY}px`;
+            };
+
+            headerElem.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+            window.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            headerElem.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    startDrag(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            });
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1) {
+                    doDrag(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            });
+            window.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        makeWindowDraggable(filesHeader, filesWindow);
+        makeWindowDraggable(imageHeader, imageViewerWindow);
 
         const holidaysData = {
             "01-01": "Новый год", "01-07": "Рождество Христово", "02-23": "День защитника Отечества",
@@ -396,8 +631,7 @@
         function showPage(pageElem) {
             const pages = [
                 settingsMainPage, settingsColorPage, settingsWallpaperPage,
-                settingsAnimWallpaperPage, settingsCursorPage, settingsTypingSpeedPage,
-                settingsFontSizePage, settingsAboutPage
+                settingsAnimWallpaperPage, settingsTypingSpeedPage, settingsFontSizePage, settingsAboutPage
             ];
             pages.forEach(p => { if (p) p.classList.add('hidden'); });
             if (pageElem) pageElem.classList.remove('hidden');
@@ -410,7 +644,6 @@
         if (goToColorPageBtn) goToColorPageBtn.addEventListener('click', () => showPage(settingsColorPage));
         if (goToWallpaperPageBtn) goToWallpaperPageBtn.addEventListener('click', () => showPage(settingsWallpaperPage));
         if (goToAnimWallpaperPageBtn) goToAnimWallpaperPageBtn.addEventListener('click', () => showPage(settingsAnimWallpaperPage));
-        if (goToCursorPageBtn) goToCursorPageBtn.addEventListener('click', () => showPage(settingsCursorPage));
         if (goToTypingSpeedPageBtn) goToTypingSpeedPageBtn.addEventListener('click', () => showPage(settingsTypingSpeedPage));
         if (goToFontSizePageBtn) goToFontSizePageBtn.addEventListener('click', () => showPage(settingsFontSizePage));
         if (goToAboutPageBtn) goToAboutPageBtn.addEventListener('click', () => showPage(settingsAboutPage));
@@ -452,21 +685,6 @@
             });
         });
 
-        // ЛОГИКА ВЫБОРА КУРСОРОВ
-        document.querySelectorAll('#settingsCursorPage .opt-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('#settingsCursorPage .opt-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                const cursorStyle = e.target.getAttribute('data-cursor');
-                
-                document.body.classList.remove(
-                    'cursor-default', 'cursor-crosshair', 'cursor-arrow',
-                    'cursor-square', 'cursor-dot', 'cursor-block'
-                );
-                document.body.classList.add(`cursor-${cursorStyle}`);
-            });
-        });
-
         if (speedSlider) {
             speedSlider.addEventListener('input', (e) => {
                 const val = parseInt(e.target.value, 10);
@@ -490,38 +708,7 @@
             });
         }
 
-        if (settingsHeader && settingsWindow) {
-            let isDragging = false;
-            let offsetX = 0, offsetY = 0;
-
-            const startDrag = (clientX, clientY) => {
-                isDragging = true;
-                offsetX = clientX - settingsWindow.offsetLeft;
-                offsetY = clientY - settingsWindow.offsetTop;
-            };
-
-            const doDrag = (clientX, clientY) => {
-                if (!isDragging) return;
-                settingsWindow.style.left = `${clientX - offsetX}px`;
-                settingsWindow.style.top = `${clientY - offsetY}px`;
-            };
-
-            settingsHeader.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
-            window.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
-            window.addEventListener('mouseup', () => { isDragging = false; });
-
-            settingsHeader.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    startDrag(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            });
-            window.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1) {
-                    doDrag(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            });
-            window.addEventListener('touchend', () => { isDragging = false; });
-        }
+        makeWindowDraggable(settingsHeader, settingsWindow);
 
         if (startBtn) {
             startBtn.addEventListener('click', (e) => {
@@ -819,8 +1006,10 @@
             }
         }
 
-        // ОБРАБОТЧИК КЛАВИШ (ДЛЯ ФИЗИЧЕСКОЙ И ВИРТУАЛЬНОЙ КЛАВИАТУР)
         function handleKeyPress(key) {
+            // Если фокус находится внутри инпута пароля, не перехватываем нажатия клавиш консолью
+            if (document.activeElement === passInput) return;
+
             if (isSleeping) { wakeUp(); return; }
             if (isHackerMode) { stopHackerMode(); return; }
 
