@@ -121,6 +121,8 @@
         const imageViewerWindow = document.getElementById('imageViewerWindow');
         const closeImageBtn = document.getElementById('closeImageBtn');
         const imageHeader = document.getElementById('imageHeader');
+        const imageWindowTitle = document.getElementById('imageWindowTitle');
+        const viewerImage = document.getElementById('viewerImage');
 
         // ФАЙЛОВАЯ СТРУКТУРА (ЦЕПОЧКА)
         const fileSystem = {
@@ -207,7 +209,7 @@
                     renderFiles();
                 }
             } else if (item.type === 'image') {
-                openImageViewer();
+                openImageViewer(item);
             }
         }
 
@@ -280,8 +282,12 @@
         if (menuFolderBtn) menuFolderBtn.addEventListener('click', openFilesWindow);
         if (closeFilesBtn) closeFilesBtn.addEventListener('click', closeFilesWindow);
 
-        function openImageViewer() {
-            if (imageViewerWindow) imageViewerWindow.classList.remove('hidden');
+        function openImageViewer(item) {
+            if (imageViewerWindow) {
+                if (imageWindowTitle && item) imageWindowTitle.textContent = `🖼️ Просмотр: ${item.name}`;
+                if (viewerImage && item) viewerImage.src = item.src;
+                imageViewerWindow.classList.remove('hidden');
+            }
         }
 
         function closeImageViewer() {
@@ -958,141 +964,92 @@
             commandHistory.push(rawCmd);
             historyIndex = commandHistory.length;
 
-            if (mainCmd === 'exit') {
-                switchToDesktop();
-            } else if (mainCmd === 'off' || mainCmd === 'shutdown') {
-                triggerPowerOff();
-            } else if (mainCmd === 'hacker') {
+            if (mainCmd === 'спати' || mainCmd === 'spati') {
+                handleSpatiLogic(cmd);
+                return;
+            }
+
+            if (mainCmd === 'color' || mainCmd === 'цвет') {
+                const colorArg = cmd.substring(mainCmd.length).trim();
+                changeTerminalColor(colorArg);
+                return;
+            }
+
+            if (mainCmd === 'echo') {
+                const echoText = cmd.substring(5);
+                printTextTyped(echoText || '');
+                return;
+            }
+
+            if (mainCmd === 'hacker' || mainCmd === 'хакер') {
                 startHackerMode();
-            } else if (mainCmd === 'color') {
-                const colorVal = cmd.split(' ').slice(1).join(' ');
-                changeTerminalColor(colorVal);
-            } else if (mainCmd === 'спати') {
-                if (isSpatiEnabled) {
-                    handleSpatiLogic(cmd);
-                } else {
-                    printTextTyped(`Команда не найдена: "${cmd}". Введите 'help' для справки.`);
-                }
-            } else if (mainCmd === 'clear') {
-                terminalOutput.innerHTML = '';
-            } else if (mainCmd === 'echo') {
-                const echoText = cmd.split(' ').slice(1).join(' ').trim();
-                if (echoText === '1') {
-                    isSpatiEnabled = true;
-                    printTextTyped("[СПАТИ АКТИВИРОВАН]");
-                } else if (echoText === '0') {
-                    isSpatiEnabled = false;
-                    printTextTyped("[СПАТИ ДЕАКТИВИРОВАН]");
-                } else {
-                    printTextTyped(echoText);
-                }
-            } else if (commands[mainCmd]) {
-                const result = typeof commands[mainCmd] === 'function' ? commands[mainCmd]() : commands[mainCmd];
+                return;
+            }
+
+            if (mainCmd === 'exit' || mainCmd === 'gui') {
+                switchToDesktop();
+                return;
+            }
+
+            if (mainCmd === 'off' || mainCmd === 'shutdown') {
+                triggerPowerOff();
+                return;
+            }
+
+            if (mainCmd === 'clear' || mainCmd === 'cls') {
+                if (terminalOutput) terminalOutput.innerHTML = '';
+                return;
+            }
+
+            if (commands[mainCmd]) {
+                const action = commands[mainCmd];
+                const result = (typeof action === 'function') ? action() : action;
                 printTextTyped(result);
             } else {
-                printTextTyped(`Команда не найдена: "${cmd}". Введите 'help' для справки.`);
+                printTextTyped(`Команда не найдена: "${mainCmd}". Введите 'help'.`);
             }
         }
 
         function handleKeyPress(key) {
-            if (document.activeElement === passInput) return;
+            if (!isBooted || isTyping || isHackerMode) return;
 
-            if (isSleeping) { wakeUp(); return; }
-            if (isHackerMode) { stopHackerMode(); return; }
-
-            if (isTyping && currentTypingTimeout && (key === 'Enter' || key === ' ')) {
-                clearTimeout(currentTypingTimeout);
-                if (activeTypingLine) { activeTypingLine.textContent = fullTypingText; }
-                isTyping = false;
-                currentTypingTimeout = null;
-                activeTypingLine = null;
-                scrollToBottom();
-                if (currentTypingCallback) {
-                    const cb = currentTypingCallback;
-                    currentTypingCallback = null;
-                    cb();
-                }
-                return;
-            }
-
-            if (!isBooted || isTyping || desktopContainer.classList.contains('hidden') === false) return;
-
-            if (key === 'ArrowUp') {
+            if (key === 'Enter') {
+                const cmdToRun = currentInput;
+                currentInput = '';
+                if (commandInputText) commandInputText.textContent = '';
+                handleCommand(cmdToRun);
+            } else if (key === 'Backspace') {
+                currentInput = currentInput.slice(0, -1);
+                if (commandInputText) commandInputText.textContent = currentInput;
+            } else if (key === 'ArrowUp') {
                 if (commandHistory.length > 0 && historyIndex > 0) {
                     historyIndex--;
                     currentInput = commandHistory[historyIndex];
                     if (commandInputText) commandInputText.textContent = currentInput;
                 }
-                return;
-            }
-
-            if (key === 'ArrowDown') {
-                if (historyIndex < commandHistory.length - 1) {
+            } else if (key === 'ArrowDown') {
+                if (commandHistory.length > 0 && historyIndex < commandHistory.length - 1) {
                     historyIndex++;
                     currentInput = commandHistory[historyIndex];
                     if (commandInputText) commandInputText.textContent = currentInput;
-                } else if (historyIndex === commandHistory.length - 1) {
+                } else {
                     historyIndex = commandHistory.length;
                     currentInput = '';
                     if (commandInputText) commandInputText.textContent = '';
                 }
-                return;
-            }
-
-            if (key === 'Enter') {
-                const commandToExecute = currentInput;
-                currentInput = '';
-                if (commandInputText) commandInputText.textContent = currentInput;
-                handleCommand(commandToExecute);
-            } else if (key === 'Backspace') {
-                currentInput = currentInput.slice(0, -1);
-                if (commandInputText) commandInputText.textContent = currentInput;
             } else if (key.length === 1) {
                 currentInput += key;
                 if (commandInputText) commandInputText.textContent = currentInput;
             }
         }
 
-        window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.altKey || e.metaKey || e.key.startsWith('F')) return;
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            if (e.key === 'Backspace' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+            }
             handleKeyPress(e.key);
         });
-
-        function scheduleGlitch() {
-            const randomTime = Math.random() * (40000 - 20000) + 20000;
-            setTimeout(() => {
-                if (glitchLine) {
-                    glitchLine.classList.add('glitch-active');
-                    setTimeout(() => glitchLine.classList.remove('glitch-active'), 300);
-                }
-                scheduleGlitch();
-            }, randomTime);
-        }
-
-        scheduleGlitch();
-
-        // --- ЛОГИКА КНОПКИ ПОЛНОЭКРАННОГО РЕЖИМА ДЛЯ МОБИЛОК ---
-        const mobileFsBtn = document.getElementById('mobileFsBtn');
-
-        if (mobileFsBtn) {
-            mobileFsBtn.addEventListener('click', () => {
-                if (!document.fullscreenElement) {
-                    const docEl = document.documentElement;
-                    if (docEl.requestFullscreen) {
-                        docEl.requestFullscreen();
-                    } else if (docEl.webkitRequestFullscreen) {
-                        docEl.webkitRequestFullscreen();
-                    }
-                    mobileFsBtn.textContent = '✖ ВЫЙТИ';
-                } else {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    } else if (document.webkitExitFullscreen) {
-                        document.webkitExitFullscreen();
-                    }
-                    mobileFsBtn.textContent = '📱 НА ВЕСЬ ЭКРАН';
-                }
-            });
-        }
     });
 })();
