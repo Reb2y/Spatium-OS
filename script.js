@@ -117,7 +117,6 @@
         const closePassModalBtn = document.getElementById('closePassModalBtn');
         const passInput = document.getElementById('passInput');
         const submitPassBtn = document.getElementById('submitPassBtn');
-        const passError = document.getElementById('passError');
 
         const imageViewerWindow = document.getElementById('imageViewerWindow');
         const closeImageBtn = document.getElementById('closeImageBtn');
@@ -215,7 +214,6 @@
         function openPasswordModal() {
             if (!passwordModal) return;
             passwordModal.classList.remove('hidden');
-            if (passError) passError.classList.add('hidden'); // Всегда прячем ошибку при открытии
             if (passInput) {
                 passInput.value = '';
                 setTimeout(() => passInput.focus(), 50);
@@ -225,7 +223,6 @@
         function closePasswordModal() {
             if (!passwordModal) return;
             passwordModal.classList.add('hidden');
-            if (passError) passError.classList.add('hidden');
             pendingProtectedFolder = null;
         }
 
@@ -239,7 +236,6 @@
                 pathHistory.push(target);
                 renderFiles();
             } else {
-                if (passError) passError.classList.remove('hidden'); // Показываем только при НЕВЕРНОМ пароле
                 if (passInput) {
                     passInput.value = '';
                     passInput.focus();
@@ -251,19 +247,11 @@
         if (closePassModalBtn) closePassModalBtn.addEventListener('click', closePasswordModal);
 
         if (passInput) {
-            // При нажатии Enter отправляем пароль
             passInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     e.stopPropagation();
                     handlePasswordSubmit();
-                }
-            });
-
-            // Прячем ошибку, когда пользователь начинает вводить заново, чтобы не мелькала
-            passInput.addEventListener('input', () => {
-                if (passError && !passError.classList.contains('hidden')) {
-                    passError.classList.add('hidden');
                 }
             });
         }
@@ -1007,7 +995,6 @@
         }
 
         function handleKeyPress(key) {
-            // Если фокус находится внутри инпута пароля, не перехватываем нажатия клавиш консолью
             if (document.activeElement === passInput) return;
 
             if (isSleeping) { wakeUp(); return; }
@@ -1083,5 +1070,29 @@
         }
 
         scheduleGlitch();
+
+        // --- ЛОГИКА КНОПКИ ПОЛНОЭКРАННОГО РЕЖИМА ДЛЯ МОБИЛОК ---
+        const mobileFsBtn = document.getElementById('mobileFsBtn');
+
+        if (mobileFsBtn) {
+            mobileFsBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    const docEl = document.documentElement;
+                    if (docEl.requestFullscreen) {
+                        docEl.requestFullscreen();
+                    } else if (docEl.webkitRequestFullscreen) {
+                        docEl.webkitRequestFullscreen();
+                    }
+                    mobileFsBtn.textContent = '✖ ВЫЙТИ';
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                    mobileFsBtn.textContent = '📱 НА ВЕСЬ ЭКРАН';
+                }
+            });
+        }
     });
 })();
