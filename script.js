@@ -1,5 +1,26 @@
 (function initSpatiumOS() {
     document.addEventListener('DOMContentLoaded', () => {
+        // --- ЛОГИКА КНОПКИ ПОЛНОЭКРАННОГО РЕЖИМА ---
+        const mobileFsBtn = document.getElementById('mobileFsBtn');
+        if (mobileFsBtn) {
+            mobileFsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().then(() => {
+                        mobileFsBtn.textContent = '📱 ВЫЙТИ';
+                    }).catch(err => {
+                        console.log(` Ошибка включения фуллскрина: ${err.message}`);
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().then(() => {
+                            mobileFsBtn.textContent = '📱 НА ВЕСЬ ЭКРАН';
+                        });
+                    }
+                }
+            });
+        }
+
         // --- ДВИЖЕНИЕ И ИНТЕРАКТИВНОСТЬ КАСТОМНОГО КУРСОРA ---
         const customCursor = document.getElementById('custom-cursor');
         const cursorFollower = document.getElementById('cursor-follower');
@@ -761,7 +782,7 @@
             }
 
             if (!screen || screen.classList.contains('crt-off')) return;
-            if (e.target.closest('#desktopContainer') || e.target.closest('#virtualKeyboard')) return;
+            if (e.target.closest('#desktopContainer') || e.target.closest('#virtualKeyboard') || e.target.closest('#mobileFsBtn')) return;
 
             if (isTyping && currentTypingTimeout) {
                 clearTimeout(currentTypingTimeout);

@@ -31,6 +31,28 @@ html, body {
     font-family: var(--font-family);
 }
 
+/* СТИЛИ КНОПКИ ПОЛНОЭКРАННОГО РЕЖИМА */
+.mobile-fs-btn {
+    display: none; /* ПО УМОЛЧАНИЮ СКРЫТО НА ПК */
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 999999;
+    background: var(--crt-bg);
+    color: var(--crt-color);
+    border: 2px solid var(--crt-color);
+    box-shadow: 0 0 10px var(--crt-glow);
+    font-family: var(--font-family);
+    font-size: 9px;
+    padding: 8px 12px;
+    outline: none;
+}
+
+.mobile-fs-btn:active {
+    background: var(--crt-color);
+    color: #000;
+}
+
 /* КАСТОМНЫЙ РЕТРО-КУРСОР */
 #custom-cursor, #cursor-follower {
     display: none;
@@ -767,6 +789,10 @@ body.active #custom-cursor {
 
 /* АДАПТИВНОСТЬ ПОД МОБИЛЬНЫЕ УСТРОЙСТВА */
 @media screen and (max-width: 768px) {
+    .mobile-fs-btn {
+        display: block; /* ПОКАЗЫВАЕМ КНОПКУ ПОЛНОЭКРАННОГО РЕЖИМА ТОЛЬКО НА МОБИЛЬНЫХ */
+    }
+
     .virtual-keyboard {
         display: flex; /* ПОКАЗЫВАЕМ ЭКРАННУЮ КЛАВИАТУРУ НА СМАРТФОНАХ */
     }
