@@ -9,7 +9,7 @@
                     document.documentElement.requestFullscreen().then(() => {
                         mobileFsBtn.textContent = '📱 ВЫЙТИ';
                     }).catch(err => {
-                        console.log(` Ошибка включения фуллскрина: ${err.message}`);
+                        console.log(`Ошибка включения фуллскрина: ${err.message}`);
                     });
                 } else {
                     if (document.exitFullscreen) {
@@ -145,6 +145,21 @@
         const imageWindowTitle = document.getElementById('imageWindowTitle');
         const viewerImage = document.getElementById('viewerImage');
 
+        // --- ЭЛЕМЕНТЫ КАМЕР И КАСТОМНОГО ВИДЕОПЛЕЕРА ---
+        const openCamsBtn = document.getElementById('openCamsBtn');
+        const camsWindow = document.getElementById('camsWindow');
+        const camsHeader = document.getElementById('camsHeader');
+        const closeCamsBtn = document.getElementById('closeCamsBtn');
+        const camRecord1 = document.getElementById('camRecord1');
+
+        const videoPlayerWindow = document.getElementById('videoPlayerWindow');
+        const videoPlayerHeader = document.getElementById('videoPlayerHeader');
+        const closeVideoBtn = document.getElementById('closeVideoBtn');
+        const camVideo = document.getElementById('camVideo');
+        const videoPlayPauseBtn = document.getElementById('videoPlayPauseBtn');
+        const videoProgress = document.getElementById('videoProgress');
+        const videoTimeDisplay = document.getElementById('videoTimeDisplay');
+
         // ФАЙЛОВАЯ СТРУКТУРА (ЦЕПОЧКА)
         const fileSystem = {
             name: "C:",
@@ -180,7 +195,9 @@
 
         let currentDirectory = fileSystem;
         let pathHistory = [fileSystem];
-        let pendingProtectedFolder = null;
+        
+        // Цель защищенного доступа: объект папки или строка 'cams'
+        let pendingTarget = null;
 
         function renderFiles() {
             if (!filesGrid) return;
@@ -222,7 +239,7 @@
         function openFileSystemItem(item) {
             if (item.type === 'folder') {
                 if (item.protected) {
-                    pendingProtectedFolder = item;
+                    pendingTarget = { type: 'folder', target: item, pass: item.pass };
                     openPasswordModal();
                 } else {
                     currentDirectory = item;
@@ -246,18 +263,24 @@
         function closePasswordModal() {
             if (!passwordModal) return;
             passwordModal.classList.add('hidden');
-            pendingProtectedFolder = null;
+            pendingTarget = null;
         }
 
         function handlePasswordSubmit() {
-            if (!pendingProtectedFolder) return;
+            if (!pendingTarget) return;
             const entered = passInput ? passInput.value.trim() : '';
-            if (entered === pendingProtectedFolder.pass) {
-                const target = pendingProtectedFolder;
-                closePasswordModal();
-                currentDirectory = target;
-                pathHistory.push(target);
-                renderFiles();
+            
+            if (entered === pendingTarget.pass) {
+                if (pendingTarget.type === 'cams') {
+                    closePasswordModal();
+                    if (camsWindow) camsWindow.classList.remove('hidden');
+                } else if (pendingTarget.type === 'folder') {
+                    const target = pendingTarget.target;
+                    closePasswordModal();
+                    currentDirectory = target;
+                    pathHistory.push(target);
+                    renderFiles();
+                }
             } else {
                 if (passInput) {
                     passInput.value = '';
@@ -302,6 +325,85 @@
         if (openFolderBtn) openFolderBtn.addEventListener('click', openFilesWindow);
         if (menuFolderBtn) menuFolderBtn.addEventListener('click', openFilesWindow);
         if (closeFilesBtn) closeFilesBtn.addEventListener('click', closeFilesWindow);
+
+        // --- ЛОГИКА ОКНА КАМЕР И ВИДЕОПЛЕЕРА ---
+        if (openCamsBtn) {
+            openCamsBtn.addEventListener('click', () => {
+                if (startMenu) startMenu.classList.add('hidden');
+                pendingTarget = { type: 'cams', pass: '8888' };
+                openPasswordModal();
+            });
+        }
+
+        if (closeCamsBtn) {
+            closeCamsBtn.addEventListener('click', () => {
+                if (camsWindow) camsWindow.classList.add('hidden');
+            });
+        }
+
+        if (camRecord1) {
+            camRecord1.addEventListener('click', () => {
+                if (videoPlayerWindow) {
+                    videoPlayerWindow.classList.remove('hidden');
+                    if (camVideo) {
+                        camVideo.currentTime = 0;
+                        camVideo.play();
+                        if (videoPlayPauseBtn) videoPlayPauseBtn.textContent = '❚❚';
+                    }
+                }
+            });
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        if (camVideo) {
+            camVideo.addEventListener('timeupdate', () => {
+                if (camVideo.duration) {
+                    const pct = (camVideo.currentTime / camVideo.duration) * 100;
+                    if (videoProgress) videoProgress.value = pct;
+                    if (videoTimeDisplay) {
+                        videoTimeDisplay.textContent = `${formatTime(camVideo.currentTime)} / ${formatTime(camVideo.duration)}`;
+                    }
+                }
+            });
+
+            camVideo.addEventListener('ended', () => {
+                if (videoPlayPauseBtn) videoPlayPauseBtn.textContent = '►';
+            });
+        }
+
+        if (videoPlayPauseBtn) {
+            videoPlayPauseBtn.addEventListener('click', () => {
+                if (!camVideo) return;
+                if (camVideo.paused) {
+                    camVideo.play();
+                    videoPlayPauseBtn.textContent = '❚❚';
+                } else {
+                    camVideo.pause();
+                    videoPlayPauseBtn.textContent = '►';
+                }
+            });
+        }
+
+        if (videoProgress) {
+            videoProgress.addEventListener('input', (e) => {
+                if (!camVideo || !camVideo.duration) return;
+                const seekTime = (e.target.value / 100) * camVideo.duration;
+                camVideo.currentTime = seekTime;
+            });
+        }
+
+        if (closeVideoBtn) {
+            closeVideoBtn.addEventListener('click', () => {
+                if (camVideo) camVideo.pause();
+                if (videoPlayerWindow) videoPlayerWindow.classList.add('hidden');
+            });
+        }
 
         function openImageViewer(item) {
             if (imageViewerWindow) {
@@ -354,6 +456,8 @@
 
         makeWindowDraggable(filesHeader, filesWindow);
         makeWindowDraggable(imageHeader, imageViewerWindow);
+        makeWindowDraggable(camsHeader, camsWindow);
+        makeWindowDraggable(videoPlayerHeader, videoPlayerWindow);
 
         const holidaysData = {
             "01-01": "Новый год", "01-07": "Рождество Христово", "02-23": "День защитника Отечества",
@@ -383,7 +487,7 @@
         let currentTypingDelay = 50;
         let viewDate = new Date();
 
-        // --- ЛОГИКА РЕТРО ЭКРАННОЙ КЛАВИАТУРЫ ---
+        // --- ЛОГИКА РЕТРО ЭКРАННОЙ КЛАВИАТУРА ---
         const kbLayouts = {
             ru: [
                 ['Й','Ц','У','К','Е','Н','Г','Ш','Щ','З','Х','Ъ'],

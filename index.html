@@ -105,6 +105,10 @@
                     <div class="icon-box">📁</div>
                     <span>Файлы</span>
                 </div>
+                <div class="desktop-icon" id="openCamsBtn">
+                    <div class="icon-box">📹</div>
+                    <span>Камеры</span>
+                </div>
                 <div class="desktop-icon" id="openSettingsBtn">
                     <div class="icon-box">⚙️</div>
                     <span>Настройки</span>
@@ -123,6 +127,40 @@
                         <span class="files-path" id="filesPath">C:/</span>
                     </div>
                     <div class="files-grid" id="filesGrid"></div>
+                </div>
+            </div>
+
+            <!-- ОКНО ВИДЕОНАБЛЮДЕНИЯ (КАМЕРЫ) -->
+            <div class="window-container hidden" id="camsWindow">
+                <div class="window-header" id="camsHeader">
+                    <span class="window-title">📹 Системы наблюдения</span>
+                    <button class="window-close-btn" id="closeCamsBtn">X</button>
+                </div>
+                <div class="window-body">
+                    <div class="files-grid">
+                        <div class="file-item" id="camRecord1">
+                            <div class="file-icon">🎬</div>
+                            <span class="file-name">Запись 1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ОКНО ВИДЕОПЛЕЕРА (СТИЛИЗОВАННОЕ) -->
+            <div class="window-container hidden" id="videoPlayerWindow">
+                <div class="window-header" id="videoPlayerHeader">
+                    <span class="window-title" id="videoPlayerTitle">🎬 Просмотр: Запись 1</span>
+                    <button class="window-close-btn" id="closeVideoBtn">X</button>
+                </div>
+                <div class="window-body video-player-body">
+                    <div class="video-display-container">
+                        <video id="camVideo" src="img/racia_hide.mp4" preload="metadata"></video>
+                    </div>
+                    <div class="custom-video-controls">
+                        <button class="video-ctrl-btn" id="videoPlayPauseBtn">►</button>
+                        <input type="range" min="0" max="100" value="0" class="crt-slider video-slider" id="videoProgress">
+                        <span class="video-time-display" id="videoTimeDisplay">00:00 / 00:00</span>
+                    </div>
                 </div>
             </div>
 
