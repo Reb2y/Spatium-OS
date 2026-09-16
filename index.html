@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- КНОПКА ПОЛНОЭКРАННОГО РЕЖИМА (Скрыта на ПК через style.css) -->
+    <!-- КНОПКА ПОЛНОЭКРАННОГО РЕЖИМА -->
     <button id="mobileFsBtn" class="mobile-fs-btn">📱 НА ВЕСЬ ЭКРАН</button>
 
     <!-- Элементы кастомного курсора -->
@@ -115,11 +115,30 @@
                 </div>
             </div>
 
+            <!-- РАНДОМНАЯ СЮЖЕТНАЯ КНОПКА -->
+            <button id="storySecretBtn" class="story-secret-btn hidden"></button>
+
+            <!-- ДИAЛОГОВОЕ ОКНО ВНИЗУ -->
+            <div id="storyDialogBox" class="story-dialog-box hidden">
+                <div class="dialog-content">
+                    <div class="dialog-text" id="dialogText"></div>
+                    <div class="dialog-choices" id="dialogChoices">
+                        <button class="dialog-choice-btn">1. Кто здесь?</button>
+                        <button class="dialog-choice-btn">2. Успокойся!</button>
+                        <button class="dialog-choice-btn">3. Закрыть</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- ОКНО ФАЙЛОВОГО МЕНЕДЖЕРА -->
             <div class="window-container hidden" id="filesWindow">
                 <div class="window-header" id="filesHeader">
                     <span class="window-title" id="filesWindowTitle">📁 Проводник: C:/</span>
-                    <button class="window-close-btn" id="closeFilesBtn">X</button>
+                    <div class="window-controls">
+                        <button class="window-btn win-minimize-btn" title="Свернуть">_</button>
+                        <button class="window-btn win-maximize-btn" title="Развернуть">□</button>
+                        <button class="window-btn window-close-btn" id="closeFilesBtn" title="Закрыть">X</button>
+                    </div>
                 </div>
                 <div class="window-body">
                     <div class="files-toolbar">
@@ -134,7 +153,11 @@
             <div class="window-container hidden" id="camsWindow">
                 <div class="window-header" id="camsHeader">
                     <span class="window-title">📹 Системы наблюдения</span>
-                    <button class="window-close-btn" id="closeCamsBtn">X</button>
+                    <div class="window-controls">
+                        <button class="window-btn win-minimize-btn" title="Свернуть">_</button>
+                        <button class="window-btn win-maximize-btn" title="Развернуть">□</button>
+                        <button class="window-btn window-close-btn" id="closeCamsBtn" title="Закрыть">X</button>
+                    </div>
                 </div>
                 <div class="window-body">
                     <div class="files-grid">
@@ -146,11 +169,15 @@
                 </div>
             </div>
 
-            <!-- ОКНО ВИДЕОПЛЕЕРА (СТИЛИЗОВАННОЕ) -->
+            <!-- ОКНО ВИДЕОПЛЕЕРА -->
             <div class="window-container hidden" id="videoPlayerWindow">
                 <div class="window-header" id="videoPlayerHeader">
                     <span class="window-title" id="videoPlayerTitle">🎬 Просмотр: Запись 1</span>
-                    <button class="window-close-btn" id="closeVideoBtn">X</button>
+                    <div class="window-controls">
+                        <button class="window-btn win-minimize-btn" title="Свернуть">_</button>
+                        <button class="window-btn win-maximize-btn" title="Развернуть">□</button>
+                        <button class="window-btn window-close-btn" id="closeVideoBtn" title="Закрыть">X</button>
+                    </div>
                 </div>
                 <div class="window-body video-player-body">
                     <div class="video-display-container">
@@ -164,11 +191,13 @@
                 </div>
             </div>
 
-            <!-- ОКНО ВВОДА ПАРОЛЯ В СТИЛЕ ТЕРМИНАЛА -->
+            <!-- ОКНО ВВОДА ПАРОЛЯ -->
             <div class="window-container hidden modal-dialog" id="passwordModal">
                 <div class="window-header">
                     <span class="window-title">🔒 ЗАЩИЩЕННЫЙ ДОСТУП</span>
-                    <button class="window-close-btn" id="closePassModalBtn">X</button>
+                    <div class="window-controls">
+                        <button class="window-btn window-close-btn" id="closePassModalBtn" title="Закрыть">X</button>
+                    </div>
                 </div>
                 <div class="window-body pass-modal-body">
                     <p class="pass-label">&gt; ВВЕДИТЕ ПАРОЛЬ ДОСТУПА:</p>
@@ -183,7 +212,11 @@
             <div class="window-container hidden" id="imageViewerWindow">
                 <div class="window-header" id="imageHeader">
                     <span class="window-title" id="imageWindowTitle">🖼️ Просмотр</span>
-                    <button class="window-close-btn" id="closeImageBtn">X</button>
+                    <div class="window-controls">
+                        <button class="window-btn win-minimize-btn" title="Свернуть">_</button>
+                        <button class="window-btn win-maximize-btn" title="Развернуть">□</button>
+                        <button class="window-btn window-close-btn" id="closeImageBtn" title="Закрыть">X</button>
+                    </div>
                 </div>
                 <div class="window-body image-viewer-body">
                     <img src="" alt="photo.png" id="viewerImage">
@@ -194,7 +227,11 @@
             <div class="window-container hidden" id="settingsWindow">
                 <div class="window-header" id="settingsHeader">
                     <span class="window-title">⚙️ Настройки системы</span>
-                    <button class="window-close-btn" id="closeSettingsBtn">X</button>
+                    <div class="window-controls">
+                        <button class="window-btn win-minimize-btn" title="Свернуть">_</button>
+                        <button class="window-btn win-maximize-btn" title="Развернуть">□</button>
+                        <button class="window-btn window-close-btn" id="closeSettingsBtn" title="Закрыть">X</button>
+                    </div>
                 </div>
                 <div class="window-body">
                     <div class="settings-page" id="settingsMainPage">

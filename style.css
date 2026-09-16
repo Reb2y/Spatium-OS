@@ -33,7 +33,7 @@ html, body {
 
 /* СТИЛИ КНОПКИ ПОЛНОЭКРАННОГО РЕЖИМА */
 .mobile-fs-btn {
-    display: none; /* ПО УМОЛЧАНИЮ СКРЫТО НА ПК */
+    display: none;
     position: fixed;
     top: 10px;
     right: 10px;
@@ -854,11 +854,11 @@ body.active #custom-cursor {
 /* АДАПТИВНОСТЬ ПОД МОБИЛЬНЫЕ УСТРОЙСТВА */
 @media screen and (max-width: 768px) {
     .mobile-fs-btn {
-        display: block; /* ПОКАЗЫВАЕМ КНОПКУ ПОЛНОЭКРАННОГО РЕЖИМА ТОЛЬКО НА МОБИЛЬНЫХ */
+        display: block;
     }
 
     .virtual-keyboard {
-        display: flex; /* ПОКАЗЫВАЕМ ЭКРАННУЮ КЛАВИАТУРУ НА СМАРТФОНАХ */
+        display: flex;
     }
 
     .terminal-container {
@@ -948,4 +948,143 @@ body.active #custom-cursor {
     40% { transform: scale(1, 0.005); filter: brightness(4) contrast(300%); opacity: 1; }
     70% { transform: scale(0.005, 0.005); filter: brightness(10); opacity: 1; }
     100% { transform: scale(0, 0); filter: brightness(0); opacity: 0; }
+}
+
+/* Кнопки и заголовок окон */
+.window-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    cursor: move;
+}
+
+.window-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.window-btn {
+    background: var(--crt-color);
+    color: var(--crt-bg);
+    border: none;
+    font-family: inherit;
+    font-size: 10px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.window-btn:hover {
+    filter: brightness(1.2);
+}
+
+/* Стили активного окна */
+.window-container.active-window {
+    border-color: var(--crt-color);
+    box-shadow: 0 0 15px var(--crt-glow);
+}
+
+.window-container.maximized {
+    border-radius: 0;
+    max-width: 100vw !important;
+    max-height: calc(100vh - 40px) !important;
+}
+
+/* СЮЖЕТНАЯ КНОПКА (ПРОЗРАЧНЫЙ PNG) */
+.story-secret-btn {
+    position: absolute;
+    width: 52px;
+    height: 52px;
+    background-image: url('img/blue.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    filter: drop-shadow(0 0 8px var(--crt-glow));
+    cursor: pointer;
+    z-index: 10;
+    outline: none;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.story-secret-btn:hover {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 12px var(--crt-color));
+}
+
+.story-secret-btn.hidden {
+    display: none;
+}
+
+/* УВЕЛИЧЕННОЕ ДИАЛОГОВОЕ ОКНО */
+.story-dialog-box {
+    position: absolute;
+    bottom: 55px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: clamp(400px, 88vw, 850px);
+    min-height: 120px;
+    background: var(--crt-bg);
+    border: 3px solid var(--crt-color);
+    box-shadow: 0 0 25px var(--crt-glow);
+    padding: 20px 25px;
+    z-index: 99;
+    font-family: var(--font-family);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.story-dialog-box.hidden {
+    display: none;
+}
+
+.dialog-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.dialog-text {
+    flex: 1;
+    color: var(--crt-color);
+    font-size: calc(13px * var(--font-scale));
+    line-height: 1.6;
+    word-break: break-word;
+    min-height: 50px;
+    text-shadow: 0 0 6px var(--crt-glow);
+}
+
+.dialog-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 180px;
+}
+
+.dialog-choice-btn {
+    background: rgba(0, 0, 0, 0.85);
+    color: var(--crt-color);
+    border: 1px solid var(--crt-color);
+    font-family: var(--font-family);
+    font-size: calc(10px * var(--font-scale));
+    padding: 8px 12px;
+    text-align: left;
+    outline: none;
+    box-shadow: 0 0 5px var(--crt-glow);
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.dialog-choice-btn:hover {
+    background: var(--crt-color);
+    color: #000;
 }

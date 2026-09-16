@@ -51,7 +51,7 @@
         document.addEventListener('mousedown', () => document.body.classList.add('active'));
         document.addEventListener('mouseup', () => document.body.classList.remove('active'));
 
-        const interactiveSelector = 'button, a, input, .desktop-icon, .start-item, .cal-day-cell, .cal-nav-btn, .start-btn, .taskbar-time, .window-close-btn, .kb-key, .file-item';
+        const interactiveSelector = 'button, a, input, .desktop-icon, .start-item, .cal-day-cell, .cal-nav-btn, .start-btn, .taskbar-time, .window-close-btn, .win-minimize-btn, .win-maximize-btn, .kb-key, .file-item, .story-secret-btn, .dialog-choice-btn';
         document.addEventListener('mouseover', (e) => {
             if (e.target.closest(interactiveSelector)) {
                 document.body.classList.add('hovered');
@@ -124,6 +124,68 @@
         const calPrevMonth = document.getElementById('calPrevMonth');
         const calNextMonth = document.getElementById('calNextMonth');
 
+        // --- СЮЖЕТНЫЕ ЭЛЕМЕНТЫ ---
+        const storySecretBtn = document.getElementById('storySecretBtn');
+        const storyDialogBox = document.getElementById('storyDialogBox');
+        const dialogText = document.getElementById('dialogText');
+        const dialogChoices = document.getElementById('dialogChoices');
+
+        let isDialogTyping = false;
+        let dialogTypingTimeout = null;
+
+        function spawnStorySecretBtn() {
+            if (!storySecretBtn) return;
+            
+            const margin = 60;
+            const maxX = window.innerWidth - margin - 52;
+            const maxY = window.innerHeight - margin - 52;
+
+            const randomX = Math.floor(Math.random() * (maxX - margin)) + margin;
+            const randomY = Math.floor(Math.random() * (maxY - margin)) + margin;
+
+            storySecretBtn.style.left = `${randomX}px`;
+            storySecretBtn.style.top = `${randomY}px`;
+            storySecretBtn.classList.remove('hidden');
+        }
+
+        function triggerStoryDialog(text) {
+            if (!storyDialogBox || !dialogText) return;
+            
+            storyDialogBox.classList.remove('hidden');
+            dialogText.textContent = '';
+            
+            let index = 0;
+            isDialogTyping = true;
+
+            if (dialogTypingTimeout) clearInterval(dialogTypingTimeout);
+
+            dialogTypingTimeout = setInterval(() => {
+                if (index < text.length) {
+                    dialogText.textContent += text.charAt(index);
+                    index++;
+                } else {
+                    clearInterval(dialogTypingTimeout);
+                    isDialogTyping = false;
+                }
+            }, 40);
+        }
+
+        if (storySecretBtn) {
+            storySecretBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                triggerStoryDialog("АААААААААААААААААААААА");
+            });
+        }
+
+        if (dialogChoices) {
+            dialogChoices.querySelectorAll('.dialog-choice-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (storyDialogBox) storyDialogBox.classList.add('hidden');
+                });
+            });
+        }
+
         // --- ЭЛЕМЕНТЫ ПРОВОДНИКА И ФАЙЛОВОЙ СИСТЕМЫ ---
         const openFolderBtn = document.getElementById('openFolderBtn');
         const menuFolderBtn = document.getElementById('menuFolderBtn');
@@ -160,7 +222,77 @@
         const videoProgress = document.getElementById('videoProgress');
         const videoTimeDisplay = document.getElementById('videoTimeDisplay');
 
-        // ФАЙЛОВАЯ СТРУКТУРА (ЦЕПОЧКА)
+        // ==========================================
+        // Z-INDEX & CONTROLS ОКОН
+        // ==========================================
+        let highestZIndex = 100;
+
+        function bringToFront(windowElem) {
+            if (!windowElem) return;
+            highestZIndex++;
+            windowElem.style.zIndex = highestZIndex;
+
+            document.querySelectorAll('.window-container').forEach(w => w.classList.remove('active-window'));
+            windowElem.classList.add('active-window');
+        }
+
+        document.querySelectorAll('.window-container').forEach(win => {
+            win.addEventListener('mousedown', () => bringToFront(win));
+            win.addEventListener('touchstart', () => bringToFront(win), { passive: true });
+        });
+
+        function setupWindowControls(windowElem) {
+            if (!windowElem) return;
+            const minBtn = windowElem.querySelector('.win-minimize-btn');
+            const maxBtn = windowElem.querySelector('.win-maximize-btn');
+            const header = windowElem.querySelector('.window-header');
+
+            if (minBtn) {
+                minBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    windowElem.classList.add('hidden');
+                });
+            }
+
+            if (maxBtn) {
+                maxBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleMaximizeWindow(windowElem);
+                });
+            }
+
+            if (header) {
+                header.addEventListener('dblclick', (e) => {
+                    if (e.target.closest('.window-controls')) return;
+                    toggleMaximizeWindow(windowElem);
+                });
+            }
+        }
+
+        function toggleMaximizeWindow(windowElem) {
+            if (windowElem.classList.contains('maximized')) {
+                windowElem.classList.remove('maximized');
+                if (windowElem.dataset.prevLeft) windowElem.style.left = windowElem.dataset.prevLeft;
+                if (windowElem.dataset.prevTop) windowElem.style.top = windowElem.dataset.prevTop;
+                if (windowElem.dataset.prevWidth) windowElem.style.width = windowElem.dataset.prevWidth;
+                if (windowElem.dataset.prevHeight) windowElem.style.height = windowElem.dataset.prevHeight;
+            } else {
+                windowElem.dataset.prevLeft = windowElem.style.left || `${windowElem.offsetLeft}px`;
+                windowElem.dataset.prevTop = windowElem.style.top || `${windowElem.offsetTop}px`;
+                windowElem.dataset.prevWidth = windowElem.style.width || `${windowElem.offsetWidth}px`;
+                windowElem.dataset.prevHeight = windowElem.style.height || `${windowElem.offsetHeight}px`;
+
+                windowElem.classList.add('maximized');
+                windowElem.style.left = '0px';
+                windowElem.style.top = '0px';
+                windowElem.style.width = '100%';
+                windowElem.style.height = 'calc(100% - 40px)';
+            }
+        }
+
+        document.querySelectorAll('.window-container').forEach(setupWindowControls);
+
+        // ФАЙЛОВАЯ СТРУКТУРА (ЗДЕСЬ ТОЖЕ ФИКСИРУЕМ ФОРМАТ НА PNG)
         const fileSystem = {
             name: "C:",
             type: "folder",
@@ -195,8 +327,6 @@
 
         let currentDirectory = fileSystem;
         let pathHistory = [fileSystem];
-        
-        // Цель защищенного доступа: объект папки или строка 'cams'
         let pendingTarget = null;
 
         function renderFiles() {
@@ -253,6 +383,7 @@
 
         function openPasswordModal() {
             if (!passwordModal) return;
+            bringToFront(passwordModal);
             passwordModal.classList.remove('hidden');
             if (passInput) {
                 passInput.value = '';
@@ -273,7 +404,10 @@
             if (entered === pendingTarget.pass) {
                 if (pendingTarget.type === 'cams') {
                     closePasswordModal();
-                    if (camsWindow) camsWindow.classList.remove('hidden');
+                    if (camsWindow) {
+                        bringToFront(camsWindow);
+                        camsWindow.classList.remove('hidden');
+                    }
                 } else if (pendingTarget.type === 'folder') {
                     const target = pendingTarget.target;
                     closePasswordModal();
@@ -314,7 +448,10 @@
 
         function openFilesWindow() {
             if (startMenu) startMenu.classList.add('hidden');
-            if (filesWindow) filesWindow.classList.remove('hidden');
+            if (filesWindow) {
+                bringToFront(filesWindow);
+                filesWindow.classList.remove('hidden');
+            }
             renderFiles();
         }
 
@@ -344,6 +481,7 @@
         if (camRecord1) {
             camRecord1.addEventListener('click', () => {
                 if (videoPlayerWindow) {
+                    bringToFront(videoPlayerWindow);
                     videoPlayerWindow.classList.remove('hidden');
                     if (camVideo) {
                         camVideo.currentTime = 0;
@@ -407,6 +545,7 @@
 
         function openImageViewer(item) {
             if (imageViewerWindow) {
+                bringToFront(imageViewerWindow);
                 if (imageWindowTitle && item) imageWindowTitle.textContent = `🖼️ Просмотр: ${item.name}`;
                 if (viewerImage && item) viewerImage.src = item.src;
                 imageViewerWindow.classList.remove('hidden');
@@ -419,38 +558,60 @@
 
         if (closeImageBtn) closeImageBtn.addEventListener('click', closeImageViewer);
 
-        // Функция для перемещения окон drag-and-drop
+        // DRAGGING ПЕРЕТАСКИВАНИЕ ОКОН
         function makeWindowDraggable(headerElem, windowElem) {
             if (!headerElem || !windowElem) return;
             let isDragging = false;
             let offsetX = 0, offsetY = 0;
 
-            const startDrag = (clientX, clientY) => {
+            const startDrag = (clientX, clientY, target) => {
+                if (target.closest('.window-controls')) return;
+                if (windowElem.classList.contains('maximized')) return;
+
                 isDragging = true;
-                offsetX = clientX - windowElem.offsetLeft;
-                offsetY = clientY - windowElem.offsetTop;
+                bringToFront(windowElem);
+
+                const rect = windowElem.getBoundingClientRect();
+                offsetX = clientX - rect.left;
+                offsetY = clientY - rect.top;
             };
 
             const doDrag = (clientX, clientY) => {
                 if (!isDragging) return;
-                windowElem.style.left = `${clientX - offsetX}px`;
-                windowElem.style.top = `${clientY - offsetY}px`;
+
+                let newLeft = clientX - offsetX;
+                let newTop = clientY - offsetY;
+
+                const parent = screen || document.body;
+                const parentRect = parent.getBoundingClientRect();
+                const maxLeft = parentRect.width - windowElem.offsetWidth;
+                const maxTop = parentRect.height - windowElem.offsetHeight - 40; 
+
+                if (newLeft < 0) newLeft = 0;
+                if (newTop < 0) newTop = 0;
+                if (newLeft > maxLeft) newLeft = Math.max(0, maxLeft);
+                if (newTop > maxTop) newTop = Math.max(0, maxTop);
+
+                windowElem.style.left = `${newLeft}px`;
+                windowElem.style.top = `${newTop}px`;
             };
 
-            headerElem.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+            headerElem.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY, e.target));
             window.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
             window.addEventListener('mouseup', () => { isDragging = false; });
 
             headerElem.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
-                    startDrag(e.touches[0].clientX, e.touches[0].clientY);
+                    startDrag(e.touches[0].clientX, e.touches[0].clientY, e.target);
                 }
-            });
+            }, { passive: true });
+
             window.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1) {
+                if (e.touches.length === 1 && isDragging) {
                     doDrag(e.touches[0].clientX, e.touches[0].clientY);
                 }
-            });
+            }, { passive: true });
+
             window.addEventListener('touchend', () => { isDragging = false; });
         }
 
@@ -458,6 +619,7 @@
         makeWindowDraggable(imageHeader, imageViewerWindow);
         makeWindowDraggable(camsHeader, camsWindow);
         makeWindowDraggable(videoPlayerHeader, videoPlayerWindow);
+        makeWindowDraggable(settingsHeader, settingsWindow);
 
         const holidaysData = {
             "01-01": "Новый год", "01-07": "Рождество Христово", "02-23": "День защитника Отечества",
@@ -475,7 +637,6 @@
         const commandHistory = [];
         let historyIndex = -1;
 
-        let isSpatiEnabled = false;
         let isHackerMode = false;
         let hackerInterval = null;
 
@@ -726,6 +887,7 @@
                 if (winBootScreen) winBootScreen.classList.add('hidden');
                 if (desktopContainer) desktopContainer.classList.remove('hidden');
                 document.body.classList.add('show-cursor');
+                spawnStorySecretBtn();
             }, 1500);
         }
 
@@ -739,7 +901,10 @@
 
         function openSettings() {
             if (startMenu) startMenu.classList.add('hidden');
-            if (settingsWindow) settingsWindow.classList.remove('hidden');
+            if (settingsWindow) {
+                bringToFront(settingsWindow);
+                settingsWindow.classList.remove('hidden');
+            }
             showPage(settingsMainPage);
         }
 
@@ -826,8 +991,6 @@
                 if (fontSliderVal) fontSliderVal.textContent = `${val}%`;
             });
         }
-
-        makeWindowDraggable(settingsHeader, settingsWindow);
 
         if (startBtn) {
             startBtn.addEventListener('click', (e) => {
