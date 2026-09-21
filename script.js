@@ -1,642 +1,35 @@
+// Запуск скрипта Spatium OS
 (function initSpatiumOS() {
     document.addEventListener('DOMContentLoaded', () => {
-        // --- ЛОГИКА КНОПКИ ПОЛНОЭКРАННОГО РЕЖИМА ---
-        const mobileFsBtn = document.getElementById('mobileFsBtn');
-        if (mobileFsBtn) {
-            mobileFsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().then(() => {
-                        mobileFsBtn.textContent = '📱 ВЫЙТИ';
-                    }).catch(err => {
-                        console.log(`Ошибка включения фуллскрина: ${err.message}`);
-                    });
-                } else {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen().then(() => {
-                            mobileFsBtn.textContent = '📱 НА ВЕСЬ ЭКРАН';
-                        });
-                    }
-                }
-            });
-        }
-
-        // --- ДВИЖЕНИЕ И ИНТЕРАКТИВНОСТЬ КАСТОМНОГО КУРСОРA ---
-        const customCursor = document.getElementById('custom-cursor');
-        const cursorFollower = document.getElementById('cursor-follower');
-
-        let mouseX = 0, mouseY = 0;
-        let followerX = 0, followerY = 0;
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            if (customCursor) {
-                customCursor.style.left = `${mouseX}px`;
-                customCursor.style.top = `${mouseY}px`;
-            }
-        });
-
-        function animateCursorFollower() {
-            followerX += (mouseX - followerX) * 0.2;
-            followerY += (mouseY - followerY) * 0.2;
-            if (cursorFollower) {
-                cursorFollower.style.left = `${followerX}px`;
-                cursorFollower.style.top = `${followerY}px`;
-            }
-            requestAnimationFrame(animateCursorFollower);
-        }
-        animateCursorFollower();
-
-        document.addEventListener('mousedown', () => document.body.classList.add('active'));
-        document.addEventListener('mouseup', () => document.body.classList.remove('active'));
-
-        const interactiveSelector = 'button, a, input, .desktop-icon, .start-item, .cal-day-cell, .cal-nav-btn, .start-btn, .taskbar-time, .window-close-btn, .win-minimize-btn, .win-maximize-btn, .kb-key, .file-item, .story-secret-btn, .dialog-choice-btn';
-        document.addEventListener('mouseover', (e) => {
-            if (e.target.closest(interactiveSelector)) {
-                document.body.classList.add('hovered');
-            }
-        });
-        document.addEventListener('mouseout', (e) => {
-            if (e.target.closest(interactiveSelector)) {
-                document.body.classList.remove('hovered');
-            }
-        });
-
-        // --- ЭЛЕМЕНТЫ СИСТЕМЫ ---
         const screen = document.getElementById('screen');
         const glitchLine = document.getElementById('glitchLine');
         const bootContainer = document.getElementById('bootContainer');
         const progressFill = document.getElementById('progressFill');
         const terminalContainer = document.getElementById('terminalContainer');
-        const desktopContainer = document.getElementById('desktopContainer');
-        const animBgLayer = document.getElementById('animBgLayer');
-        const winBootScreen = document.getElementById('winBootScreen');
-        const sleepOverlay = document.getElementById('sleepOverlay');
-        const startMenu = document.getElementById('startMenu');
-        
         const terminalOutput = document.getElementById('terminalOutput');
         const commandInputText = document.getElementById('commandInputText');
-        
-        const openTerminalBtn = document.getElementById('openTerminalBtn');
-        const menuTerminalBtn = document.getElementById('menuTerminalBtn');
-        
-        const openSettingsBtn = document.getElementById('openSettingsBtn');
-        const menuSettingsBtn = document.getElementById('menuSettingsBtn');
-        const settingsWindow = document.getElementById('settingsWindow');
-        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-        const settingsHeader = document.getElementById('settingsHeader');
-
-        const settingsMainPage = document.getElementById('settingsMainPage');
-        const settingsColorPage = document.getElementById('settingsColorPage');
-        const settingsWallpaperPage = document.getElementById('settingsWallpaperPage');
-        const settingsAnimWallpaperPage = document.getElementById('settingsAnimWallpaperPage');
-        const settingsTypingSpeedPage = document.getElementById('settingsTypingSpeedPage');
-        const settingsFontSizePage = document.getElementById('settingsFontSizePage');
-        const settingsAboutPage = document.getElementById('settingsAboutPage');
-
-        const goToColorPageBtn = document.getElementById('goToColorPageBtn');
-        const goToWallpaperPageBtn = document.getElementById('goToWallpaperPageBtn');
-        const goToAnimWallpaperPageBtn = document.getElementById('goToAnimWallpaperPageBtn');
-        const goToTypingSpeedPageBtn = document.getElementById('goToTypingSpeedPageBtn');
-        const goToFontSizePageBtn = document.getElementById('goToFontSizePageBtn');
-        const goToAboutPageBtn = document.getElementById('goToAboutPageBtn');
-
-        const resetColorBtn = document.getElementById('resetColorBtn');
-
-        const fontSlider = document.getElementById('fontSlider');
-        const fontSliderVal = document.getElementById('fontSliderVal');
-        const speedSlider = document.getElementById('speedSlider');
-        const speedSliderVal = document.getElementById('speedSliderVal');
-
-        const startBtn = document.getElementById('startBtn');
-        const taskbarTime = document.getElementById('taskbarTime');
-
-        const btnSleep = document.getElementById('btnSleep');
-        const btnReboot = document.getElementById('btnReboot');
-        const btnShutdown = document.getElementById('btnShutdown');
-
-        const calendarWindow = document.getElementById('calendarWindow');
-        const calDayName = document.getElementById('calDayName');
-        const calFullDate = document.getElementById('calFullDate');
-        const calMonthYear = document.getElementById('calMonthYear');
-        const calendarDaysGrid = document.getElementById('calendarDaysGrid');
-        const calPrevMonth = document.getElementById('calPrevMonth');
-        const calNextMonth = document.getElementById('calNextMonth');
-
-        // --- СЮЖЕТНЫЕ ЭЛЕМЕНТЫ ---
-        const storySecretBtn = document.getElementById('storySecretBtn');
-        const storyDialogBox = document.getElementById('storyDialogBox');
-        const dialogText = document.getElementById('dialogText');
-        const dialogChoices = document.getElementById('dialogChoices');
-
-        let isDialogTyping = false;
-        let dialogTypingTimeout = null;
-
-        function spawnStorySecretBtn() {
-            if (!storySecretBtn) return;
-            
-            const margin = 60;
-            const maxX = window.innerWidth - margin - 52;
-            const maxY = window.innerHeight - margin - 52;
-
-            const randomX = Math.floor(Math.random() * (maxX - margin)) + margin;
-            const randomY = Math.floor(Math.random() * (maxY - margin)) + margin;
-
-            storySecretBtn.style.left = `${randomX}px`;
-            storySecretBtn.style.top = `${randomY}px`;
-            storySecretBtn.classList.remove('hidden');
-        }
-
-        function triggerStoryDialog(text) {
-            if (!storyDialogBox || !dialogText) return;
-            
-            storyDialogBox.classList.remove('hidden');
-            dialogText.textContent = '';
-            
-            let index = 0;
-            isDialogTyping = true;
-
-            if (dialogTypingTimeout) clearInterval(dialogTypingTimeout);
-
-            dialogTypingTimeout = setInterval(() => {
-                if (index < text.length) {
-                    dialogText.textContent += text.charAt(index);
-                    index++;
-                } else {
-                    clearInterval(dialogTypingTimeout);
-                    isDialogTyping = false;
-                }
-            }, 40);
-        }
-
-        if (storySecretBtn) {
-            storySecretBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                triggerStoryDialog("АААААААААААААААААААААА");
-            });
-        }
-
-        if (dialogChoices) {
-            dialogChoices.querySelectorAll('.dialog-choice-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (storyDialogBox) storyDialogBox.classList.add('hidden');
-                });
-            });
-        }
-
-        // --- ЭЛЕМЕНТЫ ПРОВОДНИКА И ФАЙЛОВОЙ СИСТЕМЫ ---
-        const openFolderBtn = document.getElementById('openFolderBtn');
-        const menuFolderBtn = document.getElementById('menuFolderBtn');
-        const filesWindow = document.getElementById('filesWindow');
-        const closeFilesBtn = document.getElementById('closeFilesBtn');
-        const filesHeader = document.getElementById('filesHeader');
-        const filesGrid = document.getElementById('filesGrid');
-        const filesPath = document.getElementById('filesPath');
-        const filesBackBtn = document.getElementById('filesBackBtn');
-
-        const passwordModal = document.getElementById('passwordModal');
-        const closePassModalBtn = document.getElementById('closePassModalBtn');
-        const passInput = document.getElementById('passInput');
-        const submitPassBtn = document.getElementById('submitPassBtn');
-
-        const imageViewerWindow = document.getElementById('imageViewerWindow');
-        const closeImageBtn = document.getElementById('closeImageBtn');
-        const imageHeader = document.getElementById('imageHeader');
-        const imageWindowTitle = document.getElementById('imageWindowTitle');
-        const viewerImage = document.getElementById('viewerImage');
-
-        // --- ЭЛЕМЕНТЫ КАМЕР И КАСТОМНОГО ВИДЕОПЛЕЕРА ---
-        const openCamsBtn = document.getElementById('openCamsBtn');
-        const camsWindow = document.getElementById('camsWindow');
-        const camsHeader = document.getElementById('camsHeader');
-        const closeCamsBtn = document.getElementById('closeCamsBtn');
-        const camRecord1 = document.getElementById('camRecord1');
-
-        const videoPlayerWindow = document.getElementById('videoPlayerWindow');
-        const videoPlayerHeader = document.getElementById('videoPlayerHeader');
-        const closeVideoBtn = document.getElementById('closeVideoBtn');
-        const camVideo = document.getElementById('camVideo');
-        const videoPlayPauseBtn = document.getElementById('videoPlayPauseBtn');
-        const videoProgress = document.getElementById('videoProgress');
-        const videoTimeDisplay = document.getElementById('videoTimeDisplay');
-
-        // ==========================================
-        // Z-INDEX & CONTROLS ОКОН
-        // ==========================================
-        let highestZIndex = 100;
-
-        function bringToFront(windowElem) {
-            if (!windowElem) return;
-            highestZIndex++;
-            windowElem.style.zIndex = highestZIndex;
-
-            document.querySelectorAll('.window-container').forEach(w => w.classList.remove('active-window'));
-            windowElem.classList.add('active-window');
-        }
-
-        document.querySelectorAll('.window-container').forEach(win => {
-            win.addEventListener('mousedown', () => bringToFront(win));
-            win.addEventListener('touchstart', () => bringToFront(win), { passive: true });
-        });
-
-        function setupWindowControls(windowElem) {
-            if (!windowElem) return;
-            const minBtn = windowElem.querySelector('.win-minimize-btn');
-            const maxBtn = windowElem.querySelector('.win-maximize-btn');
-            const header = windowElem.querySelector('.window-header');
-
-            if (minBtn) {
-                minBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    windowElem.classList.add('hidden');
-                });
-            }
-
-            if (maxBtn) {
-                maxBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggleMaximizeWindow(windowElem);
-                });
-            }
-
-            if (header) {
-                header.addEventListener('dblclick', (e) => {
-                    if (e.target.closest('.window-controls')) return;
-                    toggleMaximizeWindow(windowElem);
-                });
-            }
-        }
-
-        function toggleMaximizeWindow(windowElem) {
-            if (windowElem.classList.contains('maximized')) {
-                windowElem.classList.remove('maximized');
-                if (windowElem.dataset.prevLeft) windowElem.style.left = windowElem.dataset.prevLeft;
-                if (windowElem.dataset.prevTop) windowElem.style.top = windowElem.dataset.prevTop;
-                if (windowElem.dataset.prevWidth) windowElem.style.width = windowElem.dataset.prevWidth;
-                if (windowElem.dataset.prevHeight) windowElem.style.height = windowElem.dataset.prevHeight;
-            } else {
-                windowElem.dataset.prevLeft = windowElem.style.left || `${windowElem.offsetLeft}px`;
-                windowElem.dataset.prevTop = windowElem.style.top || `${windowElem.offsetTop}px`;
-                windowElem.dataset.prevWidth = windowElem.style.width || `${windowElem.offsetWidth}px`;
-                windowElem.dataset.prevHeight = windowElem.style.height || `${windowElem.offsetHeight}px`;
-
-                windowElem.classList.add('maximized');
-                windowElem.style.left = '0px';
-                windowElem.style.top = '0px';
-                windowElem.style.width = '100%';
-                windowElem.style.height = 'calc(100% - 40px)';
-            }
-        }
-
-        document.querySelectorAll('.window-container').forEach(setupWindowControls);
-
-        // ФАЙЛОВАЯ СТРУКТУРА (ЗДЕСЬ ТОЖЕ ФИКСИРУЕМ ФОРМАТ НА PNG)
-        const fileSystem = {
-            name: "C:",
-            type: "folder",
-            children: [
-                {
-                    name: "НЕ ОТКРЫВАТЬ",
-                    type: "folder",
-                    children: [
-                        {
-                            name: "Я же сказал не открывать!",
-                            type: "folder",
-                            children: [
-                                {
-                                    name: "1234",
-                                    type: "folder",
-                                    protected: true,
-                                    pass: "1234",
-                                    children: [
-                                        {
-                                            name: "photo.png",
-                                            type: "image",
-                                            src: "img/racia_cherep.png"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-
-        let currentDirectory = fileSystem;
-        let pathHistory = [fileSystem];
-        let pendingTarget = null;
-
-        function renderFiles() {
-            if (!filesGrid) return;
-            filesGrid.innerHTML = '';
-
-            let currentPathString = pathHistory.map(item => item.name).join('/');
-            if (filesPath) filesPath.textContent = currentPathString;
-
-            if (filesBackBtn) {
-                filesBackBtn.disabled = pathHistory.length <= 1;
-            }
-
-            if (!currentDirectory.children || currentDirectory.children.length === 0) {
-                filesGrid.innerHTML = '<div class="files-empty">Папка пуста</div>';
-                return;
-            }
-
-            currentDirectory.children.forEach(item => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'file-item';
-
-                let icon = '📁';
-                if (item.type === 'image') icon = '🖼️';
-
-                itemDiv.innerHTML = `
-                    <div class="file-icon">${icon}</div>
-                    <span class="file-name">${item.name}</span>
-                `;
-
-                itemDiv.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openFileSystemItem(item);
-                });
-
-                filesGrid.appendChild(itemDiv);
-            });
-        }
-
-        function openFileSystemItem(item) {
-            if (item.type === 'folder') {
-                if (item.protected) {
-                    pendingTarget = { type: 'folder', target: item, pass: item.pass };
-                    openPasswordModal();
-                } else {
-                    currentDirectory = item;
-                    pathHistory.push(item);
-                    renderFiles();
-                }
-            } else if (item.type === 'image') {
-                openImageViewer(item);
-            }
-        }
-
-        function openPasswordModal() {
-            if (!passwordModal) return;
-            bringToFront(passwordModal);
-            passwordModal.classList.remove('hidden');
-            if (passInput) {
-                passInput.value = '';
-                setTimeout(() => passInput.focus(), 50);
-            }
-        }
-
-        function closePasswordModal() {
-            if (!passwordModal) return;
-            passwordModal.classList.add('hidden');
-            pendingTarget = null;
-        }
-
-        function handlePasswordSubmit() {
-            if (!pendingTarget) return;
-            const entered = passInput ? passInput.value.trim() : '';
-            
-            if (entered === pendingTarget.pass) {
-                if (pendingTarget.type === 'cams') {
-                    closePasswordModal();
-                    if (camsWindow) {
-                        bringToFront(camsWindow);
-                        camsWindow.classList.remove('hidden');
-                    }
-                } else if (pendingTarget.type === 'folder') {
-                    const target = pendingTarget.target;
-                    closePasswordModal();
-                    currentDirectory = target;
-                    pathHistory.push(target);
-                    renderFiles();
-                }
-            } else {
-                if (passInput) {
-                    passInput.value = '';
-                    passInput.focus();
-                }
-            }
-        }
-
-        if (submitPassBtn) submitPassBtn.addEventListener('click', handlePasswordSubmit);
-        if (closePassModalBtn) closePassModalBtn.addEventListener('click', closePasswordModal);
-
-        if (passInput) {
-            passInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handlePasswordSubmit();
-                }
-            });
-        }
-
-        if (filesBackBtn) {
-            filesBackBtn.addEventListener('click', () => {
-                if (pathHistory.length > 1) {
-                    pathHistory.pop();
-                    currentDirectory = pathHistory[pathHistory.length - 1];
-                    renderFiles();
-                }
-            });
-        }
-
-        function openFilesWindow() {
-            if (startMenu) startMenu.classList.add('hidden');
-            if (filesWindow) {
-                bringToFront(filesWindow);
-                filesWindow.classList.remove('hidden');
-            }
-            renderFiles();
-        }
-
-        function closeFilesWindow() {
-            if (filesWindow) filesWindow.classList.add('hidden');
-        }
-
-        if (openFolderBtn) openFolderBtn.addEventListener('click', openFilesWindow);
-        if (menuFolderBtn) menuFolderBtn.addEventListener('click', openFilesWindow);
-        if (closeFilesBtn) closeFilesBtn.addEventListener('click', closeFilesWindow);
-
-        // --- ЛОГИКА ОКНА КАМЕР И ВИДЕОПЛЕЕРА ---
-        if (openCamsBtn) {
-            openCamsBtn.addEventListener('click', () => {
-                if (startMenu) startMenu.classList.add('hidden');
-                pendingTarget = { type: 'cams', pass: '8888' };
-                openPasswordModal();
-            });
-        }
-
-        if (closeCamsBtn) {
-            closeCamsBtn.addEventListener('click', () => {
-                if (camsWindow) camsWindow.classList.add('hidden');
-            });
-        }
-
-        if (camRecord1) {
-            camRecord1.addEventListener('click', () => {
-                if (videoPlayerWindow) {
-                    bringToFront(videoPlayerWindow);
-                    videoPlayerWindow.classList.remove('hidden');
-                    if (camVideo) {
-                        camVideo.currentTime = 0;
-                        camVideo.play();
-                        if (videoPlayPauseBtn) videoPlayPauseBtn.textContent = '❚❚';
-                    }
-                }
-            });
-        }
-
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return '00:00';
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        }
-
-        if (camVideo) {
-            camVideo.addEventListener('timeupdate', () => {
-                if (camVideo.duration) {
-                    const pct = (camVideo.currentTime / camVideo.duration) * 100;
-                    if (videoProgress) videoProgress.value = pct;
-                    if (videoTimeDisplay) {
-                        videoTimeDisplay.textContent = `${formatTime(camVideo.currentTime)} / ${formatTime(camVideo.duration)}`;
-                    }
-                }
-            });
-
-            camVideo.addEventListener('ended', () => {
-                if (videoPlayPauseBtn) videoPlayPauseBtn.textContent = '►';
-            });
-        }
-
-        if (videoPlayPauseBtn) {
-            videoPlayPauseBtn.addEventListener('click', () => {
-                if (!camVideo) return;
-                if (camVideo.paused) {
-                    camVideo.play();
-                    videoPlayPauseBtn.textContent = '❚❚';
-                } else {
-                    camVideo.pause();
-                    videoPlayPauseBtn.textContent = '►';
-                }
-            });
-        }
-
-        if (videoProgress) {
-            videoProgress.addEventListener('input', (e) => {
-                if (!camVideo || !camVideo.duration) return;
-                const seekTime = (e.target.value / 100) * camVideo.duration;
-                camVideo.currentTime = seekTime;
-            });
-        }
-
-        if (closeVideoBtn) {
-            closeVideoBtn.addEventListener('click', () => {
-                if (camVideo) camVideo.pause();
-                if (videoPlayerWindow) videoPlayerWindow.classList.add('hidden');
-            });
-        }
-
-        function openImageViewer(item) {
-            if (imageViewerWindow) {
-                bringToFront(imageViewerWindow);
-                if (imageWindowTitle && item) imageWindowTitle.textContent = `🖼️ Просмотр: ${item.name}`;
-                if (viewerImage && item) viewerImage.src = item.src;
-                imageViewerWindow.classList.remove('hidden');
-            }
-        }
-
-        function closeImageViewer() {
-            if (imageViewerWindow) imageViewerWindow.classList.add('hidden');
-        }
-
-        if (closeImageBtn) closeImageBtn.addEventListener('click', closeImageViewer);
-
-        // DRAGGING ПЕРЕТАСКИВАНИЕ ОКОН
-        function makeWindowDraggable(headerElem, windowElem) {
-            if (!headerElem || !windowElem) return;
-            let isDragging = false;
-            let offsetX = 0, offsetY = 0;
-
-            const startDrag = (clientX, clientY, target) => {
-                if (target.closest('.window-controls')) return;
-                if (windowElem.classList.contains('maximized')) return;
-
-                isDragging = true;
-                bringToFront(windowElem);
-
-                const rect = windowElem.getBoundingClientRect();
-                offsetX = clientX - rect.left;
-                offsetY = clientY - rect.top;
-            };
-
-            const doDrag = (clientX, clientY) => {
-                if (!isDragging) return;
-
-                let newLeft = clientX - offsetX;
-                let newTop = clientY - offsetY;
-
-                const parent = screen || document.body;
-                const parentRect = parent.getBoundingClientRect();
-                const maxLeft = parentRect.width - windowElem.offsetWidth;
-                const maxTop = parentRect.height - windowElem.offsetHeight - 40; 
-
-                if (newLeft < 0) newLeft = 0;
-                if (newTop < 0) newTop = 0;
-                if (newLeft > maxLeft) newLeft = Math.max(0, maxLeft);
-                if (newTop > maxTop) newTop = Math.max(0, maxTop);
-
-                windowElem.style.left = `${newLeft}px`;
-                windowElem.style.top = `${newTop}px`;
-            };
-
-            headerElem.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY, e.target));
-            window.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
-            window.addEventListener('mouseup', () => { isDragging = false; });
-
-            headerElem.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    startDrag(e.touches[0].clientX, e.touches[0].clientY, e.target);
-                }
-            }, { passive: true });
-
-            window.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1 && isDragging) {
-                    doDrag(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            }, { passive: true });
-
-            window.addEventListener('touchend', () => { isDragging = false; });
-        }
-
-        makeWindowDraggable(filesHeader, filesWindow);
-        makeWindowDraggable(imageHeader, imageViewerWindow);
-        makeWindowDraggable(camsHeader, camsWindow);
-        makeWindowDraggable(videoPlayerHeader, videoPlayerWindow);
-        makeWindowDraggable(settingsHeader, settingsWindow);
-
-        const holidaysData = {
-            "01-01": "Новый год", "01-07": "Рождество Христово", "02-23": "День защитника Отечества",
-            "03-08": "Международный женский день", "04-12": "День космонавтики", "05-01": "Праздник Весны и Труда",
-            "05-09": "День Победы", "06-12": "День России", "08-22": "День Государственного флага РФ",
-            "09-01": "День знаний", "10-05": "День учителя", "11-04": "День народного единства",
-            "12-12": "День Конституции РФ", "12-31": "Канун Нового года"
-        };
+        const hiddenInput = document.getElementById('hiddenInput'); // <-- Для мобильной клавиатуры
+
+        // Элементы плеера и логотипа
+        const logoWrapper = document.getElementById('logoWrapper');
+        const musicPlayerModal = document.getElementById('musicPlayerModal');
+        const playerCloseBtn = document.getElementById('playerCloseBtn');
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+        const btnMute = document.getElementById('btnMute');
+        const seekBar = document.getElementById('seekBar');
+        const volumeBar = document.getElementById('volumeBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationTimeEl = document.getElementById('durationTime');
+        const trackNameEl = document.getElementById('trackName');
+        const playlistContainer = document.getElementById('playlistContainer');
 
         let isBooted = false;
         let isTyping = false;
-        let isSleeping = false;
         let currentInput = '';
         
-        const commandHistory = [];
-        let historyIndex = -1;
-
+        let isSpatiEnabled = false;
         let isHackerMode = false;
         let hackerInterval = null;
 
@@ -645,211 +38,207 @@
         let activeTypingLine = null;
         let fullTypingText = '';
 
-        let currentTypingDelay = 50;
-        let viewDate = new Date();
+        // ==========================================
+        // ПЛЕЙЛИСТ И ФОНОВАЯ МУЗЫКА
+        // ==========================================
+        const playlist = [
+            { title: "Console OST", src: "music/console_ost.mp3" },
+            { title: "Server OST 1", src: "music/server_ost1.mp3" },
+            { title: "Server OST 2", src: "music/server_ost2.mp3" },
+            { title: "Server OST 3", src: "music/server_ost3.mp3" },
+            { title: "Server OST 4", src: "music/server_ost4.mp3" },
+            { title: "Server OST 5", src: "music/server_ost5.mp3" }
+        ];
 
-        // --- ЛОГИКА РЕТРО ЭКРАННОЙ КЛАВИАТУРА ---
-        const kbLayouts = {
-            ru: [
-                ['Й','Ц','У','К','Е','Н','Г','Ш','Щ','З','Х','Ъ'],
-                ['Ф','Ы','В','А','П','Р','О','Л','Д','Ж','Э'],
-                ['Я','Ч','С','М','И','Т','Ь','Б','Ю']
-            ],
-            en: [
-                ['Q','W','E','R','T','Y','U','I','O','P'],
-                ['A','S','D','F','G','H','J','K','L'],
-                ['Z','X','C','V','B','N','M']
-            ]
-        };
+        let currentTrackIndex = 0;
+        const bgAudio = new Audio();
+        bgAudio.volume = 0.009; 
 
-        let currentKbLang = 'ru';
+        let audioShouldPlay = false;
+        let audioStarted = false;
 
-        function renderVirtualKeyboard() {
-            const row1 = document.getElementById('kbRow1');
-            const row2 = document.getElementById('kbRow2');
-            const row3 = document.getElementById('kbRow3');
-            if (!row1 || !row2 || !row3) return;
+        function loadTrack(index) {
+            currentTrackIndex = index;
+            bgAudio.src = playlist[currentTrackIndex].src;
+            if (trackNameEl) {
+                trackNameEl.textContent = `${currentTrackIndex + 1}. ${playlist[currentTrackIndex].title}`;
+            }
+            renderPlaylist();
+        }
 
-            row1.innerHTML = ''; row2.innerHTML = ''; row3.innerHTML = '';
-
-            kbLayouts[currentKbLang][0].forEach(char => {
-                row1.appendChild(createKbKey(char));
-            });
-            kbLayouts[currentKbLang][1].forEach(char => {
-                row2.appendChild(createKbKey(char));
-            });
-            kbLayouts[currentKbLang][2].forEach(char => {
-                row3.appendChild(createKbKey(char));
+        function renderPlaylist() {
+            if (!playlistContainer) return;
+            playlistContainer.innerHTML = '';
+            playlist.forEach((track, idx) => {
+                const item = document.createElement('div');
+                item.className = `playlist-item ${idx === currentTrackIndex ? 'active' : ''}`;
+                item.textContent = `${idx + 1}. ${track.title}`;
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    loadTrack(idx);
+                    bgAudio.play();
+                    audioStarted = true;
+                    updatePlayButtonState();
+                });
+                playlistContainer.appendChild(item);
             });
         }
 
-        function createKbKey(char) {
-            const btn = document.createElement('button');
-            btn.className = 'kb-key';
-            btn.textContent = char;
-            btn.setAttribute('data-key', char.toLowerCase());
-            return btn;
+        loadTrack(0);
+
+        function tryPlayAudio() {
+            if (!audioStarted && audioShouldPlay) {
+                bgAudio.play().then(() => {
+                    audioStarted = true;
+                    updatePlayButtonState();
+                    removeAudioUnlockListeners();
+                }).catch(() => {});
+            }
         }
 
-        const virtualKeyboard = document.getElementById('virtualKeyboard');
-        const kbLangBtn = document.getElementById('kbLangBtn');
+        function removeAudioUnlockListeners() {
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('keydown', unlockAudio);
+        }
 
-        if (kbLangBtn) {
-            kbLangBtn.addEventListener('click', (e) => {
+        function unlockAudio() {
+            tryPlayAudio();
+        }
+
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
+
+        setTimeout(() => {
+            audioShouldPlay = true;
+            tryPlayAudio();
+        }, 1000);
+
+        // ==========================================
+        // ЛОГИКА АУДИОПЛЕЕРА
+        // ==========================================
+        function toggleAudioPlayer(e) {
+            if (e) e.stopPropagation();
+            if (!isBooted) return;
+            musicPlayerModal.classList.toggle('hidden');
+        }
+
+        function updatePlayButtonState() {
+            if (btnPlayPause) {
+                btnPlayPause.textContent = bgAudio.paused ? 'PLAY' : 'PAUSE';
+            }
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        if (logoWrapper) logoWrapper.addEventListener('click', toggleAudioPlayer);
+
+        if (playerCloseBtn) {
+            playerCloseBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                currentKbLang = currentKbLang === 'ru' ? 'en' : 'ru';
-                renderVirtualKeyboard();
+                musicPlayerModal.classList.add('hidden');
             });
         }
 
-        if (virtualKeyboard) {
-            virtualKeyboard.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const targetKey = e.target.closest('.kb-key');
-                if (!targetKey) return;
+        if (musicPlayerModal) {
+            musicPlayerModal.addEventListener('click', (e) => e.stopPropagation());
+        }
 
-                const keyVal = targetKey.getAttribute('data-key');
-                if (!keyVal) return;
-
-                handleKeyPress(keyVal);
+        if (btnPlayPause) {
+            btnPlayPause.addEventListener('click', () => {
+                if (bgAudio.paused) {
+                    bgAudio.play();
+                    audioStarted = true;
+                } else {
+                    bgAudio.pause();
+                }
+                updatePlayButtonState();
             });
         }
 
-        renderVirtualKeyboard();
+        if (btnPrev) {
+            btnPrev.addEventListener('click', () => {
+                let prevIdx = currentTrackIndex - 1;
+                if (prevIdx < 0) prevIdx = playlist.length - 1;
+                loadTrack(prevIdx);
+                bgAudio.play();
+                audioStarted = true;
+                updatePlayButtonState();
+            });
+        }
 
+        if (btnNext) {
+            btnNext.addEventListener('click', () => {
+                let nextIdx = (currentTrackIndex + 1) % playlist.length;
+                loadTrack(nextIdx);
+                bgAudio.play();
+                audioStarted = true;
+                updatePlayButtonState();
+            });
+        }
+
+        if (btnMute) {
+            btnMute.addEventListener('click', () => {
+                bgAudio.muted = !bgAudio.muted;
+                btnMute.textContent = bgAudio.muted ? 'MUTED' : 'VOL';
+            });
+        }
+
+        if (volumeBar) {
+            volumeBar.value = bgAudio.volume;
+            volumeBar.addEventListener('input', (e) => {
+                bgAudio.volume = parseFloat(e.target.value);
+                if (bgAudio.muted && bgAudio.volume > 0) {
+                    bgAudio.muted = false;
+                    btnMute.textContent = 'VOL';
+                }
+            });
+        }
+
+        if (seekBar) {
+            seekBar.addEventListener('input', (e) => {
+                if (bgAudio.duration) {
+                    bgAudio.currentTime = (parseFloat(e.target.value) / 100) * bgAudio.duration;
+                }
+            });
+        }
+
+        bgAudio.addEventListener('timeupdate', () => {
+            if (bgAudio.duration) {
+                const progress = (bgAudio.currentTime / bgAudio.duration) * 100;
+                if (seekBar) seekBar.value = progress;
+                if (currentTimeEl) currentTimeEl.textContent = formatTime(bgAudio.currentTime);
+                if (durationTimeEl) durationTimeEl.textContent = formatTime(bgAudio.duration);
+            }
+        });
+
+        bgAudio.addEventListener('ended', () => {
+            let nextIdx = (currentTrackIndex + 1) % playlist.length;
+            loadTrack(nextIdx);
+            bgAudio.play();
+        });
+
+        // Цвета
         const colorPalette = {
             green: { color: '#33ff33', glow: 'rgba(51, 255, 51, 0.6)', bg: '#001100' },
             matrix: { color: '#00ff66', glow: 'rgba(0, 255, 102, 0.7)', bg: '#000f05' },
             amber: { color: '#ffb000', glow: 'rgba(255, 176, 0, 0.6)', bg: '#140c00' },
-            orange: { color: '#ff6600', glow: 'rgba(255, 102, 0, 0.6)', bg: '#140800' },
             red: { color: '#ff3333', glow: 'rgba(255, 51, 51, 0.6)', bg: '#110000' },
-            crimson: { color: '#dc143c', glow: 'rgba(220, 20, 60, 0.6)', bg: '#110005' },
-            pink: { color: '#ff66cc', glow: 'rgba(255, 102, 204, 0.6)', bg: '#14000e' },
             cyberpunk: { color: '#ff0055', glow: 'rgba(255, 0, 85, 0.7)', bg: '#140005' },
-            purple: { color: '#cc33ff', glow: 'rgba(204, 51, 255, 0.6)', bg: '#0e0011' },
-            violet: { color: '#8a2be2', glow: 'rgba(138, 43, 226, 0.6)', bg: '#090014' },
             blue: { color: '#3388ff', glow: 'rgba(51, 136, 255, 0.6)', bg: '#000811' },
             cyan: { color: '#33ffff', glow: 'rgba(51, 255, 255, 0.6)', bg: '#001111' },
-            teal: { color: '#008080', glow: 'rgba(0, 128, 128, 0.6)', bg: '#000d0d' },
-            gold: { color: '#ffd700', glow: 'rgba(255, 215, 0, 0.6)', bg: '#141100' },
-            lime: { color: '#a6ff00', glow: 'rgba(166, 255, 0, 0.6)', bg: '#0a1400' },
+            purple: { color: '#cc33ff', glow: 'rgba(204, 51, 255, 0.6)', bg: '#0e0011' },
             white: { color: '#ffffff', glow: 'rgba(255, 255, 255, 0.6)', bg: '#111111' }
         };
 
         const spatiSingleReplies = [
             "СПАТИ: Я тут", "СПАТИ: На связи", "СПАТИ: Чего?", "СПАТИ: Слушаю", "СПАТИ: Звал?",
-            "СПАТИ: Да?", "СПАТИ: Внимание на экран", "СПАТИ: Готов к работе", "СПАТИ: Я здесь", "СПАТИ: На месте!"
+            "СПАТИ: Тут я, тут", "СПАТИ: Да?", "СПАТИ: Внимание на экран", "СПАТИ: Ась?", "СПАТИ: Готов к работе"
         ];
-
-        desktopContainer.classList.add('wp-classic');
-
-        setInterval(() => {
-            if (taskbarTime) {
-                taskbarTime.textContent = new Date().toLocaleTimeString('ru-RU');
-            }
-        }, 1000);
-
-        function updateCalendarHeader() {
-            const now = new Date();
-            const dayName = now.toLocaleDateString('ru-RU', { weekday: 'long' });
-            const fullDate = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-
-            if (calDayName) calDayName.textContent = dayName.toUpperCase();
-            if (calFullDate) calFullDate.textContent = fullDate.toUpperCase();
-        }
-
-        function renderCalendarDays() {
-            if (!calendarDaysGrid) return;
-            calendarDaysGrid.innerHTML = '';
-
-            const year = viewDate.getFullYear();
-            const month = viewDate.getMonth();
-
-            const monthName = viewDate.toLocaleDateString('ru-RU', { month: 'long' });
-            if (calMonthYear) {
-                calMonthYear.textContent = `${monthName.toUpperCase()} ${year}`;
-            }
-
-            const firstDayIndex = new Date(year, month, 1).getDay();
-            const shift = (firstDayIndex === 0 ? 6 : firstDayIndex - 1);
-
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const prevMonthDays = new Date(year, month, 0).getDate();
-            const today = new Date();
-
-            for (let i = shift; i > 0; i--) {
-                const cell = document.createElement('div');
-                cell.className = 'cal-day-cell other-month';
-                cell.textContent = prevMonthDays - i + 1;
-                calendarDaysGrid.appendChild(cell);
-            }
-
-            for (let day = 1; day <= daysInMonth; day++) {
-                const cell = document.createElement('div');
-                cell.className = 'cal-day-cell';
-                cell.textContent = day;
-
-                if (
-                    day === today.getDate() &&
-                    month === today.getMonth() &&
-                    year === today.getFullYear()
-                ) {
-                    cell.classList.add('today');
-                }
-
-                const formattedMonth = String(month + 1).padStart(2, '0');
-                const formattedDay = String(day).padStart(2, '0');
-                const dateKey = `${formattedMonth}-${formattedDay}`;
-
-                if (holidaysData[dateKey]) {
-                    cell.classList.add('has-holiday');
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'holiday-tooltip';
-                    tooltip.textContent = holidaysData[dateKey];
-                    cell.appendChild(tooltip);
-                }
-
-                calendarDaysGrid.appendChild(cell);
-            }
-        }
-
-        if (taskbarTime) {
-            taskbarTime.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (startMenu) startMenu.classList.add('hidden');
-                if (calendarWindow) {
-                    const isHidden = calendarWindow.classList.contains('hidden');
-                    if (isHidden) {
-                        viewDate = new Date();
-                        updateCalendarHeader();
-                        renderCalendarDays();
-                        calendarWindow.classList.remove('hidden');
-                    } else {
-                        calendarWindow.classList.add('hidden');
-                    }
-                }
-            });
-        }
-
-        if (calPrevMonth) {
-            calPrevMonth.addEventListener('click', (e) => {
-                e.stopPropagation();
-                viewDate.setMonth(viewDate.getMonth() - 1);
-                renderCalendarDays();
-            });
-        }
-
-        if (calNextMonth) {
-            calNextMonth.addEventListener('click', (e) => {
-                e.stopPropagation();
-                viewDate.setMonth(viewDate.getMonth() + 1);
-                renderCalendarDays();
-            });
-        }
-
-        if (calendarWindow) {
-            calendarWindow.addEventListener('click', (e) => e.stopPropagation());
-        }
 
         function startBootSequence() {
             const duration = 1000;
@@ -870,6 +259,7 @@
                             if (bootContainer) bootContainer.style.display = 'none';
                             if (terminalContainer) terminalContainer.classList.remove('hidden');
                             isBooted = true;
+                            if (hiddenInput) hiddenInput.focus(); // Вызываем фокус после загрузки
                         }, 400);
                     }, 150);
                 }
@@ -878,182 +268,16 @@
 
         startBootSequence();
 
-        function switchToDesktop() {
-            if (startMenu) startMenu.classList.add('hidden');
-            if (terminalContainer) terminalContainer.classList.add('hidden');
-            if (winBootScreen) winBootScreen.classList.remove('hidden');
-
-            setTimeout(() => {
-                if (winBootScreen) winBootScreen.classList.add('hidden');
-                if (desktopContainer) desktopContainer.classList.remove('hidden');
-                document.body.classList.add('show-cursor');
-                spawnStorySecretBtn();
-            }, 1500);
-        }
-
-        function switchToTerminal() {
-            document.body.classList.remove('show-cursor');
-            if (startMenu) startMenu.classList.add('hidden');
-            if (calendarWindow) calendarWindow.classList.add('hidden');
-            if (desktopContainer) desktopContainer.classList.add('hidden');
-            if (terminalContainer) terminalContainer.classList.remove('hidden');
-        }
-
-        function openSettings() {
-            if (startMenu) startMenu.classList.add('hidden');
-            if (settingsWindow) {
-                bringToFront(settingsWindow);
-                settingsWindow.classList.remove('hidden');
-            }
-            showPage(settingsMainPage);
-        }
-
-        function closeSettings() {
-            if (settingsWindow) settingsWindow.classList.add('hidden');
-        }
-
-        function showPage(pageElem) {
-            const pages = [
-                settingsMainPage, settingsColorPage, settingsWallpaperPage,
-                settingsAnimWallpaperPage, settingsTypingSpeedPage, settingsFontSizePage, settingsAboutPage
-            ];
-            pages.forEach(p => { if (p) p.classList.add('hidden'); });
-            if (pageElem) pageElem.classList.remove('hidden');
-        }
-
-        if (openSettingsBtn) openSettingsBtn.addEventListener('click', openSettings);
-        if (menuSettingsBtn) menuSettingsBtn.addEventListener('click', openSettings);
-        if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
-
-        if (goToColorPageBtn) goToColorPageBtn.addEventListener('click', () => showPage(settingsColorPage));
-        if (goToWallpaperPageBtn) goToWallpaperPageBtn.addEventListener('click', () => showPage(settingsWallpaperPage));
-        if (goToAnimWallpaperPageBtn) goToAnimWallpaperPageBtn.addEventListener('click', () => showPage(settingsAnimWallpaperPage));
-        if (goToTypingSpeedPageBtn) goToTypingSpeedPageBtn.addEventListener('click', () => showPage(settingsTypingSpeedPage));
-        if (goToFontSizePageBtn) goToFontSizePageBtn.addEventListener('click', () => showPage(settingsFontSizePage));
-        if (goToAboutPageBtn) goToAboutPageBtn.addEventListener('click', () => showPage(settingsAboutPage));
-
-        document.querySelectorAll('.back-btn').forEach(btn => {
-            btn.addEventListener('click', () => showPage(settingsMainPage));
-        });
-
-        document.querySelectorAll('.color-palette-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const colorKey = e.target.getAttribute('data-color');
-                applyColorTheme(colorKey);
-            });
-        });
-
-        if (resetColorBtn) resetColorBtn.addEventListener('click', () => applyColorTheme('reset'));
-
-        document.querySelectorAll('#settingsWallpaperPage .opt-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('#settingsWallpaperPage .opt-btn, #settingsAnimWallpaperPage .opt-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                if (animBgLayer) animBgLayer.className = 'anim-bg-layer';
-                const wallpaper = e.target.getAttribute('data-wallpaper');
-                desktopContainer.className = 'desktop-container';
-                desktopContainer.classList.add(`wp-${wallpaper}`);
-            });
-        });
-
-        document.querySelectorAll('#settingsAnimWallpaperPage .opt-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('#settingsWallpaperPage .opt-btn, #settingsAnimWallpaperPage .opt-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                desktopContainer.className = 'desktop-container';
-                const animWallpaper = e.target.getAttribute('data-anim-wallpaper');
-                if (animBgLayer) {
-                    animBgLayer.className = 'anim-bg-layer';
-                    animBgLayer.classList.add(`anim-${animWallpaper}`);
-                }
-            });
-        });
-
-        if (speedSlider) {
-            speedSlider.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value, 10);
-                currentTypingDelay = Math.round(120 - (val * 1.2));
-                if (speedSliderVal) {
-                    if (val === 100) {
-                        speedSliderVal.textContent = 'Мгновенно (0 ms)';
-                    } else {
-                        speedSliderVal.textContent = `${val}% (${currentTypingDelay} ms)`;
-                    }
-                }
-            });
-        }
-
-        if (fontSlider) {
-            fontSlider.addEventListener('input', (e) => {
-                const val = e.target.value;
-                const scale = val / 100;
-                document.documentElement.style.setProperty('--font-scale', scale);
-                if (fontSliderVal) fontSliderVal.textContent = `${val}%`;
-            });
-        }
-
-        if (startBtn) {
-            startBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (calendarWindow) calendarWindow.classList.add('hidden');
-                if (startMenu) startMenu.classList.toggle('hidden');
-            });
-        }
-
-        if (openTerminalBtn) openTerminalBtn.addEventListener('click', switchToTerminal);
-        if (menuTerminalBtn) menuTerminalBtn.addEventListener('click', switchToTerminal);
-
-        function enterSleepMode() {
-            if (startMenu) startMenu.classList.add('hidden');
-            if (calendarWindow) calendarWindow.classList.add('hidden');
-            if (sleepOverlay) sleepOverlay.classList.remove('hidden');
-            isSleeping = true;
-        }
-
-        function wakeUp() {
-            if (!isSleeping) return;
-            if (sleepOverlay) sleepOverlay.classList.add('hidden');
-            isSleeping = false;
-        }
-
-        if (btnSleep) btnSleep.addEventListener('click', enterSleepMode);
-        if (sleepOverlay) sleepOverlay.addEventListener('click', wakeUp);
-
-        function rebootSystem() {
-            if (startMenu) startMenu.classList.add('hidden');
-            if (screen) screen.classList.add('crt-off');
-            setTimeout(() => { window.location.reload(); }, 700);
-        }
-
-        if (btnReboot) btnReboot.addEventListener('click', rebootSystem);
-
-        function shutdownSystem() {
-            if (startMenu) startMenu.classList.add('hidden');
-            if (screen) screen.classList.add('crt-off');
-            setTimeout(() => {
-                document.body.innerHTML = '<div style="background:#000;width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;color:#00ff00;font-family:sans-serif;text-align:center;padding:20px;">ПИТАНИЕ КОМПЬЮТЕРА ОТКЛЮЧЕНО. МОЖНО ЗАКРЫТЬ ВКЛАДКУ.</div>';
-            }, 800);
-        }
-
-        if (btnShutdown) btnShutdown.addEventListener('click', shutdownSystem);
-
+        // ==========================================
+        // ЛОГИКА ВВОДА И КЛИКОВ (АДАПТИРОВАНО ПОД МОБИЛКИ)
+        // ==========================================
         window.addEventListener('click', (e) => {
-            if (isSleeping) { wakeUp(); return; }
-
-            if (startMenu && !startMenu.classList.contains('hidden') && !e.target.closest('#startMenu') && !e.target.closest('#startBtn')) {
-                startMenu.classList.add('hidden');
-            }
-
-            if (calendarWindow && !calendarWindow.classList.contains('hidden') && !e.target.closest('#calendarWindow') && !e.target.closest('#taskbarTime')) {
-                calendarWindow.classList.add('hidden');
-            }
-
             if (!screen || screen.classList.contains('crt-off')) return;
-            if (e.target.closest('#desktopContainer') || e.target.closest('#virtualKeyboard') || e.target.closest('#mobileFsBtn')) return;
 
+            // Пропуск печати текста
             if (isTyping && currentTypingTimeout) {
                 clearTimeout(currentTypingTimeout);
-                if (activeTypingLine) { activeTypingLine.textContent = fullTypingText; }
+                if (activeTypingLine) activeTypingLine.textContent = fullTypingText;
                 isTyping = false;
                 currentTypingTimeout = null;
                 activeTypingLine = null;
@@ -1066,11 +290,75 @@
                 return;
             }
 
-            if (isHackerMode) { stopHackerMode(); return; }
+            if (isHackerMode) {
+                stopHackerMode();
+                return;
+            }
+
+            // Фокус на инпут при клике по экрану (вызывает клавиатуру на мобилках)
+            if (isBooted && !isTyping && hiddenInput && !musicPlayerModal.contains(e.target) && e.target !== logoWrapper) {
+                hiddenInput.focus();
+            }
 
             screen.classList.remove('shake');
             void screen.offsetWidth; 
             screen.classList.add('shake');
+        });
+
+        // Обработка нативного инпута (работает и на ПК, и на мобилках идеально)
+        if (hiddenInput) {
+            hiddenInput.addEventListener('input', (e) => {
+                currentInput = e.target.value;
+                if (commandInputText) commandInputText.textContent = currentInput;
+            });
+
+            hiddenInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (isTyping) return; // Блокируем отправку пока терминал печатает
+                    const commandToExecute = currentInput;
+                    currentInput = '';
+                    hiddenInput.value = '';
+                    if (commandInputText) commandInputText.textContent = '';
+                    if (commandToExecute.trim() !== '') {
+                        handleCommand(commandToExecute);
+                    }
+                }
+            });
+        }
+
+        // Страховочный keydown для ПК, если инпут потерял фокус
+        window.addEventListener('keydown', (e) => {
+            if (isHackerMode) {
+                stopHackerMode();
+                e.preventDefault();
+                return;
+            }
+
+            // Быстрая прокрутка анимации печати по пробелу/энтеру
+            if (isTyping && currentTypingTimeout && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                clearTimeout(currentTypingTimeout);
+                if (activeTypingLine) activeTypingLine.textContent = fullTypingText;
+                isTyping = false;
+                currentTypingTimeout = null;
+                activeTypingLine = null;
+                scrollToBottom();
+                if (currentTypingCallback) {
+                    const cb = currentTypingCallback;
+                    currentTypingCallback = null;
+                    cb();
+                }
+                return;
+            }
+
+            if (!isBooted || isTyping) return;
+            if (e.ctrlKey || e.altKey || e.metaKey || e.key.startsWith('F')) return;
+
+            // Возвращаем фокус на скрытое поле для набора
+            if (document.activeElement !== hiddenInput && hiddenInput) {
+                hiddenInput.focus();
+            }
         });
 
         const commands = {
@@ -1080,28 +368,26 @@
   time               - Текущее время системы
   date               - Текущая дата
   echo               - Вывести свой текст
-  color [название]   - Сменить цвет (color help - список)
+  color [знач]       - Сменить цвет
   hacker             - Запустить режим хакера
-  exit               - Выйти на рабочий стол
   off                - Выключение терминала`,
             time: () => `ВРЕМЯ: ${new Date().toLocaleTimeString('ru-RU')}`,
             date: () => `ДАТА: ${new Date().toLocaleDateString('ru-RU')}`
         };
 
+        const hackerPhrases = [
+            "BYPASSING FIREWALL... [OK]", "ACCESS GRANTED TO ROOT DIRECTORY", "DECRYPTING RSA-4096 BIT KEY..."
+        ];
+
         function startHackerMode() {
             if (isHackerMode) return;
+            if (hiddenInput) hiddenInput.blur(); // Прячем клаву на мобилках
             isHackerMode = true;
             isTyping = true;
-            printTextInstant(">>> РЕЖИМ ХАКЕРА АКТИВИРОВАН. ДЛЯ ОСТАНОВКИ НАЖМИТЕ НА ЭКРАН <<<");
-
+            printTextInstant(">>> РЕЖИМ ХАКЕРА АКТИВИРОВАН <<<");
             hackerInterval = setInterval(() => {
-                const hackerPhrases = [
-                    "BYPASSING FIREWALL... [OK]", "ACCESS GRANTED TO ROOT DIRECTORY", "DECRYPTING RSA-4096 BIT KEY...",
-                    "INJECTING PAYLOAD INTO /DEV/SDA...", "CONNECTING TO PENTAGON MAINMAINFRAME..."
-                ];
                 const randomPhrase = hackerPhrases[Math.floor(Math.random() * hackerPhrases.length)];
-                const randomHex = Math.random().toString(16).substring(2, 10).toUpperCase();
-                printTextInstant(`[0x${randomHex}] ${randomPhrase}`);
+                printTextInstant(`[0x${Math.random().toString(16).substring(2, 10).toUpperCase()}] ${randomPhrase}`);
             }, 60);
         }
 
@@ -1113,56 +399,42 @@
             printTextInstant(">>> РЕЖИМ ХАКЕРА ОСТАНОВЛЕН <<<");
         }
 
-        function applyColorTheme(colorName) {
+        function changeTerminalColor(colorParam) {
             const root = document.documentElement;
-            const target = colorName.toLowerCase().trim();
+            const target = colorParam.toLowerCase().trim();
 
-            if (target === 'clear' || target === 'reset' || target === 'сброс') {
+            if (target === 'clear' || target === 'reset') {
                 root.style.removeProperty('--crt-color');
                 root.style.removeProperty('--crt-glow');
                 root.style.removeProperty('--crt-bg');
-                return true;
+                printTextTyped("ЦВЕТОВАЯ СХЕМА СБРОШЕНА ПО УМОЛЧАНИЮ.");
             } else if (colorPalette[target]) {
                 const scheme = colorPalette[target];
                 root.style.setProperty('--crt-color', scheme.color);
                 root.style.setProperty('--crt-glow', scheme.glow);
                 root.style.setProperty('--crt-bg', scheme.bg);
-                return true;
-            }
-            return false;
-        }
-
-        function changeTerminalColor(colorParam) {
-            const param = colorParam.trim().toLowerCase();
-
-            if (param === 'help' || param === 'помощь' || param === '?') {
-                const availableColors = Object.keys(colorPalette).join(', ');
-                printTextTyped(`ДОСТУПНЫЕ ЦВЕТА:\n${availableColors}\n\nСБРОС:\nreset, clear, сброс\n\nПример: color matrix`);
-                return;
-            }
-
-            if (!param) {
-                printTextTyped('Укажите цвет. Пример: color red или color help');
-                return;
-            }
-
-            if (applyColorTheme(param)) {
-                printTextTyped(`ЦВЕТОВАЯ СХЕМА ИЗМЕНЕНА: ${param.toUpperCase()}`);
+                printTextTyped(`ЦВЕТОВАЯ СХЕМА ИЗМЕНЕНА: ${target.toUpperCase()}`);
             } else {
-                printTextTyped(`Неизвестный цвет: "${param}". Введите 'color help' для списка всех цветов.`);
+                printTextTyped(`Неизвестный цвет: "${colorParam}"`);
             }
         }
 
         function triggerPowerOff() {
             if (!screen) return;
+            if (hiddenInput) hiddenInput.blur();
             isBooted = false;
-            printTextTyped("ВЫКЛЮЧЕНИЕ СИСТЕМЫ...", () => { setTimeout(shutdownSystem, 400); });
+            printTextTyped("ВЫКЛЮЧЕНИЕ СИСТЕМЫ...", () => {
+                setTimeout(() => {
+                    screen.classList.add('crt-off');
+                    setTimeout(() => window.location.reload(), 800);
+                }, 400);
+            });
         }
 
         function triggerSystemCrash() {
             if (!screen || !terminalOutput) return;
+            if (hiddenInput) hiddenInput.blur();
             isBooted = false; 
-
             screen.classList.add('crash-glitch');
             terminalOutput.classList.add('text-crash');
             if (glitchLine) glitchLine.classList.add('glitch-active');
@@ -1171,22 +443,19 @@
                 screen.classList.remove('crash-glitch');
                 terminalOutput.classList.remove('text-crash');
                 screen.classList.add('crt-off');
-                setTimeout(() => { window.location.reload(); }, 750);
+                setTimeout(() => window.location.reload(), 750);
             }, 1500);
         }
 
         function handleSpatiLogic(fullInput) {
             const cleanText = fullInput.toLowerCase().replace(/[^a-zа-я0-9\s]/gi, '').trim();
-
             if (cleanText.includes('кто такой зенит')) {
                 printTextTyped("СПАТИ: Зенит это не человек это мо", () => {
                     setTimeout(triggerSystemCrash, 300);
                 });
                 return;
             }
-
             const textAfterSpati = fullInput.replace(/^спати\s*/i, '').trim();
-
             if (!textAfterSpati) {
                 const randomIndex = Math.floor(Math.random() * spatiSingleReplies.length);
                 printTextTyped(spatiSingleReplies[randomIndex]);
@@ -1201,13 +470,6 @@
 
         function printTextTyped(text, onComplete) {
             if (!terminalOutput) return;
-
-            if (currentTypingDelay === 0) {
-                printTextInstant(text);
-                if (onComplete) onComplete();
-                return;
-            }
-
             isTyping = true;
             fullTypingText = text;
             activeTypingLine = document.createElement('div');
@@ -1222,12 +484,14 @@
                     activeTypingLine.textContent += text.charAt(index);
                     index++;
                     scrollToBottom();
-                    currentTypingTimeout = setTimeout(typeNextChar, Math.floor(Math.random() * 15) + currentTypingDelay);
+                    currentTypingTimeout = setTimeout(typeNextChar, Math.floor(Math.random() * 40) + 50);
                 } else {
                     isTyping = false;
                     currentTypingTimeout = null;
                     activeTypingLine = null;
                     currentTypingCallback = null;
+                    // Опускаем скролл до конца после завершения печати
+                    scrollToBottom();
                     if (onComplete) onComplete();
                 }
             }
@@ -1249,95 +513,55 @@
             printTextInstant(`> ${rawCmd}`);
             if (cmd === '') return;
 
-            commandHistory.push(rawCmd);
-            historyIndex = commandHistory.length;
-
-            if (mainCmd === 'спати' || mainCmd === 'spati') {
-                handleSpatiLogic(cmd);
-                return;
-            }
-
-            if (mainCmd === 'color' || mainCmd === 'цвет') {
-                const colorArg = cmd.substring(mainCmd.length).trim();
-                changeTerminalColor(colorArg);
-                return;
-            }
-
-            if (mainCmd === 'echo') {
-                const echoText = cmd.substring(5);
-                printTextTyped(echoText || '');
-                return;
-            }
-
-            if (mainCmd === 'hacker' || mainCmd === 'хакер') {
-                startHackerMode();
-                return;
-            }
-
-            if (mainCmd === 'exit' || mainCmd === 'gui') {
-                switchToDesktop();
-                return;
-            }
-
             if (mainCmd === 'off' || mainCmd === 'shutdown') {
                 triggerPowerOff();
-                return;
-            }
-
-            if (mainCmd === 'clear' || mainCmd === 'cls') {
-                if (terminalOutput) terminalOutput.innerHTML = '';
-                return;
-            }
-
-            if (commands[mainCmd]) {
-                const action = commands[mainCmd];
-                const result = (typeof action === 'function') ? action() : action;
+            } else if (mainCmd === 'hacker') {
+                startHackerMode();
+            } else if (mainCmd === 'color') {
+                const colorVal = cmd.split(' ').slice(1).join(' ');
+                if (!colorVal) {
+                    printTextTyped("Укажите цвет. Пример: color matrix, color clear");
+                } else {
+                    changeTerminalColor(colorVal);
+                }
+            } else if (mainCmd === 'спати') {
+                if (isSpatiEnabled) {
+                    handleSpatiLogic(cmd);
+                } else {
+                    printTextTyped(`Команда не найдена: "${cmd}". Введите 'help' для справки.`);
+                }
+            } else if (mainCmd === 'clear') {
+                terminalOutput.innerHTML = '';
+            } else if (mainCmd === 'echo') {
+                const echoText = cmd.split(' ').slice(1).join(' ').trim();
+                if (echoText === '1') {
+                    isSpatiEnabled = true;
+                    printTextTyped("[СПАТИ АКТИВИРОВАН]");
+                } else if (echoText === '0') {
+                    isSpatiEnabled = false;
+                    printTextTyped("[СПАТИ ДЕАКТИВИРОВАН]");
+                } else {
+                    printTextTyped(echoText);
+                }
+            } else if (commands[mainCmd]) {
+                const result = typeof commands[mainCmd] === 'function' ? commands[mainCmd]() : commands[mainCmd];
                 printTextTyped(result);
             } else {
-                printTextTyped(`Команда не найдена: "${mainCmd}". Введите 'help'.`);
+                printTextTyped(`Команда не найдена: "${cmd}". Введите 'help' для справки.`);
             }
         }
 
-        function handleKeyPress(key) {
-            if (!isBooted || isTyping || isHackerMode) return;
-
-            if (key === 'Enter') {
-                const cmdToRun = currentInput;
-                currentInput = '';
-                if (commandInputText) commandInputText.textContent = '';
-                handleCommand(cmdToRun);
-            } else if (key === 'Backspace') {
-                currentInput = currentInput.slice(0, -1);
-                if (commandInputText) commandInputText.textContent = currentInput;
-            } else if (key === 'ArrowUp') {
-                if (commandHistory.length > 0 && historyIndex > 0) {
-                    historyIndex--;
-                    currentInput = commandHistory[historyIndex];
-                    if (commandInputText) commandInputText.textContent = currentInput;
+        function scheduleGlitch() {
+            const randomTime = Math.random() * (40000 - 20000) + 20000;
+            setTimeout(() => {
+                if (glitchLine) {
+                    glitchLine.classList.add('glitch-active');
+                    setTimeout(() => glitchLine.classList.remove('glitch-active'), 300);
                 }
-            } else if (key === 'ArrowDown') {
-                if (commandHistory.length > 0 && historyIndex < commandHistory.length - 1) {
-                    historyIndex++;
-                    currentInput = commandHistory[historyIndex];
-                    if (commandInputText) commandInputText.textContent = currentInput;
-                } else {
-                    historyIndex = commandHistory.length;
-                    currentInput = '';
-                    if (commandInputText) commandInputText.textContent = '';
-                }
-            } else if (key.length === 1) {
-                currentInput += key;
-                if (commandInputText) commandInputText.textContent = currentInput;
-            }
+                scheduleGlitch();
+            }, randomTime);
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-            if (e.key === 'Backspace' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                e.preventDefault();
-            }
-            handleKeyPress(e.key);
-        });
+        scheduleGlitch();
     });
 })();
