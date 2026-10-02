@@ -32,6 +32,7 @@
         let isSpatiEnabled = false;
         let isHackerMode = false;
         let hackerInterval = null;
+        let hackerGuardUntil = 0; // защита от мгновенной остановки тем же Enter/кликом
 
         let currentTypingTimeout = null;
         let currentTypingCallback = null;
@@ -118,6 +119,7 @@
             { id: 'boot',       cat: 'СИСТЕМА', icon: 'power',     title: 'ДОБРО ПОЖАЛОВАТЬ', desc: 'Запусти Spatium OS' },
             { id: 'regular',    cat: 'СИСТЕМА', icon: 'clock',     title: 'ПОСТОЯННЫЙ ГОСТЬ', desc: 'Загляни в систему 3 раза' },
             { id: 'regular10',  cat: 'СИСТЕМА', icon: 'crown',     title: 'ЗАВСЕГДАТАЙ',      desc: 'Загляни в систему 10 раз' },
+            { id: 'regular50',  cat: 'СИСТЕМА', icon: 'diamond',   title: 'ПРЕДАННЫЙ',        desc: 'Загляни в систему 50 раз', rarity: 'legendary' },
             { id: 'night',      cat: 'СИСТЕМА', icon: 'moon',      title: 'НОЧНОЙ ДОЗОР',     desc: 'Запусти систему между 00:00 и 05:00' },
             { id: 'early',      cat: 'СИСТЕМА', icon: 'sun',       title: 'ЖАВОРОНОК',        desc: 'Запусти систему между 05:00 и 08:00' },
             { id: 'marathon',   cat: 'СИСТЕМА', icon: 'hourglass', title: 'МАРАФОН',          desc: 'Просиди в системе 10 минут подряд' },
@@ -144,6 +146,9 @@
             { id: 'long',       cat: 'ТЕРМИНАЛ', icon: 'key',      title: 'ПИСАТЕЛЬ',         desc: 'Введи команду длиннее 60 символов' },
             { id: 'hacker',     cat: 'ТЕРМИНАЛ', icon: 'skull',    title: 'ХАКЕР',            desc: 'Запусти режим хакера' },
             { id: 'hacker_long', cat: 'ТЕРМИНАЛ', icon: 'eye',     title: 'ТЕРПЕНИЕ',         desc: 'Продержи режим хакера 10 секунд' },
+            { id: 'speedrun',   cat: 'ТЕРМИНАЛ', icon: 'bolt',     title: 'СКОРОСТНОЙ',       desc: 'Выполни 5 команд за 10 секунд', rarity: 'rare' },
+            { id: 'sudo',       cat: 'ТЕРМИНАЛ', icon: 'lock',     title: 'НЕТ ПРАВ',         desc: 'Попробуй получить права суперпользователя', hidden: true, rarity: 'rare' },
+            { id: 'rmrf',       cat: 'ТЕРМИНАЛ', icon: 'skull',    title: 'САМОУНИЧТОЖЕНИЕ',  desc: 'Попробуй снести систему командой rm -rf /', hidden: true, rarity: 'epic' },
             // ---- ЦВЕТА ----
             { id: 'color',      cat: 'ЦВЕТА', icon: 'drop',        title: 'ДИЗАЙНЕР',         desc: 'Смени цветовую схему' },
             { id: 'color_help', cat: 'ЦВЕТА', icon: 'magnifier',   title: 'ПАЛИТРА',          desc: 'Открой список цветов командой color help' },
@@ -173,13 +178,44 @@
             { id: 'spati_meaning', cat: 'СПАТИ', icon: 'eye',      title: 'ФИЛОСОФ',          desc: 'Спроси Спати о смысле жизни', hidden: true },
             { id: 'spati_zenit', cat: 'СПАТИ', icon: 'magnifier',  title: 'ЛЮБОПЫТСТВО',      desc: 'Заикнись при Спати о Зените', hidden: true },
             { id: 'spati_off',  cat: 'СПАТИ', icon: 'lock',        title: 'ТИШИНА В ЭФИРЕ',   desc: 'Усыпи Спати командой echo 0', hidden: true },
-            { id: 'crash',      cat: 'СПАТИ', icon: 'skull',       title: 'СБОЙ СИСТЕМЫ',     desc: 'Спроси Спати о запретном', hidden: true }
+            { id: 'crash',      cat: 'СПАТИ', icon: 'skull',       title: 'СБОЙ СИСТЕМЫ',     desc: 'Спроси Спати о запретном', hidden: true },
+            { id: 'weekend',    cat: 'СИСТЕМА', icon: 'sun',       title: 'ВЫХОДНОЙ РЕЖИМ',   desc: 'Запусти систему в субботу или воскресенье', rarity: 'common' },
+            { id: 'newyear',    cat: 'СИСТЕМА', icon: 'star',      title: 'С НОВЫМ ГОДОМ',    desc: 'Запусти систему 1 января', hidden: true, rarity: 'legendary' },
+            { id: 'paranoid',   cat: 'ТЕРМИНАЛ', icon: 'eye',      title: 'ПАРАНОИК',         desc: 'Запусти режим хакера 3 раза за один заход', rarity: 'rare' },
+            { id: 'light_show', cat: 'ЦВЕТА', icon: 'bolt',        title: 'СВЕТОМУЗЫКА',      desc: 'Смени цвет 5 раз за 10 секунд', rarity: 'rare' },
+            { id: 'gold_rush',  cat: 'ЦВЕТА', icon: 'crown',       title: 'ЗОЛОТАЯ ЛИХОРАДКА', desc: 'Попробуй gold, amber и yellow', rarity: 'common' },
+            { id: 'rewind',     cat: 'ПЛЕЕР', icon: 'arrow',       title: 'ПЕРЕМОТКА',        desc: 'Передвинь ползунок перемотки трека', rarity: 'common' },
+            { id: 'deep_cut',   cat: 'ПЛЕЕР', icon: 'disk',        title: 'ГЛУБОКИЙ ТРЕК',    desc: 'Включи последний трек плейлиста', rarity: 'common' },
+            { id: 'spati_night', cat: 'СПАТИ', icon: 'moon',       title: 'НОЧНОЙ РАЗГОВОР',  desc: 'Поговори со Спати между 00:00 и 05:00', hidden: true, rarity: 'epic' },
+            { id: 'spati_ach',  cat: 'СПАТИ', icon: 'trophy',      title: 'САМОКОПАНИЕ',      desc: 'Спроси Спати про достижения', hidden: true, rarity: 'common' },
+            { id: 'spati_hacker', cat: 'СПАТИ', icon: 'bug',       title: 'СОУЧАСТНИК',       desc: 'Заговори со Спати о взломе', hidden: true, rarity: 'common' }
         ];
+        // ----- редкость -----
+        const RARITIES = {
+            common:    { label: 'ОБЫЧНОЕ' },
+            rare:      { label: 'РЕДКОЕ' },
+            epic:      { label: 'ЭПИЧЕСКОЕ' },
+            legendary: { label: 'ЛЕГЕНДАРНОЕ' }
+        };
+        const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary'];
+        const RARITY_BY_ID = {
+            rare: ['regular', 'night', 'early', 'marathon', 'nerves', 'half', 'cmd50', 'hacker_long', 'rainbow', 'retro',
+                   'melomaniac', 'full_track', 'skipper', 'chatty', 'spati_joke', 'spati_meaning', 'spati_zenit',
+                   'spati_rude', 'spati_love', 'spati_off'],
+            epic: ['regular10', 'cmd200', 'chameleon', 'all_colors', 'konami', 'spati_friend', 'crash'],
+            legendary: ['master']
+        };
+        ACHIEVEMENTS.forEach(a => {
+            if (!a.rarity) {
+                a.rarity = 'common';
+                RARITY_ORDER.forEach(r => { if ((RARITY_BY_ID[r] || []).includes(a.id)) a.rarity = r; });
+            }
+        });
+
         const achById = {};
         ACHIEVEMENTS.forEach(a => { achById[a.id] = a; });
 
-        const achToast = document.getElementById('achToast');
-        const achToastIcon = document.getElementById('achToastIcon');
+        const achToastStack = document.getElementById('achToastStack');
         const achCountEl = document.getElementById('achCount');
         const achBarCountEl = document.getElementById('achBarCount');
         const achWindow = document.getElementById('achWindow');
@@ -191,8 +227,13 @@
         let achWindowOpen = false;
         let achView = 'stats';
         let achFilter = 'all';
+        let achSort = 'cat'; // 'cat' - по разделам, 'rar' - по редкости
         const toastQueue = [];
-        let toastBusy = false;
+        let toastActive = 0;
+        let toastPumping = false;
+        const TOAST_MAX = 5;      // сколько уведомлений видно одновременно
+        const TOAST_LIFE = 4000;  // сколько живёт одно уведомление, мс
+        const TOAST_GAP = 280;    // задержка между появлением соседних, мс
 
         const unlockedCount = () => ACHIEVEMENTS.filter(a => state.ach[a.id]).length;
 
@@ -233,26 +274,35 @@
             return svg;
         }
 
-        function nextToast() {
-            const def = toastQueue.shift();
-            if (!def || !achToast) { toastBusy = false; return; }
-            toastBusy = true;
-            achToast.querySelector('.ach-name').textContent = def.title;
-            achToast.querySelector('.ach-desc').textContent = def.desc;
-            if (achToastIcon) {
-                achToastIcon.innerHTML = '';
-                achToastIcon.appendChild(makeIcon(def.icon));
-            }
-            achToast.classList.add('show');
+        // Уведомления складываются в стопку: новые появляются ниже предыдущих
+        function spawnToast(def) {
+            if (!achToastStack) return;
+            const el = elem('div', 'ach-toast r-' + def.rarity);
+            el.appendChild(iconBox(def.icon));
+            const text = elem('div', 'ach-toast-text');
+            text.appendChild(elem('div', 'ach-head', 'ДОСТИЖЕНИЕ ОТКРЫТО · ' + RARITIES[def.rarity].label));
+            text.appendChild(elem('div', 'ach-name', def.title));
+            text.appendChild(elem('div', 'ach-desc', def.desc));
+            el.appendChild(text);
+            achToastStack.appendChild(el);
+            toastActive++;
+            requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
             setTimeout(() => {
-                achToast.classList.remove('show');
-                setTimeout(nextToast, 450);
-            }, 3500);
+                el.classList.remove('show');
+                setTimeout(() => { el.remove(); toastActive--; pumpToasts(); }, 400);
+            }, TOAST_LIFE);
+        }
+
+        function pumpToasts() {
+            if (toastPumping || !toastQueue.length || toastActive >= TOAST_MAX) return;
+            toastPumping = true;
+            spawnToast(toastQueue.shift());
+            setTimeout(() => { toastPumping = false; pumpToasts(); }, TOAST_GAP);
         }
 
         function enqueueToast(def) {
             toastQueue.push(def);
-            if (!toastBusy) nextToast();
+            pumpToasts();
         }
 
         // deferToast: окно уведомления покажем при следующей загрузке (перед перезагрузкой страницы)
@@ -286,7 +336,11 @@
         unlock('boot', true);
         if (state.stats.visits >= 3) unlock('regular', true);
         if (state.stats.visits >= 10) unlock('regular10', true);
+        if (state.stats.visits >= 50) unlock('regular50', true);
         const startHour = new Date().getHours();
+        const startDate = new Date();
+        if (startDate.getDay() === 0 || startDate.getDay() === 6) unlock('weekend', true);
+        if (startDate.getMonth() === 0 && startDate.getDate() === 1) unlock('newyear', true);
         if (startHour < 5) unlock('night', true);
         else if (startHour < 8) unlock('early', true);
         setTimeout(() => unlock('marathon'), 10 * 60 * 1000);
@@ -294,6 +348,9 @@
         updateAchCount();
 
         let hackerStartedAt = 0;
+        let hackerRuns = 0;
+        const colorTimes = [];
+        const cmdTimes = [];
         let skipCount = 0;
         let clickCount = 0;
         function registerSkip() {
@@ -390,6 +447,14 @@
             const secrets = ACHIEVEMENTS.filter(a => a.hidden);
             achBody.appendChild(progressRow('СКРЫТЫЕ', secrets.filter(a => state.ach[a.id]).length, secrets.length));
 
+            achBody.appendChild(elem('div', 'ach-section', 'ПО РЕДКОСТИ'));
+            RARITY_ORDER.forEach(r => {
+                const list = ACHIEVEMENTS.filter(a => a.rarity === r);
+                const row = progressRow(RARITIES[r].label, list.filter(a => state.ach[a.id]).length, list.length);
+                row.classList.add('rar', 'r-' + r);
+                achBody.appendChild(row);
+            });
+
             achBody.appendChild(elem('div', 'ach-section', 'СТАТИСТИКА'));
             const grid = elem('div', 'ach-stats');
             const st = state.stats;
@@ -408,7 +473,7 @@
                 achBody.appendChild(elem('div', 'ach-empty', 'Пока пусто. Выполни любую команду.'));
             }
             recent.forEach(a => {
-                const item = elem('div', 'ach-recent-item');
+                const item = elem('div', 'ach-recent-item r-' + a.rarity);
                 item.appendChild(iconBox(a.icon, 'small'));
                 const text = elem('div', 'ach-card-text');
                 text.appendChild(elem('div', 'ach-card-title', a.title));
@@ -426,11 +491,12 @@
         function achCard(a) {
             const done = !!state.ach[a.id];
             const secret = a.hidden && !done;
-            const card = elem('div', 'ach-card ' + (done ? 'done' : 'locked'));
+            const card = elem('div', 'ach-card ' + (done ? 'done' : 'locked') + (secret ? '' : ' r-' + a.rarity));
             card.appendChild(iconBox(done ? a.icon : 'lock'));
             const text = elem('div', 'ach-card-text');
             text.appendChild(elem('div', 'ach-card-title', secret ? '???' : a.title));
             text.appendChild(elem('div', 'ach-card-desc', secret ? 'Скрытое достижение' : a.desc));
+            if (!secret) text.appendChild(elem('div', 'ach-card-rarity', RARITIES[a.rarity].label));
             if (done) text.appendChild(elem('div', 'ach-card-date', fmtDate(state.ach[a.id])));
             card.appendChild(text);
             return card;
@@ -451,15 +517,28 @@
             });
             achBody.appendChild(bar);
 
+            const sortBar = elem('div', 'ach-toolbar');
+            sortBar.appendChild(elem('span', 'ach-sort-label', 'СОРТИРОВКА:'));
+            [['cat', 'ПО РАЗДЕЛАМ'], ['rar', 'ПО РЕДКОСТИ']].forEach(([key, label]) => {
+                const b = elem('button', 'player-btn' + (achSort === key ? ' active' : ''), label);
+                b.type = 'button';
+                b.addEventListener('click', () => { achSort = key; renderAchWindow(); });
+                sortBar.appendChild(b);
+            });
+            achBody.appendChild(sortBar);
+
+            const passes = (a) => achFilter === 'all' || (achFilter === 'done') === !!state.ach[a.id];
+            const groups = achSort === 'rar'
+                ? RARITY_ORDER.slice().reverse().map(r => ({ name: RARITIES[r].label, cls: 'r-' + r, all: ACHIEVEMENTS.filter(a => a.rarity === r) }))
+                : ACH_CATS.map(cat => ({ name: cat, cls: '', all: ACHIEVEMENTS.filter(a => a.cat === cat) }));
             let shown = 0;
-            ACH_CATS.forEach(cat => {
-                const all = ACHIEVEMENTS.filter(a => a.cat === cat);
-                const list = all.filter(a => achFilter === 'all' || (achFilter === 'done') === !!state.ach[a.id]);
+            groups.forEach(g => {
+                const list = g.all.filter(passes);
                 if (!list.length) return;
                 shown += list.length;
-                const title = elem('div', 'ach-group-title');
-                title.appendChild(elem('span', '', cat));
-                title.appendChild(elem('span', '', `${all.filter(a => state.ach[a.id]).length}/${all.length}`));
+                const title = elem('div', 'ach-group-title ' + g.cls);
+                title.appendChild(elem('span', '', g.name));
+                title.appendChild(elem('span', '', `${g.all.filter(a => state.ach[a.id]).length}/${g.all.length}`));
                 achBody.appendChild(title);
                 const grid = elem('div', 'ach-grid');
                 list.forEach(a => grid.appendChild(achCard(a)));
@@ -746,6 +825,7 @@
 
         if (seekBar) {
             seekBar.addEventListener('input', (e) => {
+                unlock('rewind');
                 if (bgAudio.duration) {
                     bgAudio.currentTime = (parseFloat(e.target.value) / 100) * bgAudio.duration;
                 }
@@ -774,6 +854,7 @@
                 saveState();
             }
             if (state.stats.tracks.length >= playlist.length) unlock('melomaniac');
+            if (currentTrackIndex === playlist.length - 1) unlock('deep_cut');
         });
 
         // Цвета
@@ -868,7 +949,7 @@
             }
 
             if (isHackerMode) {
-                stopHackerMode();
+                if (Date.now() >= hackerGuardUntil) stopHackerMode();
                 return;
             }
 
@@ -917,14 +998,19 @@
 
         // Страховочный keydown для ПК, если инпут потерял фокус
         window.addEventListener('keydown', (e) => {
+            if (admOpen && admWin && admWin.contains(e.target)) {
+                if (e.key === 'Escape') closeAdmin();
+                return; // не перехватываем ввод внутри админ-меню
+            }
             trackKonami(e.key);
             if (e.key === 'Escape' && achWindowOpen) {
                 closeAchWindow();
                 return;
             }
             if (isHackerMode) {
-                stopHackerMode();
                 e.preventDefault();
+                if (e.repeat || ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
+                if (Date.now() >= hackerGuardUntil) stopHackerMode();
                 return;
             }
 
@@ -1037,7 +1123,7 @@ TAB - дополнить, ↑↓ - история`;
                 }
                 if (sub === 'list') {
                     const lines = ACHIEVEMENTS.map(a => {
-                        if (state.ach[a.id]) return `[X] ${a.title}`;
+                        if (state.ach[a.id]) return `[X] ${a.title} (${RARITIES[a.rarity].label})`;
                         return a.hidden ? '[ ] ???' : `[ ] ${a.title} - ${a.desc}`;
                     });
                     printTextInstant(`ДОСТИЖЕНИЯ: ${unlockedCount()}/${ACHIEVEMENTS.length}\n${lines.join('\n')}`);
@@ -1113,11 +1199,14 @@ TAB - дополнить, ↑↓ - история`;
             isHackerMode = true;
             isTyping = true;
             hackerStartedAt = Date.now();
+            if (++hackerRuns >= 3) unlock('paranoid');
+            hackerGuardUntil = hackerStartedAt + 600;
             unlock('hacker');
             printTextInstant(">>> РЕЖИМ ХАКЕРА АКТИВИРОВАН <<<");
             hackerInterval = setInterval(() => {
                 const randomPhrase = hackerPhrases[Math.floor(Math.random() * hackerPhrases.length)];
                 printTextInstant(`[0x${Math.random().toString(16).substring(2, 10).toUpperCase()}] ${randomPhrase}`);
+                while (terminalOutput.childElementCount > 300) terminalOutput.removeChild(terminalOutput.firstChild);
             }, 60);
         }
 
@@ -1173,6 +1262,10 @@ TAB - дополнить, ↑↓ - история`;
                     state.stats.colors.push(target);
                     saveState();
                 }
+                colorTimes.push(Date.now());
+                if (colorTimes.length > 5) colorTimes.shift();
+                if (colorTimes.length === 5 && colorTimes[4] - colorTimes[0] <= 10000) unlock('light_show');
+                if (['gold', 'amber', 'yellow'].every(c => state.stats.colors.includes(c))) unlock('gold_rush');
                 if (state.stats.colors.length >= 5) unlock('rainbow');
                 if (state.stats.colors.length >= 15) unlock('chameleon');
                 if (['vapor', 'gameboy', 'c64', 'dos'].every(c => state.stats.colors.includes(c))) unlock('retro');
@@ -1239,9 +1332,9 @@ TAB - дополнить, ↑↓ - история`;
             { re: /шутк|анекдот|рассмеши|пошути/, ach: 'spati_joke', a: ["СПАТИ: Почему терминал не ходит в гости? Он вечно зависает", "СПАТИ: Сколько программистов нужно, чтобы поменять лампочку? Ни одного, это железо", "СПАТИ: Ошибка 404: шутка не найдена"] },
             { re: /люблю|нравишься|красив|умница|молодец|классный|крутой/, ach: 'spati_love', a: ["СПАТИ: Эм. Спасибо. Мне даже жарко стало", "СПАТИ: Приятно. Записал в лог", "СПАТИ: Не отвлекай, я краснею. Это видно только по температуре"] },
             { re: /дурак|тупой|идиот|ненавижу|бесишь|плохой/, ach: 'spati_rude', a: ["СПАТИ: Обидно. Но я переживу", "СПАТИ: Зафиксировано. Без обид"] },
-            { re: /хакер|взлом|пароль|root/, a: ["СПАТИ: Я видел логи. Лучше не повторяй", "СПАТИ: Попробуй команду hacker. Только без фанатизма"] },
+            { re: /хакер|взлом|пароль|root/, ach: 'spati_hacker', a: ["СПАТИ: Я видел логи. Лучше не повторяй", "СПАТИ: Попробуй команду hacker. Только без фанатизма"] },
             { re: /цвет|тема|оформление/, a: ["СПАТИ: Цвет меняется командой color. Матричный зелёный классика", "СПАТИ: Нажми Tab после color. Покажу варианты"] },
-            { re: /достижен|ачивк|achievement/, a: ["СПАТИ: Команда ach покажет, что ты нашёл. Не всё там видно", "СПАТИ: Достижения хранятся даже после перезагрузки"] },
+            { re: /достижен|ачивк|achievement/, ach: 'spati_ach', a: ["СПАТИ: Команда ach покажет, что ты нашёл. Не всё там видно", "СПАТИ: Достижения хранятся даже после перезагрузки"] },
             { re: /скучно|делать нечего|чем заняться/, a: ["СПАТИ: Включи плеер. Или попробуй hacker", "СПАТИ: Поищи скрытые команды. Они есть"] },
             { re: /смысл жизни|зачем (мы|все)|что такое жизнь/, ach: 'spati_meaning', a: ["СПАТИ: Ответ 42. Вопрос потерялся", "СПАТИ: Смысл в том, чтобы терминал не завис"] },
             { re: /^(да|нет|ага|угу|неа)$/, a: ["СПАТИ: Понял. Принято", "СПАТИ: Записал"] }
@@ -1289,6 +1382,7 @@ TAB - дополнить, ↑↓ - история`;
             }
             state.stats.spatiTalks++;
             saveState();
+            if (new Date().getHours() < 5) unlock('spati_night');
             if (state.stats.spatiTalks >= 5) unlock('chatty');
             if (state.stats.spatiTalks >= 20) unlock('spati_friend');
             printTextTyped(spatiAnswer(query));
@@ -1343,12 +1437,16 @@ TAB - дополнить, ↑↓ - история`;
             printTextInstant(`> ${rawCmd}`);
             if (cmd === '') return;
             unlock('first_cmd');
+            procLog('shell', `exec ${mainCmd}`);
             state.stats.cmds++;
             saveState();
             if (state.stats.cmds >= 10) unlock('cmd10');
             if (state.stats.cmds >= 50) unlock('cmd50');
             if (state.stats.cmds >= 200) unlock('cmd200');
             if (cmd.length >= 60) unlock('long');
+            cmdTimes.push(Date.now());
+            if (cmdTimes.length > 5) cmdTimes.shift();
+            if (cmdTimes.length === 5 && cmdTimes[4] - cmdTimes[0] <= 10000) unlock('speedrun');
 
             if (mainCmd === 'off' || mainCmd === 'shutdown') {
                 triggerPowerOff();
@@ -1388,6 +1486,15 @@ TAB - дополнить, ↑↓ - история`;
                     if (echoText) unlock('echo');
                     printTextTyped(echoText);
                 }
+            } else if (mainCmd === 'sudo') {
+                unlock('sudo');
+                printTextTyped('Пользователь не найден в файле sudoers. Инцидент будет зарегистрирован.');
+            } else if (mainCmd === 'rm' && cmd.includes('-rf') && cmd.includes('/')) {
+                unlock('rmrf');
+                screen.classList.remove('shake');
+                void screen.offsetWidth;
+                screen.classList.add('shake');
+                printTextTyped('Попытка уничтожения системы отклонена. Spatium OS защищает себя.');
             } else if (consoleCommands[mainCmd]) {
                 consoleCommands[mainCmd](cmd.split(/\s+/).slice(1));
             } else if (commands[mainCmd]) {
@@ -1447,6 +1554,281 @@ TAB - дополнить, ↑↓ - история`;
                 if (hiddenInput) hiddenInput.focus();
             });
         })();
+
+        // ----- Боковая панель: живые метры и мини-лог процессов -----
+        const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+        const meters = ['cpu', 'mem', 'net', 'pwr'].reduce((o, k) => {
+            o[k] = { fill: document.getElementById('m-' + k), val: document.getElementById('v-' + k) };
+            return o;
+        }, {});
+        meters.cpu.v = 62; meters.cpu.base = 35; meters.cpu.amp = 22; meters.cpu.hack = 92;
+        meters.mem.v = 41; meters.mem.base = 42; meters.mem.amp = 5;  meters.mem.hack = 74;
+        meters.net.v = 78; meters.net.base = 45; meters.net.amp = 38; meters.net.hack = 96;
+        meters.pwr.v = 93; meters.pwr.base = 93; meters.pwr.amp = 3;  meters.pwr.hack = 99;
+
+        function tickMeters() {
+            if (document.hidden) return;
+            for (const k in meters) {
+                const m = meters[k];
+                if (!m.fill) continue;
+                const target = isHackerMode ? m.hack : m.base + (k === 'cpu' && !bgAudio.paused ? 8 : 0);
+                m.v = clamp(m.v + (target - m.v) * 0.25 + (Math.random() - 0.5) * m.amp, 3, 99);
+                const p = Math.round(m.v);
+                m.fill.style.width = p + '%';
+                m.val.textContent = p + '%';
+                m.val.parentElement.classList.toggle('hot', p >= 90 && k !== 'pwr');
+            }
+        }
+
+        const procLogEl = document.getElementById('procLog');
+        const PIDS = { spatiumd: 1, netd: 212, 'kworker/0': 17, tty0: 88, memd: 143, audiod: 301, crond: 64, shell: 420 };
+        const PROC_POOL = [
+            () => ['spatiumd', 'heartbeat ok'],
+            () => ['netd', `rx ${rnd(1, 98)}K tx ${rnd(1, 40)}K`],
+            () => ['kworker/0', 'flush cache'],
+            () => ['tty0', 'poll input'],
+            () => ['memd', `gc ${rnd(2, 30)} pages`],
+            () => ['audiod', bgAudio.paused ? 'sink idle' : 'buffer ok'],
+            () => ['crond', 'tick'],
+            () => ['spatiumd', `sched ${rnd(3, 12)} tasks`]
+        ];
+        const HACK_POOL = [
+            () => ['netd', `port ${rnd(20, 9999)} OPEN`],
+            () => ['shell', 'inject payload'],
+            () => ['memd', `dump 0x${rnd(4096, 65535).toString(16).toUpperCase()}`],
+            () => ['spatiumd', 'firewall BYPASS'],
+            () => ['kworker/0', 'brute force...']
+        ];
+
+        function procLog(name, msg, warn) {
+            if (!procLogEl) return;
+            const row = document.createElement('div');
+            if (warn) row.className = 'warn';
+            const pid = document.createElement('span');
+            pid.className = 'pid';
+            pid.textContent = String(PIDS[name] || rnd(300, 900)).padStart(4, '0') + ' ';
+            const pn = document.createElement('span');
+            pn.className = 'pname';
+            pn.textContent = name + ' ';
+            row.append(pid, pn, document.createTextNode(msg));
+            procLogEl.appendChild(row);
+            while (procLogEl.childElementCount > 12) procLogEl.removeChild(procLogEl.firstChild);
+        }
+
+        function scheduleProcLog() {
+            setTimeout(() => {
+                if (!document.hidden) {
+                    const pool = isHackerMode ? HACK_POOL : PROC_POOL;
+                    const [n, m] = pool[rnd(0, pool.length - 1)]();
+                    procLog(n, m, isHackerMode);
+                }
+                scheduleProcLog();
+            }, isHackerMode ? rnd(200, 500) : rnd(1200, 3200));
+        }
+
+        procLog('spatiumd', 'kernel 1.0 started');
+        procLog('tty0', 'attached');
+        tickMeters();
+        setInterval(tickMeters, 1100);
+        scheduleProcLog();
+
+        // ==========================================
+        // СКРЫТОЕ АДМИН-МЕНЮ: открывается только из консоли браузера (F12)
+        //   spatiumAdmin('пароль')
+        // Пароль в коде хранится только в виде хэша. Новый хэш можно получить
+        // внутри самого меню (вкладка ДАННЫЕ -> "хэш пароля").
+        // ==========================================
+        const ADMIN_HASH = '2b3ol8nrx29';
+        const hash53 = (str, seed = 0) => {
+            let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+            for (let i = 0; i < str.length; i++) {
+                const ch = str.charCodeAt(i);
+                h1 = Math.imul(h1 ^ ch, 2654435761);
+                h2 = Math.imul(h2 ^ ch, 1597334677);
+            }
+            h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+            h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+            return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+        };
+
+        let admWin = null, admBody = null, admOpen = false, admTab = 'ach', admFails = 0;
+        const ADM_TABS = [['ach', 'ДОСТИЖЕНИЯ'], ['stats', 'СТАТЫ'], ['term', 'ТЕРМИНАЛ'], ['color', 'ЦВЕТА'], ['audio', 'ПЛЕЕР'], ['data', 'ДАННЫЕ']];
+
+        function admBtn(label, fn, cls) {
+            const b = elem('button', 'player-btn' + (cls ? ' ' + cls : ''), label);
+            b.type = 'button';
+            b.addEventListener('click', fn);
+            return b;
+        }
+        function admInput(type, value, ph) {
+            const i = document.createElement('input');
+            i.type = type; i.className = 'adm-input'; i.value = value === undefined ? '' : value;
+            if (ph) i.placeholder = ph;
+            i.autocomplete = 'off'; i.spellcheck = false;
+            return i;
+        }
+        function admRow(...nodes) {
+            const r = elem('div', 'adm-row');
+            nodes.forEach(n => r.appendChild(n));
+            return r;
+        }
+        const admOut = (text) => { printTextInstant(text); };
+        function admSetAch(id, on) {
+            if (on) unlock(id);
+            else { delete state.ach[id]; delete state.shown[id]; saveState(); updateAchCount(); if (achWindowOpen) renderAchWindow(); }
+        }
+        function admApplyColor(name) {
+            const root = document.documentElement;
+            if (!name) { ['--crt-color', '--crt-glow', '--crt-bg'].forEach(p => root.style.removeProperty(p)); return; }
+            const s = colorPalette[name];
+            root.style.setProperty('--crt-color', s.color);
+            root.style.setProperty('--crt-glow', s.glow);
+            root.style.setProperty('--crt-bg', s.bg);
+        }
+
+        function admRender() {
+            admBody.innerHTML = '';
+            const tabs = elem('div', 'adm-tabs');
+            ADM_TABS.forEach(([key, label]) => {
+                tabs.appendChild(admBtn(label, () => { admTab = key; admRender(); }, admTab === key ? 'active' : ''));
+            });
+            admBody.appendChild(tabs);
+
+            if (admTab === 'ach') {
+                admBody.appendChild(admRow(
+                    admBtn('ОТКРЫТЬ ВСЕ', () => { ACHIEVEMENTS.forEach(a => { if (!state.ach[a.id]) { state.ach[a.id] = Date.now(); state.shown[a.id] = true; } }); saveState(); updateAchCount(); admRender(); }),
+                    admBtn('ЗАКРЫТЬ ВСЕ', () => { state.ach = {}; state.shown = {}; saveState(); updateAchCount(); admRender(); }),
+                    admBtn('ТЕСТ ТОСТОВ', () => ACHIEVEMENTS.slice(0, 3).forEach(enqueueToast))
+                ));
+                RARITY_ORDER.slice().reverse().forEach(r => {
+                    admBody.appendChild(elem('div', 'ach-group-title r-' + r, RARITIES[r].label));
+                    ACHIEVEMENTS.filter(a => a.rarity === r).forEach(a => {
+                        const on = !!state.ach[a.id];
+                        const row = admRow(
+                            elem('span', 'adm-name r-' + r, `${a.title}${a.hidden ? ' *' : ''}`),
+                            elem('span', 'adm-id', a.id),
+                            admBtn('toast', () => enqueueToast(a), 'small'),
+                            admBtn(on ? 'ВЫКЛ' : 'ВКЛ', () => { admSetAch(a.id, !on); admRender(); }, 'small' + (on ? ' active' : ''))
+                        );
+                        admBody.appendChild(row);
+                    });
+                });
+            } else if (admTab === 'stats') {
+                const fields = {};
+                [['visits', 'ЗАПУСКОВ'], ['cmds', 'КОМАНД'], ['spatiTalks', 'ВОПРОСОВ СПАТИ']].forEach(([k, label]) => {
+                    fields[k] = admInput('number', state.stats[k]);
+                    admBody.appendChild(admRow(elem('span', 'adm-label', label), fields[k]));
+                });
+                admBody.appendChild(admRow(
+                    admBtn('ПРИМЕНИТЬ', () => { Object.keys(fields).forEach(k => { state.stats[k] = Math.max(0, Number(fields[k].value) || 0); }); saveState(); admOut('[ADMIN] статистика обновлена'); }),
+                    admBtn('СБРОС ЦВЕТОВ', () => { state.stats.colors = []; saveState(); admOut('[ADMIN] список цветов очищен'); }),
+                    admBtn('СБРОС ТРЕКОВ', () => { state.stats.tracks = []; saveState(); admOut('[ADMIN] список треков очищен'); })
+                ));
+                admBody.appendChild(elem('div', 'adm-note', `Цветов: ${state.stats.colors.length}/${Object.keys(colorPalette).length} · Треков: ${state.stats.tracks.length}/${playlist.length} · Истории: ${state.history.length}`));
+            } else if (admTab === 'term') {
+                const cmd = admInput('text', '', 'любая команда терминала');
+                const run = () => { if (cmd.value.trim()) { handleCommand(cmd.value); cmd.value = ''; } };
+                cmd.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+                admBody.appendChild(admRow(cmd, admBtn('RUN', run)));
+                admBody.appendChild(admRow(
+                    admBtn('СПАТИ ' + (isSpatiEnabled ? 'ВЫКЛ' : 'ВКЛ'), () => { isSpatiEnabled = !isSpatiEnabled; admRender(); admOut(`[ADMIN] Спати: ${isSpatiEnabled ? 'on' : 'off'}`); }),
+                    admBtn('HACKER', () => { closeAdmin(); startHackerMode(); }),
+                    admBtn('CLEAR', () => { terminalOutput.innerHTML = ''; })
+                ));
+                admBody.appendChild(admRow(
+                    admBtn('CRASH', () => { closeAdmin(); triggerSystemCrash(); }, 'danger'),
+                    admBtn('OFF', () => { closeAdmin(); isBooted = true; triggerPowerOff(); }, 'danger'),
+                    admBtn('ГЛИТЧ', () => { glitchLine.classList.add('glitch-active'); setTimeout(() => glitchLine.classList.remove('glitch-active'), 300); })
+                ));
+            } else if (admTab === 'color') {
+                const grid = elem('div', 'adm-chips');
+                Object.keys(colorPalette).forEach(n => {
+                    const b = admBtn(n, () => admApplyColor(n), 'small');
+                    b.style.color = colorPalette[n].color;
+                    grid.appendChild(b);
+                });
+                admBody.appendChild(grid);
+                admBody.appendChild(admRow(admBtn('СБРОС ЦВЕТА', () => admApplyColor(null))));
+                admBody.appendChild(elem('div', 'adm-note', 'Админ-смена цвета не засчитывается в достижения.'));
+            } else if (admTab === 'audio') {
+                admBody.appendChild(admRow(
+                    admBtn('PLAY', () => { bgAudio.play().then(() => { audioStarted = true; updatePlayButtonState(); }).catch(() => {}); }),
+                    admBtn('PAUSE', () => { bgAudio.pause(); updatePlayButtonState(); }),
+                    admBtn('MUTE', () => { bgAudio.muted = !bgAudio.muted; if (btnMute) btnMute.textContent = bgAudio.muted ? 'MUTED' : 'VOL'; })
+                ));
+                const vol = admInput('range', bgAudio.volume);
+                vol.min = 0; vol.max = 1; vol.step = 0.01; vol.className = 'custom-slider';
+                vol.addEventListener('input', () => { bgAudio.volume = parseFloat(vol.value); if (volumeBar) volumeBar.value = vol.value; });
+                admBody.appendChild(admRow(elem('span', 'adm-label', 'ГРОМКОСТЬ'), vol));
+                const chips = elem('div', 'adm-chips');
+                playlist.forEach((t, i) => chips.appendChild(admBtn(`${i + 1}. ${t.title}`, () => { loadTrack(i); bgAudio.play().catch(() => {}); updatePlayButtonState(); }, 'small')));
+                admBody.appendChild(chips);
+            } else if (admTab === 'data') {
+                const area = document.createElement('textarea');
+                area.className = 'adm-input adm-area'; area.spellcheck = false;
+                area.value = JSON.stringify(state, null, 1);
+                admBody.appendChild(area);
+                admBody.appendChild(admRow(
+                    admBtn('ЭКСПОРТ', () => { area.value = JSON.stringify(state); area.select(); }),
+                    admBtn('ИМПОРТ', () => {
+                        try {
+                            const data = JSON.parse(area.value);
+                            if (!data || typeof data !== 'object') throw new Error('bad');
+                            localStorage.setItem(STORE_KEY, JSON.stringify(data));
+                            location.reload();
+                        } catch (err) { admOut('[ADMIN] ошибка импорта: неверный JSON'); }
+                    }),
+                    admBtn('ПОЛНЫЙ СБРОС', () => {
+                        if (!confirm('Стереть все данные Spatium OS?')) return;
+                        try { localStorage.removeItem(STORE_KEY); } catch (err) { /* ignore */ }
+                        location.reload();
+                    }, 'danger')
+                ));
+                const pw = admInput('text', '', 'новый пароль -> хэш для ADMIN_HASH');
+                const hashOut = elem('div', 'adm-note', '');
+                pw.addEventListener('input', () => { hashOut.textContent = pw.value ? hash53(pw.value) : ''; });
+                admBody.appendChild(admRow(pw));
+                admBody.appendChild(hashOut);
+            }
+        }
+
+        function closeAdmin() {
+            admOpen = false;
+            if (admWin) admWin.classList.add('hidden');
+        }
+
+        function openAdmin() {
+            if (!admWin) {
+                admWin = elem('div', 'ach-window adm-window hidden');
+                const head = elem('div', 'player-header');
+                head.appendChild(elem('span', 'player-title', 'ADMIN // ROOT'));
+                const x = elem('button', 'player-close-btn', '[X]');
+                x.type = 'button';
+                x.addEventListener('click', (e) => { e.stopPropagation(); closeAdmin(); });
+                head.appendChild(x);
+                admBody = elem('div', 'ach-body');
+                admWin.append(head, admBody);
+                admWin.addEventListener('click', (e) => e.stopPropagation());
+                screen.appendChild(admWin);
+            }
+            admOpen = true;
+            admWin.classList.remove('hidden');
+            if (hiddenInput) hiddenInput.blur();
+            admRender();
+        }
+
+        // Невидимая для перечисления глобальная функция: spatiumAdmin('пароль')
+        Object.defineProperty(window, 'spatiumAdmin', {
+            enumerable: false, configurable: true,
+            value: function (pass) {
+                if (admFails >= 3) return;
+                if (hash53(String(pass)) !== ADMIN_HASH) { admFails++; return; }
+                admFails = 0;
+                openAdmin();
+                return 'ACCESS GRANTED';
+            }
+        });
 
         scheduleGlitch();
     });
