@@ -274,6 +274,38 @@
             return svg;
         }
 
+        // ----- звук получения достижения (Web Audio, без файлов) -----
+        let achAudioCtx = null;
+        const ACH_SOUNDS = {
+            common:    [[660, 0.10]],
+            rare:      [[660, 0.09], [880, 0.14]],
+            epic:      [[523, 0.09], [659, 0.09], [784, 0.16]],
+            legendary: [[523, 0.10], [659, 0.10], [784, 0.10], [1047, 0.30]]
+        };
+        function playAchSound(rarity) {
+            try {
+                if (typeof bgAudio !== 'undefined' && bgAudio.muted) return;
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                achAudioCtx = achAudioCtx || new AC();
+                if (achAudioCtx.state === 'suspended') achAudioCtx.resume();
+                let t = achAudioCtx.currentTime + 0.02;
+                (ACH_SOUNDS[rarity] || ACH_SOUNDS.common).forEach(([freq, dur]) => {
+                    const osc = achAudioCtx.createOscillator();
+                    const gain = achAudioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.0001, t);
+                    gain.gain.exponentialRampToValueAtTime(0.04, t + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                    osc.connect(gain).connect(achAudioCtx.destination);
+                    osc.start(t);
+                    osc.stop(t + dur + 0.02);
+                    t += dur;
+                });
+            } catch (err) { /* звук недоступен */ }
+        }
+
         // Уведомления складываются в стопку: новые появляются ниже предыдущих
         function spawnToast(def) {
             if (!achToastStack) return;
@@ -285,6 +317,7 @@
             text.appendChild(elem('div', 'ach-desc', def.desc));
             el.appendChild(text);
             achToastStack.appendChild(el);
+            playAchSound(def.rarity);
             toastActive++;
             requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
             setTimeout(() => {
@@ -1635,11 +1668,11 @@ TAB - дополнить, ↑↓ - история`;
 
         // ==========================================
         // СКРЫТОЕ АДМИН-МЕНЮ: открывается только из консоли браузера (F12)
-        //   spatiumAdmin('пароль')
+        //   spatiumAdmin('vfvf1951')  <- пароль нужен обязательно
         // Пароль в коде хранится только в виде хэша. Новый хэш можно получить
         // внутри самого меню (вкладка ДАННЫЕ -> "хэш пароля").
         // ==========================================
-        const ADMIN_HASH = '2b3ol8nrx29';
+        const ADMIN_HASH = '176qalmua2s';
         const hash53 = (str, seed = 0) => {
             let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
             for (let i = 0; i < str.length; i++) {
