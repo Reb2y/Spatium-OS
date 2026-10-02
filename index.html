@@ -36,6 +36,9 @@
                 </div>
                 <span class="menubar-title">Spatium OS</span>
                 <span class="menubar-right">
+                    <button type="button" class="ach-btn" id="achBtn" title="Достижения">
+                        <span class="ach-btn-icon" id="achBtnIcon"></span><span id="achBarCount">0/0</span>
+                    </button>
                     <span class="signal"><i class="dot"></i>СВЯЗЬ: ЕСТЬ</span>
                     <span id="sysClock">--:--:--</span>
                 </span>
@@ -86,7 +89,7 @@
                         <div class="kv"><span>TTY</span><em>tty0</em></div>
                         <div class="kv"><span>РЕЖИМ</span><em>ONLINE</em></div>
                     </div>
-                    <div class="panel">
+                    <div class="panel ach-panel" id="achPanel">
                         <div class="panel-title">ДОСТИЖЕНИЯ</div>
                         <div class="kv"><span>ОТКРЫТО</span><em id="achCount">0/0</em></div>
                     </div>
@@ -96,9 +99,20 @@
         </div>
 
         <div class="ach-toast" id="achToast" aria-live="polite">
-            <div class="ach-head">ДОСТИЖЕНИЕ ОТКРЫТО</div>
-            <div class="ach-name"></div>
-            <div class="ach-desc"></div>
+            <div class="ach-icon-box" id="achToastIcon"></div>
+            <div class="ach-toast-text">
+                <div class="ach-head">ДОСТИЖЕНИЕ ОТКРЫТО</div>
+                <div class="ach-name"></div>
+                <div class="ach-desc"></div>
+            </div>
+        </div>
+
+        <div id="achWindow" class="ach-window hidden">
+            <div class="player-header">
+                <span class="player-title">ДОСТИЖЕНИЯ</span>
+                <button id="achCloseBtn" class="player-close-btn" type="button">[X]</button>
+            </div>
+            <div class="ach-body" id="achBody"></div>
         </div>
 
         <div id="musicPlayerModal" class="music-player-modal hidden">
