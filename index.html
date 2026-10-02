@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Spatium OS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,9 +54,21 @@
                     <div class="input-line">
                         <span class="prompt">&gt;&nbsp;</span>
                         <div class="input-wrapper">
-                            <input type="text" id="hiddenInput" class="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                            <input type="text" id="hiddenInput" class="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" enterkeyhint="send">
                             <span id="commandInputText"></span><span class="terminal-cursor"></span>
                         </div>
+                    </div>
+                    <div class="quick-keys" id="quickKeys">
+                        <button type="button" data-key="tab">TAB</button>
+                        <button type="button" data-key="up">&uarr;</button>
+                        <button type="button" data-key="down">&darr;</button>
+                        <span class="qk-sep"></span>
+                        <button type="button" data-cmd="help">help</button>
+                        <button type="button" data-cmd="ach">ach</button>
+                        <button type="button" data-cmd="play">play</button>
+                        <button type="button" data-cmd="pause">pause</button>
+                        <button type="button" data-cmd="next">next</button>
+                        <button type="button" data-cmd="clear">clear</button>
                     </div>
                 </section>
 
@@ -74,9 +86,19 @@
                         <div class="kv"><span>TTY</span><em>tty0</em></div>
                         <div class="kv"><span>РЕЖИМ</span><em>ONLINE</em></div>
                     </div>
+                    <div class="panel">
+                        <div class="panel-title">ДОСТИЖЕНИЯ</div>
+                        <div class="kv"><span>ОТКРЫТО</span><em id="achCount">0/0</em></div>
+                    </div>
                     <div class="panel hint">Нажми на <b>S_</b> — откроется плеер</div>
                 </aside>
             </div>
+        </div>
+
+        <div class="ach-toast" id="achToast" aria-live="polite">
+            <div class="ach-head">ДОСТИЖЕНИЕ ОТКРЫТО</div>
+            <div class="ach-name"></div>
+            <div class="ach-desc"></div>
         </div>
 
         <div id="musicPlayerModal" class="music-player-modal hidden">

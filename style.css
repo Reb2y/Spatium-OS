@@ -7,18 +7,21 @@
     --dim: color-mix(in srgb, var(--crt-color) 14%, transparent);
     --dim2: color-mix(in srgb, var(--crt-color) 35%, transparent);
     --panel: color-mix(in srgb, var(--crt-color) 5%, var(--crt-bg));
+    --app-h: 100dvh;
+    --app-top: 0px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
 
 html, body {
-    width: 100vw; height: 100dvh; overflow: hidden;
+    width: 100vw; height: var(--app-h); overflow: hidden; overscroll-behavior: none; touch-action: manipulation;
     background: #000; font-family: var(--font-text); cursor: crosshair;
 }
 
 /* ---------- Экран и CRT ---------- */
 .crt-screen {
-    position: relative; width: 100vw; height: 100dvh; overflow: hidden;
+    position: fixed; top: var(--app-top); left: 0; width: 100vw; height: var(--app-h); overflow: hidden;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--crt-color) 14%, var(--crt-bg)) 0%, var(--crt-bg) 65%);
     box-shadow: inset 0 0 100px rgba(0,0,0,.9), inset 0 0 40px var(--crt-glow);
     animation: textFlicker .15s infinite;
@@ -68,7 +71,7 @@ html, body {
 
 /* ---------- Рабочий стол ---------- */
 .terminal-container {
-    width: 94vw; height: 92dvh; display: flex; flex-direction: column; gap: 14px;
+    width: 94vw; max-width: 100%; height: calc(var(--app-h) * .92); display: flex; flex-direction: column; gap: 14px;
     color: var(--crt-color); z-index: 2; transition: opacity .6s ease-in-out;
     text-shadow: 0 0 8px var(--crt-glow), 2px 0 3px rgba(255,0,0,.35), -2px 0 3px rgba(0,0,255,.35);
 }
@@ -127,7 +130,7 @@ html, body {
 }
 .prompt { text-shadow: 0 0 10px var(--crt-color); }
 .input-wrapper { display: flex; align-items: center; position: relative; }
-.hidden-input { position: absolute; opacity: 0; top: -9999px; left: -9999px; pointer-events: none; }
+.hidden-input { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; font-size: 16px; border: 0; padding: 0; pointer-events: none; }
 .terminal-cursor {
     display: inline-block; width: clamp(8px, 1.4vw, 12px); height: clamp(14px, 2.6vw, 20px);
     background: var(--crt-color); box-shadow: 0 0 10px var(--crt-glow); margin-left: 3px;
@@ -188,12 +191,60 @@ html, body {
 .playlist-item:hover { opacity: 1; background: var(--dim); border-left-color: var(--crt-color); }
 .playlist-item.active { opacity: 1; font-weight: 600; background: var(--crt-color); color: var(--crt-bg); text-shadow: none; }
 
+/* ---------- Быстрые клавиши (телефон) ---------- */
+.quick-keys {
+    display: none; gap: 8px; padding: 8px 12px; overflow-x: auto; scrollbar-width: none;
+    border-top: 1px solid var(--dim2); background: var(--panel);
+}
+.quick-keys::-webkit-scrollbar { display: none; }
+.quick-keys button {
+    flex: 0 0 auto; min-width: 44px; min-height: 40px; padding: 0 12px;
+    background: transparent; border: 1px solid var(--crt-color); color: var(--crt-color);
+    font-family: var(--font-ui); font-size: 9px; cursor: pointer;
+}
+.quick-keys button:active { background: var(--crt-color); color: var(--crt-bg); text-shadow: none; }
+.qk-sep { flex: 0 0 1px; background: var(--dim2); margin: 4px 2px; }
+
+/* ---------- Уведомление о достижении ---------- */
+.ach-toast {
+    position: absolute; top: 84px; right: 4vw; width: 300px; max-width: 92vw; z-index: 25;
+    padding: 12px 14px; color: var(--crt-color);
+    background: color-mix(in srgb, var(--crt-bg) 92%, #000);
+    border: 1px solid var(--crt-color); border-left: 6px solid var(--crt-color);
+    box-shadow: 0 0 26px var(--crt-glow), 6px 6px 0 rgba(0,0,0,.6);
+    opacity: 0; transform: translateX(30px); pointer-events: none;
+    transition: opacity .35s ease, transform .35s cubic-bezier(.2,1.2,.4,1);
+}
+.ach-toast.show { opacity: 1; transform: none; }
+.ach-head { font-family: var(--font-ui); font-size: 8px; letter-spacing: 1px; opacity: .75; margin-bottom: 8px; }
+.ach-name { font-family: var(--font-ui); font-size: 11px; line-height: 1.5; text-shadow: 0 0 8px var(--crt-glow); }
+.ach-desc { margin-top: 6px; font-size: 13px; opacity: .85; }
+
 /* ---------- Мобильные ---------- */
 @media (max-width: 800px) { .sidebar { display: none; } }
+@media (max-width: 650px), (hover: none) and (pointer: coarse) { .quick-keys { display: flex; } }
 @media (max-width: 650px) {
-    .terminal-container { width: 96vw; height: 94dvh; gap: 10px; }
+    .terminal-container { width: 96vw; height: calc(var(--app-h) * .94); gap: 10px; }
+    .terminal-output { font-size: 14px; padding: 12px 12px 4px; }
+    .input-line { padding: 10px 12px; font-size: 15px; }
+    .menubar { padding: 6px 12px; }
+    .ach-toast { top: 70px; right: auto; left: 50%; transform: translate(-50%, -20px); }
+    .ach-toast.show { transform: translate(-50%, 0); }
+    .music-player-modal { max-height: 90%; overflow-y: auto; }
     .menubar-title, .signal { display: none; }
     .music-player-modal { top: 50%; left: 50%; right: auto; transform: translate(-50%, -50%); width: 90%; max-width: 350px; z-index: 50; animation: none; }
+}
+@media (max-height: 480px) {
+    .bg-grid, .sidebar { display: none; }
+    .menubar { padding: 4px 10px; }
+    .terminal-container { gap: 6px; }
+}
+@media (pointer: coarse) {
+    .player-btn { min-height: 44px; }
+    .custom-slider { height: 14px; }
+    .custom-slider::-webkit-slider-thumb { width: 18px; height: 30px; }
+    .custom-slider::-moz-range-thumb { width: 18px; height: 30px; }
+    .playlist-item { padding: 9px 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .crt-screen, .bg-grid { animation: none; } }
 
