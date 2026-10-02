@@ -2,16 +2,16 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <!-- Добавлен запрет масштабирования для мобилок (чтобы экран не зумился при двойном тапе) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spatium OS - Ретро CRT Терминал</title>
+    <title>Spatium OS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="crt-screen power-on" id="screen">
+        <div class="bg-grid"></div>
         <div class="crt-overlay">
             <div class="scanlines"></div>
             <div class="vignette"></div>
@@ -26,25 +26,56 @@
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
             </div>
-            <div class="boot-status" id="bootStatus">ИНИЦИАЛИЗАЦИЯ SPATIUM OS...</div>
+            <div class="boot-status" id="bootStatus">Инициализация Spatium OS...</div>
         </div>
 
         <div class="terminal-container hidden" id="terminalContainer">
-            <div class="logo-wrapper" id="logoWrapper" title="Открыть аудиоплеер">
-                <span class="static-s">S</span><span class="blinking-underscore">_</span>
-            </div>
-
-            <div class="terminal-output" id="terminalOutput">
-                <div class="system-msg">СИСТЕМА ГОТОВА К РАБОТЕ. ВВЕДИТЕ 'help' ДЛЯ СПИСКА КОМАНД.</div>
-            </div>
-
-            <div class="input-line">
-                <span class="prompt">&gt;&nbsp;</span>
-                <div class="input-wrapper">
-                    <!-- Скрытый инпут для вызова мобильной клавиатуры -->
-                    <input type="text" id="hiddenInput" class="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-                    <span id="commandInputText"></span><span class="terminal-cursor"></span>
+            <header class="menubar">
+                <div class="logo-wrapper" id="logoWrapper" title="Открыть аудиоплеер">
+                    <span class="static-s">S</span><span class="blinking-underscore">_</span>
                 </div>
+                <span class="menubar-title">Spatium OS</span>
+                <span class="menubar-right">
+                    <span class="signal"><i class="dot"></i>СВЯЗЬ: ЕСТЬ</span>
+                    <span id="sysClock">--:--:--</span>
+                </span>
+            </header>
+
+            <div class="workspace">
+                <section class="window">
+                    <div class="window-bar">
+                        <span class="wb-dots"><i></i><i></i><i></i></span>
+                        <span>terminal.sys</span>
+                        <span>tty0</span>
+                    </div>
+                    <div class="terminal-output" id="terminalOutput">
+                        <div class="system-msg">СИСТЕМА ГОТОВА К РАБОТЕ. ВВЕДИТЕ 'help' ДЛЯ СПИСКА КОМАНД.</div>
+                    </div>
+                    <div class="input-line">
+                        <span class="prompt">&gt;&nbsp;</span>
+                        <div class="input-wrapper">
+                            <input type="text" id="hiddenInput" class="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                            <span id="commandInputText"></span><span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="sidebar" aria-hidden="true">
+                    <div class="panel">
+                        <div class="panel-title">СИСТЕМА</div>
+                        <div class="meter"><span>CPU</span><b style="--w:62%;--d:2.3s"></b></div>
+                        <div class="meter"><span>MEM</span><b style="--w:41%;--d:3.1s"></b></div>
+                        <div class="meter"><span>NET</span><b style="--w:78%;--d:1.7s"></b></div>
+                        <div class="meter"><span>PWR</span><b style="--w:93%;--d:4s"></b></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-title">СТАТУС</div>
+                        <div class="kv"><span>ЯДРО</span><em>SPATIUM 1.0</em></div>
+                        <div class="kv"><span>TTY</span><em>tty0</em></div>
+                        <div class="kv"><span>РЕЖИМ</span><em>ONLINE</em></div>
+                    </div>
+                    <div class="panel hint">Нажми на <b>S_</b> — откроется плеер</div>
+                </aside>
             </div>
         </div>
 
@@ -53,30 +84,39 @@
                 <span class="player-title">SPATIUM PLAYER</span>
                 <button id="playerCloseBtn" class="player-close-btn">[X]</button>
             </div>
-            <div class="track-info">
-                <div id="trackName" class="track-name">1. Console OST</div>
-                <div class="time-display">
-                    <span id="currentTime">00:00</span> / <span id="durationTime">00:00</span>
+            <div class="player-body">
+                <div class="track-info">
+                    <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                    <div id="trackName" class="track-name">1. Console OST</div>
+                    <div class="time-display">
+                        <span id="currentTime">00:00</span> / <span id="durationTime">00:00</span>
+                    </div>
                 </div>
-            </div>
-            <div class="seekbar-container">
-                <input type="range" id="seekBar" class="custom-slider" value="0" min="0" max="100">
-            </div>
-            <div class="player-controls">
-                <button id="btnPrev" class="player-btn">PREV</button>
-                <button id="btnPlayPause" class="player-btn">PLAY</button>
-                <button id="btnNext" class="player-btn">NEXT</button>
-            </div>
-            <div class="volume-container">
-                <button id="btnMute" class="player-btn mute-btn">VOL</button>
-                <input type="range" id="volumeBar" class="custom-slider" value="0.009" min="0" max="1" step="0.01">
-            </div>
-            <div id="playlistContainer" class="playlist-container">
-                <!-- Список треков генерируется скриптом -->
+                <div class="seekbar-container">
+                    <input type="range" id="seekBar" class="custom-slider" value="0" min="0" max="100">
+                </div>
+                <div class="player-controls">
+                    <button id="btnPrev" class="player-btn">PREV</button>
+                    <button id="btnPlayPause" class="player-btn">PLAY</button>
+                    <button id="btnNext" class="player-btn">NEXT</button>
+                </div>
+                <div class="volume-container">
+                    <button id="btnMute" class="player-btn mute-btn">VOL</button>
+                    <input type="range" id="volumeBar" class="custom-slider" value="0.009" min="0" max="1" step="0.01">
+                </div>
+                <div id="playlistContainer" class="playlist-container"></div>
             </div>
         </div>
     </div>
 
     <script src="script.js"></script>
+    <script>
+        (function () {
+            const clock = document.getElementById('sysClock');
+            const tick = () => { clock.textContent = new Date().toLocaleTimeString('ru-RU'); };
+            tick();
+            setInterval(tick, 1000);
+        })();
+    </script>
 </body>
 </html>
