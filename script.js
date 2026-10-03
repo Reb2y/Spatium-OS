@@ -5650,6 +5650,17 @@ TAB - дополнить, ↑↓ - история
             bar.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
                 if (!btn || !isBooted) return;
+                if (btn.dataset.kn) {   // секретные клавиши кода Конами: ←, →, B, A
+                    trackKonami(btn.dataset.kn);
+                    if (hiddenInput) hiddenInput.focus();
+                    return;
+                }
+                if (btn.dataset.key === 'more') {   // показать/скрыть доп. клавиши
+                    bar.classList.toggle('qk-more');
+                    return;
+                }
+                if (btn.dataset.key === 'up') trackKonami('ArrowUp');
+                else if (btn.dataset.key === 'down') trackKonami('ArrowDown');
                 if (btn.dataset.key === 'enter') {
                     if (hiddenInput) {
                         hiddenInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
@@ -7899,13 +7910,40 @@ TAB - дополнить, ↑↓ - история
             });
 
             let drag = null;
+            let sheetDrag = null;
+            screen.addEventListener('pointermove', (e) => {
+                if (!sheetDrag || e.pointerId !== sheetDrag.id) return;
+                sheetDrag.dy = Math.max(0, e.clientY - sheetDrag.sy);
+                sheetDrag.w.style.transition = 'none';
+                sheetDrag.w.style.transform = 'translateY(' + sheetDrag.dy + 'px)';
+            });
+            const endSheetDrag = (e) => {
+                if (!sheetDrag || e.pointerId !== sheetDrag.id) return;
+                const { w, dy } = sheetDrag;
+                sheetDrag = null;
+                w.style.transition = '';
+                w.style.transform = '';
+                if (dy < 6) return;
+                unlock('win_drag');
+                if (dy > 90) {
+                    const cb = w.querySelector('.player-close-btn, [data-close]');
+                    if (cb) cb.click();
+                }
+            };
+            screen.addEventListener('pointerup', endSheetDrag);
+            screen.addEventListener('pointercancel', endSheetDrag);
             screen.addEventListener('pointerdown', (e) => {
                 const w = e.target.closest && e.target.closest(SEL);
                 if (!w) return;
                 front(w);
                 const head = e.target.closest('.player-header');
                 if (!head || e.target.closest('button') || e.button > 0) return;
-                if (window.matchMedia && window.matchMedia('(max-width: 700px), (max-height: 500px) and (pointer: coarse)').matches) return;
+                if (window.matchMedia && window.matchMedia('(max-width: 700px), (max-height: 500px) and (pointer: coarse)').matches) {
+                    // телефон: окна - шторки; потяни заголовок вниз - шторка закроется (и это засчитывается как перетаскивание)
+                    sheetDrag = { w, id: e.pointerId, sy: e.clientY, dy: 0 };
+                    try { head.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+                    return;
+                }
                 const wr = w.getBoundingClientRect();
                 drag = { w, head, id: e.pointerId, dx: e.clientX - wr.left, dy: e.clientY - wr.top, sx: e.clientX, sy: e.clientY, moved: false };
                 try { head.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
@@ -7942,6 +7980,17 @@ TAB - дополнить, ↑↓ - история
                 ['left', 'top', 'right'].forEach(p => { w.style[p] = ''; });
                 if (w.id) { delete saved[w.id]; savePos(); }
             });
+
+            const setSheetTop = () => {
+                const mb = document.querySelector('.menubar');
+                const r = mb && mb.getBoundingClientRect();
+                const top = r && r.height ? Math.round(r.bottom + 4) : 6;
+                document.documentElement.style.setProperty('--sheet-top', top + 'px');
+            };
+            setSheetTop();
+            window.addEventListener('resize', setSheetTop);
+            window.addEventListener('orientationchange', () => setTimeout(setSheetTop, 250));
+            new MutationObserver(setSheetTop).observe(document.getElementById('terminalContainer') || screen, { attributes: true, attributeFilter: ['class'] });
 
             let lastW = window.innerWidth;
             window.addEventListener('resize', () => {

@@ -87,18 +87,20 @@
     }
     .quick-keys button:active { background: var(--crt-color); color: var(--crt-bg); }
     .qk-sep { flex: 0 0 1px; }
+    .quick-keys .qk-x { display: none; }
+    .quick-keys.qk-more .qk-x { display: inline-flex; }
 
     /* ---------- все окна — полноэкранные шторки ---------- */
     .ach-window, .music-player-modal, .adm-window {
         position: absolute !important;
         left: 0 !important; right: 0 !important;
-        top: calc(env(safe-area-inset-top, 0px) + 6px) !important; bottom: 0 !important;
+        top: var(--sheet-top, calc(env(safe-area-inset-top, 0px) + 6px)) !important; bottom: 0 !important;
         width: auto !important; max-width: none !important;
         height: auto !important; max-height: none !important;
         margin: 0 !important; transform: none !important;
         border-width: 1px 0 0 0; border-radius: 14px 14px 0 0;
         padding-bottom: env(safe-area-inset-bottom, 0px);
-        box-shadow: 0 0 0 100vmax rgba(0,0,0,.55), 0 -4px 24px var(--crt-glow);
+        box-shadow: 0 -4px 24px var(--crt-glow);
         animation: mSheetUp .22s ease-out !important;
         overflow: hidden;
     }
@@ -228,7 +230,7 @@
     .quick-keys button { min-height: 36px; }
     .input-line { min-height: 40px; }
     .terminal-output { font-size: 13px; padding: 6px 10px 2px; }
-    .ach-window, .music-player-modal, .adm-window { top: 0 !important; border-radius: 0; }
+    .ach-window, .music-player-modal, .adm-window { top: var(--sheet-top, 0px) !important; border-radius: 0; }
     .player-header { border-radius: 0; padding-top: 4px; padding-bottom: 4px; }
     .player-header::before { display: none; }
     .player-close-btn { min-height: 32px; }
