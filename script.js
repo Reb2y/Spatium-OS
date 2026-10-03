@@ -150,8 +150,6 @@
             { id: 'unknown',    cat: 'ТЕРМИНАЛ', icon: 'bug',      title: 'ОПЕЧАТКА',         desc: 'Введи несуществующую команду' },
             { id: 'long',       cat: 'ТЕРМИНАЛ', icon: 'key',      title: 'ПИСАТЕЛЬ',         desc: 'Введи команду длиннее 60 символов' },
             { id: 'hacker',     cat: 'ТЕРМИНАЛ', icon: 'skull',    title: 'ХАКЕР',            desc: 'Запусти режим хакера' },
-            { id: 'matrix',     cat: 'ТЕРМИНАЛ', icon: 'eye',      title: 'ПРОБУЖДЕНИЕ',      desc: 'Запусти дождь Матрицы командой matrix' },
-            { id: 'screensaver', cat: 'СИСТЕМА', icon: 'moon',     title: 'ЗАСНУЛ?',          desc: 'Дождись скринсейвера: минута без действий' },
             { id: 'hacker_long', cat: 'ТЕРМИНАЛ', icon: 'eye',     title: 'ТЕРПЕНИЕ',         desc: 'Продержи режим хакера 10 секунд' },
             { id: 'speedrun',   cat: 'ТЕРМИНАЛ', icon: 'bolt',     title: 'СКОРОСТНОЙ',       desc: 'Выполни 5 команд за 10 секунд', rarity: 'rare' },
             { id: 'sudo',       cat: 'ТЕРМИНАЛ', icon: 'lock',     title: 'НЕТ ПРАВ',         desc: 'Попробуй получить права суперпользователя', hidden: true, rarity: 'rare' },
@@ -221,7 +219,6 @@
             { id: 'echo10', cat: 'ТЕРМИНАЛ', icon: 'bubble', title: 'ПОПУГАЙ', desc: 'Используй echo с текстом 10 раз за один заход', rarity: 'rare' },
             { id: 'clear5', cat: 'ТЕРМИНАЛ', icon: 'drop', title: 'ПЕДАНТ', desc: 'Очисти экран 5 раз за один заход', rarity: 'common' },
             { id: 'color_green', cat: 'ЦВЕТА', icon: 'power', title: 'КЛАССИКА', desc: 'Включи цвет green', rarity: 'common' },
-            { id: 'color_matrix', cat: 'ЦВЕТА', icon: 'bug', title: 'ВЫБОР НЕО', desc: 'Включи цвет matrix', rarity: 'common' },
             { id: 'play_cmd', cat: 'ПЛЕЕР', icon: 'note', title: 'ПУСК', desc: 'Запусти музыку командой play', rarity: 'common' },
             { id: 'next_cmd', cat: 'ПЛЕЕР', icon: 'arrow', title: 'ВПЕРЁД', desc: 'Включи следующий трек командой next', rarity: 'common' },
             { id: 'ach_cmd', cat: 'СИСТЕМА', icon: 'trophy', title: 'ОХОТНИК', desc: 'Введи в терминале команду ach', rarity: 'common' },
@@ -239,6 +236,13 @@
             { id: 'listener10', cat: 'ПЛЕЕР', icon: 'note', title: 'НАСЛУШАННЫЙ', desc: 'Дослушай до конца 10 треков за один заход', rarity: 'epic' },
             { id: 'dj_hour', cat: 'ПЛЕЕР', icon: 'speaker', title: 'ЧАС ПОВЕР', desc: 'Слушай музыку суммарно 60 минут за один заход', rarity: 'legendary' },
             { id: 'spati_50', cat: 'СПАТИ', icon: 'ghost', title: 'ЗАДУШЕВНЫЙ РАЗГОВОР', desc: 'Задай Спати 50 вопросов', rarity: 'epic' },
+            { id: 'afk_back', cat: 'СПАТИ', icon: 'ghost', title: 'ДОЛГО ТЫ', desc: 'Вернись к Спати после минуты отсутствия', hidden: true, rarity: 'rare' },
+            { id: 'afk_long', cat: 'СПАТИ', icon: 'hourglass', title: 'ПРОПАЩИЙ', desc: 'Оставь Спати одного больше чем на 10 минут', hidden: true, rarity: 'epic' },
+            { id: 'spati_cmd5', cat: 'СПАТИ', icon: 'prompt', title: 'ПО ПРОСЬБЕ', desc: 'Выполни 5 команд через Спати', rarity: 'rare' },
+            { id: 'spati_cmd25', cat: 'СПАТИ', icon: 'gear', title: 'ДИСПЕТЧЕР', desc: 'Выполни 25 команд через Спати', rarity: 'epic' },
+            { id: 'sm_high5', cat: 'СПАТИ', icon: 'star', title: 'ДАЙ ПЯТЬ', desc: 'Быстро тапни по Спати два раза подряд', rarity: 'common' },
+            { id: 'sm_feed5', cat: 'СПАТИ', icon: 'apple', title: 'КОРМИЛЕЦ', desc: 'Скорми Спати 5 яблок', rarity: 'rare' },
+            { id: 'sm_feed25', cat: 'СПАТИ', icon: 'heart', title: 'ЯБЛОЧНЫЙ ДРУГ', desc: 'Скорми Спати 25 яблок', rarity: 'epic' },
             { id: 'spati_250', cat: 'СПАТИ', icon: 'crown', title: 'ВЕРНЫЙ СПУТНИК', desc: 'Задай Спати 250 вопросов', rarity: 'legendary' },
             // ---- ЗМЕЙКА ----
             { id: 'snake_start', cat: 'ЗМЕЙКА', icon: 'power', title: 'ЗМЕЙКА В ТЕРМИНАЛЕ', desc: 'Запусти змейку командой snake', rarity: 'common' },
@@ -274,7 +278,8 @@
             { id: 'share_send', cat: 'СИСТЕМА', icon: 'star', title: 'ДЕЛИМСЯ', desc: 'Скачай, скопируй или отправь карточку прогресса', rarity: 'rare' },
             { id: 'nick_set', cat: 'СИСТЕМА', icon: 'prompt', title: 'ЗНАКОМСТВО', desc: 'Создай никнейм', rarity: 'common' },
             { id: 'nick_change', cat: 'СИСТЕМА', icon: 'drop', title: 'НОВОЕ ИМЯ', desc: 'Смени никнейм', rarity: 'common' },
-            { id: 'nick_fake', cat: 'СИСТЕМА', icon: 'ghost', title: 'САМОЗВАНЕЦ', desc: 'Попробуй назваться именем системы', hidden: true, rarity: 'rare' }
+            { id: 'nick_fake', cat: 'СИСТЕМА', icon: 'ghost', title: 'САМОЗВАНЕЦ', desc: 'Попробуй назваться именем системы', hidden: true, rarity: 'rare' },
+            { id: 'neofetch', cat: 'ТЕРМИНАЛ', icon: 'gear', title: 'ПАСПОРТ СИСТЕМЫ', desc: 'Запусти команду neofetch', rarity: 'common' }
         ];
         // ----- редкость -----
         const RARITIES = {
@@ -665,7 +670,7 @@
             state.shown[id] = !deferToast;
             saveState();
             updateAchCount();
-            if (!deferToast) enqueueToast(achById[id]);
+            if (!deferToast) { enqueueToast(achById[id]); mascotEvent('ach'); }
             // мета-достижения
             if (ACHIEVEMENTS.filter(a => a.hidden).every(a => state.ach[a.id])) unlock('secret_all', deferToast);
             if (unlockedCount() >= Math.ceil(ACHIEVEMENTS.length / 2)) unlock('half', deferToast);
@@ -693,6 +698,7 @@
         if (state.stats.visits >= 50) unlock('regular50', true);
         if (state.stats.visits >= 25) unlock('regular25', true);
         if (state.stats.visits >= 100) unlock('regular100', true);
+        const achSessionStart = Date.now();
         setTimeout(() => unlock('marathon'), 10 * 60 * 1000);
         setTimeout(() => unlock('long_session'), 60 * 60 * 1000);
         saveState();
@@ -894,6 +900,14 @@
                 text.appendChild(hint);
                 card.addEventListener('click', () => hint.classList.toggle('hidden'));
             }
+            // Спати комментирует достижение: наведи курсор (на телефоне — тапни)
+            card.addEventListener('pointerenter', (e) => {
+                if (e.pointerType && e.pointerType !== 'mouse') return;
+                clearTimeout(card._smT);
+                card._smT = setTimeout(() => mascotAchHover(a, false), 380);
+            });
+            card.addEventListener('pointerleave', () => clearTimeout(card._smT));
+            card.addEventListener('click', () => mascotAchHover(a, true));
             return card;
         }
 
@@ -980,6 +994,7 @@
             achBody.scrollTop = 0;
             unlock('ach_open');
             sfxAch('open');
+            mascotAchOpen();
             if (hiddenInput) hiddenInput.blur();
         }
 
@@ -1029,7 +1044,7 @@
 
         // ----- Tab-автодополнение -----
         const TAB_COMMANDS = ['help', 'clear', 'time', 'date', 'echo', 'color', 'hacker', 'history', 'ach',
-            'off', 'play', 'pause', 'next', 'prev', 'tracks', 'vol', 'mute', 'player', 'matrix', 'sfx'];
+            'off', 'play', 'pause', 'next', 'prev', 'tracks', 'vol', 'mute', 'player', 'sfx'];
 
         function tabCandidates(tokens) {
             if (tokens.length === 1) {
@@ -1278,7 +1293,6 @@
         // Цвета
         const colorPalette = {
             green: { color: '#33ff33', glow: 'rgba(51, 255, 51, 0.6)', bg: '#001100' },
-            matrix: { color: '#00ff66', glow: 'rgba(0, 255, 102, 0.7)', bg: '#000f05' },
             amber: { color: '#ffb000', glow: 'rgba(255, 176, 0, 0.6)', bg: '#140c00' },
             red: { color: '#ff3333', glow: 'rgba(255, 51, 51, 0.6)', bg: '#110000' },
             cyberpunk: { color: '#ff0055', glow: 'rgba(255, 0, 85, 0.7)', bg: '#140005' },
@@ -1443,6 +1457,7 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     if (isTyping) return; // Блокируем отправку пока терминал печатает
+                    e._submitEnter = true; // этот же Enter не должен сразу пропускать печать ответа
                     const commandToExecute = currentInput;
                     currentInput = '';
                     hiddenInput.value = '';
@@ -1475,7 +1490,7 @@
             }
 
             // Быстрая прокрутка анимации печати по пробелу/энтеру
-            if (isTyping && currentTypingTimeout && (e.key === 'Enter' || e.key === ' ')) {
+            if (isTyping && currentTypingTimeout && !e._submitEnter && (e.key === 'Enter' || e.key === ' ')) {
                 e.preventDefault();
                 clearTimeout(currentTypingTimeout);
                 if (activeTypingLine) activeTypingLine.textContent = fullTypingText;
@@ -1520,7 +1535,6 @@
   echo     вывести текст
   color    сменить цвет
   hacker   режим хакера
-  matrix   дождь Матрицы
   history  история команд
   ach      достижения
   sfx      звуки клавиш вкл/выкл
@@ -1528,6 +1542,7 @@
   export   сохранить прогресс в файл
   import   загрузить прогресс из файла
   card     карточка прогресса (картинка)
+  neofetch сводка о системе
   nick     показать / сменить никнейм
   off      выключение
 
@@ -1542,8 +1557,7 @@
   player   окно плеера
 
 TAB - дополнить, ↑↓ - история
-Окна двигаются за заголовок (двойной клик - на место).
-Скринсейвер включается через 1 мин без действий.`;
+Окна двигаются за заголовок (двойной клик - на место).`;
 
         // ----- управление плеером из консоли -----
         const trackLabel = (i) => `${i + 1}. ${playlist[i].title}`;
@@ -1727,7 +1741,7 @@ TAB - дополнить, ↑↓ - история
                 root.style.setProperty('--crt-color', scheme.color);
                 root.style.setProperty('--crt-glow', scheme.glow);
                 root.style.setProperty('--crt-bg', scheme.bg);
-                unlock('color');
+                unlock('color'); mascotEvent('color');
                 if (!state.stats.colors.includes(target)) {
                     state.stats.colors.push(target);
                     saveState();
@@ -1755,9 +1769,16 @@ TAB - дополнить, ↑↓ - история
             if (!isBooted || isTyping) return;
             isSpatiEnabled = !isSpatiEnabled;
             if (spatiBtn) spatiBtn.classList.toggle('on', isSpatiEnabled);
+            setMascot(isSpatiEnabled);
             if (isSpatiEnabled) {
                 unlock('spati');
-                printTextTyped("[СПАТИ АКТИВИРОВАН]", () => setTimeout(() => { if (isSpatiEnabled && !isTyping) printTextTyped(spatiWakeLine()); }, 350));
+                printTextTyped("[СПАТИ АКТИВИРОВАН]");
+                // приветствие говорит сам маскот: пузырь + открывающийся рот
+                setTimeout(() => {
+                    if (!isSpatiEnabled) return;
+                    mascotReact('wave', true);
+                    mascotSay(spatiAfkText(spatiWakeLine()));
+                }, 750);
             } else {
                 unlock('spati_off');
                 printTextTyped("[СПАТИ ДЕАКТИВИРОВАН]");
@@ -1867,7 +1888,7 @@ TAB - дополнить, ↑↓ - история
 
         // --- цвета по-русски ---
         const SPATI_COLOR_WORDS = [
-            [/красн/, 'red'], [/зелен/, 'green'], [/матриц/, 'matrix'], [/янтар/, 'amber'], [/киберпанк/, 'cyberpunk'],
+            [/красн/, 'red'], [/зелен/, 'green'], [/янтар/, 'amber'], [/киберпанк/, 'cyberpunk'],
             [/голуб|небесн/, 'sky'], [/(^| )син\w*/, 'blue'], [/циан/, 'cyan'], [/пурпур/, 'purple'], [/фиолет/, 'violet'],
             [/сирен|лаванд/, 'lavender'], [/оранж/, 'orange'], [/золот/, 'gold'], [/желт/, 'yellow'], [/лайм/, 'lime'],
             [/мят/, 'mint'], [/бирюз/, 'teal'], [/океан/, 'ocean'], [/ледян|(^| )лед( |$)/, 'ice'], [/индиго/, 'indigo'],
@@ -1885,7 +1906,7 @@ TAB - дополнить, ↑↓ - история
         const SPATI_COLOR_QUIPS = {
             red: 'Красный. Звучит тревожно, выглядит бодро', green: 'Классика не стареет', amber: 'Янтарь, как у старых мониторов',
             blue: 'Спокойно, как океан в три часа ночи', white: 'Ярковато. Береги глаза', pink: 'Мило. Мне идёт', gold: 'Богато выглядит',
-            matrix: 'Теперь я чувствую себя хакером', purple: 'Фиолетовый. Загадочно', cyberpunk: 'Будущее уже здесь', blood: 'Мрачновато. Мне нравится'
+            purple: 'Фиолетовый. Загадочно', cyberpunk: 'Будущее уже здесь', blood: 'Мрачновато. Мне нравится'
         };
         const spatiColorReply = (t) => {
             const T = t.toUpperCase();
@@ -1910,8 +1931,60 @@ TAB - дополнить, ↑↓ - история
         const DAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
 
         // --- действия: Спати выполняет команды (возврат: строка-ответ или [ответ, функция после ответа]) ---
+        // Спати запускает команду терминала. quiet — без эха «> команда»
+        function spatiRunReply(cmdline, quiet, say) {
+            const first = cmdline.trim().split(/\s+/)[0].toLowerCase();
+            if (first === 'спати') return 'СПАТИ: Сам себя вызывать не буду. Зациклюсь';
+            const nm = state.stats.spatiCmds = (state.stats.spatiCmds || 0) + 1;
+            saveState();
+            if (nm >= 5) unlock('spati_cmd5');
+            if (nm >= 25) unlock('spati_cmd25');
+            const text = say ? `СПАТИ: ${say}` : spOne([`СПАТИ: Выполняю: ${cmdline}`, `СПАТИ: Запускаю ${first}. Секунду`, `СПАТИ: Есть, ${first}`]);
+            return [text, () => handleCommand(cmdline, quiet)];
+        }
+
         let snakeApi = null; // заполняется в initSnake
         const spatiActions = [
+            (q) => {
+                if (!/^(вернись|вернись на место|иди домой|лети домой|иди на место|на место|иди сюда|ко мне)$/.test(q)) return;
+                mascotHome();
+                return spOne(['СПАТИ: Лечу на место', 'СПАТИ: Возвращаюсь. Не скучай', 'СПАТИ: Есть, на место']);
+            },
+            // --- Спати выполняет команды терминала ---
+            (q, raw) => {
+                const m = raw.trim().match(/^(?:выполни(?:\s+команду)?|запусти\s+команду|введи(?:\s+команду)?|набери(?:\s+команду)?|команда|cmd|run|exec)\s+(.+)$/i);
+                if (!m) return;
+                return spatiRunReply(m[1].trim(), false);
+            },
+            (q, raw) => {
+                const hasAny = (re) => re.test(q);
+                const clearVerb = /очист|сотри|удал|забуд|стер|сброс/;
+                const show = /(покажи|выведи|дай|открой|хочу|глянь|посмотреть|давай)/;
+                let cmd = '', say = '';
+                const echoM = raw.trim().match(/^(?:повтори|эхо|напиши в консоль|выведи в консоль|скажи в консоль)\s+(.+)$/i);
+                if (echoM) { cmd = 'echo ' + echoM[1]; say = 'Пишу в консоль'; }
+                else if (show.test(q) && /(палитр|список цвет|все цвета)/.test(q) || /какие (есть )?цвета/.test(q)) { cmd = 'color help'; say = 'Держи палитру'; }
+                else if (show.test(q) && /истори/.test(q) && !clearVerb.test(q) && !/змейк/.test(q)) { cmd = 'history'; say = 'Вот что ты вводил'; }
+                else if (/(список|перечень) достижен|достижени[а-я]* (текстом|списком)/.test(q)) { cmd = 'ach list'; say = 'Достижения списком'; }
+                else if (/(звук[а-я]*|щелчк[а-я]*|клик[а-я]*) (клавиш|кнопок|нажатий|системы|терминала)|звуки клавиатуры/.test(q)) {
+                    cmd = /(выключ|выруб|отключ|убери|заглуш)/.test(q) ? 'sfx off' : /(включ|вруб|верни|добавь)/.test(q) ? 'sfx on' : 'sfx';
+                    say = 'Щёлкаю переключателем';
+                }
+                else if ((show.test(q) && /(информаци[а-я]* о системе|инфо о системе|систем[а-я]* (инфо|информаци)|сводк|neofetch|нефетч|характеристик)/.test(q)) || /что у тебя за система/.test(q)) { cmd = 'neofetch'; say = 'Вот моя анкета'; }
+                else if (/(сохрани|экспортируй|выгрузи|скачай|сделай бэкап|сделай резервн\w*)/.test(q) && /(прогресс|сохранени|достижени|данные|бэкап)/.test(q) || /экспорт прогресса/.test(q)) { cmd = 'export'; say = 'Сохраняю прогресс в файл'; }
+                else if (/(загрузи|импортируй|восстанови|верни)/.test(q) && /(прогресс|сохранени|бэкап|резервн)/.test(q) || /импорт прогресса/.test(q)) { cmd = 'import'; say = 'Открываю выбор файла'; }
+                else if ((show.test(q) || /(сделай|создай)/.test(q)) && /(карточк|визитк)/.test(q) || /поделиться прогрессом/.test(q)) { cmd = 'card'; say = 'Рисую карточку прогресса'; }
+                else if ((show.test(q) && /(треки|плейлист|список (треков|песен)|песни)/.test(q)) || /что в плейлисте|что сейчас играет|какой (сейчас )?трек/.test(q)) { cmd = 'tracks'; say = 'Вот плейлист'; }
+                else if (/(топ|статистик\w*|таблиц[а-я]* рекордов|рекорды)/.test(q) && /змейк/.test(q)) { cmd = 'snake best'; say = 'Смотрю таблицу рекордов'; }
+                else if (/(смени|поменяй|измени|переименуй|поставь)[а-я]* .*(ник|никнейм)/.test(q)) {
+                    const nm = raw.trim().match(/\s(?:на|в)\s+["«]?(.+?)["»]?\s*$/i);
+                    if (!nm) return 'СПАТИ: На что менять? Скажи: смени ник на Имя';
+                    cmd = 'nick ' + nm[1]; say = 'Меняю ник';
+                }
+                else if (/(какой|как) (у меня |мой )?(ник|никнейм)|мой ник|покажи (мой )?ник/.test(q)) { cmd = 'nick'; say = 'Смотрю в базе'; }
+                if (!cmd) return;
+                return spatiRunReply(cmd, true, say);
+            },
             (q) => {
                 if (!/змейк|(^| )snake( |$)/.test(q)) return;
                 if (/(закро|выключ|выруб|убери|останови)/.test(q)) {
@@ -1925,7 +1998,7 @@ TAB - дополнить, ↑↓ - история
             },
             (q) => {
                 if (!/(что|чего) (ты )?(умеешь|можешь)|твои (команды|навыки|умения)|какие у тебя (команды|навыки)|как с тобой (общаться|говорить)/.test(q)) return;
-                printTextInstant('СПАТИ УМЕЕТ:\n  сделай красным / смени цвет на синий / случайный цвет\n  включи музыку / пауза / следующий трек / громче / тише\n  сколько будет 2+2 / выбери чай или кофе\n  подбрось монетку / брось кубик / число от 1 до 100\n  покажи достижения / очисти экран / включи режим хакера / запусти змейку\n  меня зовут ... (запомню имя) / усни (разбудит echo 1)');
+                printTextInstant('СПАТИ УМЕЕТ:\n  сделай красным / смени цвет на синий / случайный цвет\n  включи музыку / пауза / следующий трек / громче / тише\n  сколько будет 2+2 / выбери чай или кофе\n  подбрось монетку / брось кубик / число от 1 до 100\n  покажи достижения / очисти экран / включи режим хакера / запусти змейку\n  выполни команду neofetch / history / tracks / snake best (любую из help)\n  покажи историю / смени ник на Имя / сохрани прогресс / сделай карточку\n  включи звуки клавиш / покажи палитру / повтори текст\n  меня зовут ... (запомню имя) / усни (разбудит echo 1)');
                 return 'СПАТИ: Вот мой репертуар. Говори как есть';
             },
             (q, raw) => {
@@ -2036,7 +2109,7 @@ TAB - дополнить, ↑↓ - история
                     consoleCommands.help();
                     return 'СПАТИ: Держи справку';
                 }
-                if (/(включ\w*|запуст\w*|активир\w*|врубай|вруби|давай|режим|стань)\w* .*хакер|взломай (систему|пентагон|матрицу|все)/.test(q)) {
+                if (/(включ\w*|запуст\w*|активир\w*|врубай|вруби|давай|режим|стань)\w* .*хакер|взломай (систему|пентагон|все)/.test(q)) {
                     unlock('spati_hacker');
                     return ['СПАТИ: Запускаю. Я тебя не знаю', startHackerMode];
                 }
@@ -2054,7 +2127,7 @@ TAB - дополнить, ↑↓ - история
                     return ['СПАТИ: Выключаю систему. Было приятно', triggerPowerOff];
                 }
                 if (/(^| )(выключись|отключись|замолчи|помолчи|заткнись|умолкни|усни|засыпай|иди спать|вырубись|тихо|спи)( |$)/.test(q)) {
-                    isSpatiEnabled = false; unlock('spati_off'); { const b = document.getElementById('spatiBtn'); if (b) b.classList.remove('on'); }
+                    isSpatiEnabled = false; unlock('spati_off'); { const b = document.getElementById('spatiBtn'); if (b) b.classList.remove('on'); } setMascot(false);
                     return 'СПАТИ: Ухожу в сон. Разбудишь кнопкой СПАТИ';
                 }
             },
@@ -2079,6 +2152,14 @@ TAB - дополнить, ↑↓ - история
                         return spOne([`СПАТИ: Беру «${pick}». Не спрашивай почему`, `СПАТИ: «${pick}». Интуиция процессора`, `СПАТИ: Определённо «${pick}»`]);
                     }
                 }
+            },
+            (q, raw) => {
+                const first = raw.trim().split(/\s+/)[0].toLowerCase().replace(/[,.:;!?]+$/, '');
+                if (!first) return;
+                const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+                const known = own(consoleCommands, first) || own(commands, first) || ['clear', 'echo', 'color', 'hacker', 'off', 'shutdown'].includes(first);
+                if (!known) return;
+                return spatiRunReply(raw.trim(), false);
             },
             (q, raw) => {
                 const low = raw.toLowerCase();
@@ -2204,17 +2285,10 @@ TAB - дополнить, ↑↓ - история
 
         // --- Спати сам подаёт голос, если долго тихо ---
         ['keydown', 'pointerdown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { spatiActivity = Date.now(); }, { passive: true }));
-        let spatiHiddenAt = 0;
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) { spatiHiddenAt = Date.now(); return; }
-            if (!spatiHiddenAt || Date.now() - spatiHiddenAt < 60000) return;
-            spatiHiddenAt = 0;
-            if (isSpatiEnabled && !isTyping && !isHackerMode && !terminalContainer.classList.contains('hidden')) {
-                printTextTyped(spOne([`СПАТИ: С возвращением${SN()}. Я не скучал. Почти`, 'СПАТИ: О, ты вернулся. Тут ничего не менялось', 'СПАТИ: Долго ты. Я пересчитал все пиксели']));
-            }
-        });
         setInterval(() => {
-            if (!isSpatiEnabled || isTyping || isHackerMode || matrixActive || document.hidden) return;
+            if (!isSpatiEnabled || isTyping || isHackerMode || document.hidden) return;
+            if (!spatiMascot || !spatiMascot.classList.contains('show') || smAsleep || smHeld || smDrag) return;
+            if (Date.now() - smSayAt < 8000) return;
             if (terminalContainer.classList.contains('hidden') || screen.classList.contains('crt-off')) return;
             if (hiddenInput && hiddenInput.value) return;
             if (Date.now() - Math.max(spatiActivity, spatiLastIdle) < spatiIdleLimit) return;
@@ -2224,9 +2298,11 @@ TAB - дополнить, ↑↓ - история
             if (!bgAudio.paused) pool.push(() => `СПАТИ: Хороший трек. ${trackLabel(currentTrackIndex)}`, 'СПАТИ: Музыка делает тишину уютнее');
             if (spPart() === 'night') pool.push(`СПАТИ: Уже поздно${SN()}. Но я не осуждаю`, 'СПАТИ: Ночью терминал светится особенно уютно');
             if (spatiMood <= -2) pool = ['СПАТИ: Я всё ещё обижен. Просто напоминаю'];
-            printTextTyped(spatiPick(pool));
+            mascotSay(spatiAfkText(spatiPick(pool)));
         }, 10000);
 
+        // AFK-реплики говорит маскот (в пузыре), а не терминал
+        const spatiAfkText = (t) => String(t).replace(/^СПАТИ:\s*/, '');
         let spatiLastReply = '';
         function spatiPick(list) {
             let reply = '';
@@ -2264,6 +2340,10 @@ TAB - дополнить, ↑↓ - история
         }
 
         function handleSpatiLogic(fullInput) {
+            forceSpati = true;
+            try { handleSpatiLogicInner(fullInput); } finally { forceSpati = false; }
+        }
+        function handleSpatiLogicInner(fullInput) {
             const cleanText = fullInput.toLowerCase().replace(/[^a-zа-я0-9\s]/gi, '').trim();
             if (cleanText.includes('кто такой зенит')) {
                 printTextTyped("СПАТИ: Зенит это не человек это мо", () => {
@@ -2313,6 +2393,993 @@ TAB - дополнить, ↑↓ - история
             });
         }
 
+        // --- Маскот Спати: призрак с открывающимся ртом ---
+        const spatiMascot = document.getElementById('spatiMascot');
+        let mouthTimer = null, thinkTimer = null, mouthFlip = false, forceSpati = false, chatterTimer = null;
+        // Мгновенные реплики Спати: рот шевелится, пока строка «говорится»
+        function mascotChatter(len) {
+            if (!spatiMascot || !isSpatiEnabled) return;
+            clearInterval(chatterTimer);
+            let n = Math.min(24, Math.max(6, Math.round(len / 2)));
+            chatterTimer = setInterval(() => {
+                if (--n <= 0 || !isSpatiEnabled) { clearInterval(chatterTimer); spatiMascot.classList.remove('open'); return; }
+                mouthFlip = !mouthFlip; spatiMascot.classList.toggle('open', mouthFlip);
+            }, 90);
+        }
+        function setMascot(on) {
+            if (!spatiMascot) return;
+            spatiMascot.classList.toggle('show', !!on);
+            document.body.classList.toggle('spati-on', !!on);
+            if (!on) { spatiMascot.classList.remove('open', 'think'); clearTimeout(mouthTimer); clearTimeout(thinkTimer); }
+            mascotToggle(!!on);
+        }
+        function mascotMouth(open) {
+            if (!spatiMascot) return;
+            clearTimeout(mouthTimer);
+            spatiMascot.classList.toggle('open', open);
+            if (open) mouthTimer = setTimeout(() => spatiMascot.classList.remove('open'), 150);
+        }
+        function mascotThink(ms) {
+            if (!spatiMascot) return;
+            clearTimeout(thinkTimer);
+            spatiMascot.classList.toggle('think', ms > 0);
+            if (ms > 0) thinkTimer = setTimeout(() => spatiMascot.classList.remove('think'), ms + 60);
+        }
+
+        // ===== Маскот: клики, перетаскивание, броски, много анимаций =====
+        const smReact = document.getElementById('spatiReact');
+        const smBubble = document.getElementById('spatiBubble');
+        const smGaze = document.getElementById('smGaze');
+        const SM_KEY = 'spatium_mascot_v1';
+        const SM_W = 96, SM_H = 104;
+        let smPos = { x: 0, y: 0 }, smMoved = false, smHeld = false, smRaf = 0;
+        let smSaved = { fx: 0, fy: 0, hint: 0, clicks: 0, m: 0 };
+        let smEmTimer = null, smAnimTimer = null, smSayTimer = null, smTypeTimer = null, smHoldTimer = null;
+        let smIdleAt = 0, smSayAt = 0, smLastReact = '', smClicks = [], smDrag = null;
+        let smAsleep = false, smSleptAt = 0, smZzzAt = 0, smStage = 0, smLastTouch = Date.now(), smWasAsleep = false, smPetTimer = null, smHoverAt = 0, smHiddenAt = 0;
+        const smPick = (a) => a[Math.floor(Math.random() * a.length)];
+        const smClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+        try {
+            const sv = JSON.parse(localStorage.getItem(SM_KEY) || 'null');
+            if (sv) { smSaved = Object.assign(smSaved, sv); smMoved = typeof sv.fx === 'number' && sv.m !== 0; }
+        } catch (e) {}
+        function smSave() {
+            const r = screen.getBoundingClientRect();
+            if (smMoved) { smSaved.fx = smPos.x / Math.max(1, r.width - SM_W); smSaved.fy = smPos.y / Math.max(1, r.height - SM_H); }
+            smSaved.m = smMoved ? 1 : 0;
+            try { localStorage.setItem(SM_KEY, JSON.stringify(smSaved)); } catch (e) {}
+        }
+        function smSetPos(x, y) {
+            const r = screen.getBoundingClientRect();
+            smPos.x = smClamp(x, 0, Math.max(0, r.width - SM_W));
+            smPos.y = smClamp(y, 0, Math.max(0, r.height - SM_H));
+            spatiMascot.style.left = smPos.x + 'px';
+            spatiMascot.style.top = smPos.y + 'px';
+        }
+        function smHome() {
+            const r = screen.getBoundingClientRect();
+            const w = document.querySelector('.window');
+            const wr = w ? w.getBoundingClientRect() : null;
+            if (wr && wr.width > 0) return { x: wr.right - r.left - SM_W - 4, y: wr.top - r.top + 30 };
+            return { x: r.width - SM_W - 20, y: 80 };
+        }
+        function smLayout() {
+            if (!spatiMascot) return;
+            const r = screen.getBoundingClientRect();
+            if (smMoved) smSetPos(smSaved.fx * (r.width - SM_W), smSaved.fy * (r.height - SM_H));
+            else { const h = smHome(); smSetPos(h.x, h.y); }
+            document.body.classList.toggle('sm-moved', smMoved);
+        }
+        window.addEventListener('resize', () => { if (spatiMascot && spatiMascot.classList.contains('show')) smLayout(); });
+
+        function smEm(em, ms) {
+            clearTimeout(smEmTimer);
+            spatiMascot.dataset.em = em || 'normal';
+            if (ms) smEmTimer = setTimeout(() => {
+                if (!smHeld && !spatiMascot.classList.contains('flying')) spatiMascot.dataset.em = 'normal';
+            }, ms);
+        }
+        function smPlay(a, ms) {
+            clearTimeout(smAnimTimer);
+            smReact.className = 'sm-react';
+            if (!smHeld && !spatiMascot.classList.contains('flying')) smReact.style.transform = '';
+            void smReact.offsetWidth;
+            if (!a) return;
+            smReact.classList.add('a-' + a);
+            smAnimTimer = setTimeout(() => { smReact.className = 'sm-react'; }, ms);
+        }
+        function mascotSay(text) {
+            if (!smBubble || !spatiMascot || !isSpatiEnabled) return;
+            if (smNight()) text = String(text).toLowerCase();   // ночью Спати говорит шёпотом
+            clearInterval(smTypeTimer); clearTimeout(smSayTimer);
+            smSayAt = Date.now();
+            const r = screen.getBoundingClientRect();
+            const right = smPos.x + SM_W / 2 > r.width / 2;
+            smBubble.className = 'sm-bubble show ' + (smPos.y < 70 ? 'down ' : 'up ') + (right ? 'r' : 'l') + (smNight() ? ' whisper' : '');
+            smBubble.textContent = '';
+            let i = 0;
+            smTypeTimer = setInterval(() => {
+                if (i >= text.length) {
+                    clearInterval(smTypeTimer); mascotMouth(false);
+                    smSayTimer = setTimeout(() => smBubble.classList.remove('show'), 1500 + text.length * 35);
+                    return;
+                }
+                const ch = text.charAt(i++);
+                smBubble.textContent += ch;
+                if (/[a-zа-яё0-9]/i.test(ch)) { mouthFlip = !mouthFlip; mascotMouth(mouthFlip); } else mascotMouth(false);
+            }, 38);
+        }
+        const smSayCool = (text, ms) => { if (Date.now() - smSayAt >= (ms || 1800)) mascotSay(text); };
+
+        const SM_R = {
+            jump:   { a: 'jump',   ms: 750,  em: 'happy',     say: ['Оп!', 'Прыг-скок!', 'Подпрыгнул. Зачёт?', 'Хоп! Гравитация, ты где?', 'Ещё выше? Я могу', 'Пружинка включена'] },
+            spin:   { a: 'spin',   ms: 950,  em: 'surprised', say: ['Вжух!', 'Кручусь-верчусь!', 'Голова не кружится. Почти', 'Юла-призрак!', 'Оборот на 720. Для стиля'] },
+            flip:   { a: 'flip',   ms: 850,  em: 'happy',     say: ['Кувырок!', 'Сальто. Без страховки', 'Ап!', 'Олимпиада, я иду', 'Приземлился. Как всегда'] },
+            squish: { a: 'squish', ms: 650,  em: 'surprised', say: ['Ай! Мягче!', 'Не дави на пиксели', 'Я не кнопка', 'Я же сплющусь', 'Блин. То есть пиксель-блин'] },
+            wink:   { a: 'sway',   ms: 1000, em: 'wink',      say: ['Подмигиваю. Чисто технически', 'Ты меня заметил', 'Это наш секрет', 'Мы с тобой одна команда', 'Моргнул. Или нет?'] },
+            shake:  { a: 'shake',  ms: 600,  em: 'angry',     say: ['Эй!', 'Не тыкай!', 'Я всё вижу', 'Я при исполнении', 'Хмуро смотрю. Видишь?'] },
+            dizzy:  { a: 'dizzy',  ms: 1700, em: 'dizzy',     say: ['Ой, всё плывёт...', 'Земля, где ты?', 'Кружится...', 'Мир стал круглым', 'Кажется, я в центрифуге'] },
+            vanish: { a: 'vanish', ms: 1400, em: 'surprised', say: ['Куку!', 'Я исчез. Или нет', 'Фокус!', 'Меня нет. Вообще', 'Хлоп, и я тут'] },
+            laugh:  { a: 'laugh',  ms: 1300, em: 'laugh',     chat: 26, say: ['Ха-ха-ха!', 'Щекотно!', 'Хи-хи', 'Не смеши, я лопну', 'Ой, не могу'] },
+            boo:    { a: 'boo',    ms: 900,  em: 'surprised', say: ['БУУ!', 'Испугался? Я тоже', 'Буу! Шутка', 'Я же призрак. Работа такая', 'Страшно? Мне тоже'] },
+            dance:  { a: 'dance',  ms: 2600, em: 'happy',     say: ['Танцую, как умею', 'Диско-терминал!', 'Раз-два-три', 'Ноги не нужны, ритм есть', 'Это называется призрачный твист'] },
+            glitch: { a: 'glitch', ms: 800,  em: 'dizzy',     say: ['С-с-сбой...', 'Ошибка 404: призрак', 'Перезагрузка... нет', 'Пиксели разбежались', 'Это не баг, это фича'] },
+            sleep:  { a: 'sleep',  ms: 3200, em: 'sleepy',    say: ['Zzz...', 'Я не сплю. Я простаиваю', 'Минуточку подремлю', 'Дай вздремнуть, а?'] },
+            inflate:{ a: 'inflate',ms: 1300, em: 'surprised', say: ['Надулся. Не от обиды', 'Я воздушный шарик!', 'Пых-пых', 'Только не лопай'] },
+            tilt:   { a: 'tilt',   ms: 1200, em: 'look',      say: ['Хм?', 'Это что-то новое', 'А ты точно человек?', 'Любопытно...', 'Не понял, но интересно'] },
+            hiccup: { a: 'hiccup', ms: 1400, em: 'surprised', say: ['Ик!', 'Ик! Простите', 'Ик! Это от нервов', 'Ик... кто-то вспоминает меня'] },
+            sneeze: { a: 'sneeze', ms: 1000, em: 'surprised', say: ['Апчхи!', 'Пыль в терминале', 'Будь здоров. То есть я', 'Апчхи! Это аллергия на баги'] },
+            stretch:{ a: 'stretch',ms: 1800, em: 'yawn' },
+            startle:{ a: 'jump',   ms: 700,  em: 'surprised', say: ['Ой! Я не спал!', 'Что? Где? Я бодрствую!', 'Я только на секундочку закрыл глаза', 'Не сплю! Совсем не сплю!'] },
+            pet:    { a: 'sway',   ms: 1800, em: 'happy',     chat: 14, say: ['Мурр...', 'Приятно...', 'Погладь ещё', 'Так и быть, разрешаю', 'Я даже не знал, что так можно'] },
+            sulk:   { a: null,     ms: 1800, em: 'sad',       say: ['Я всё ещё обижен', 'Не смотри на меня', 'Поговорим, когда извинишься', 'Отстань. Я дуюсь', 'Тыкай не тыкай, я обижен'] },
+            cheer:  { a: 'jump',   ms: 750,  em: 'happy',     say: ['Ура!', 'Достижение! Горжусь тобой', 'Так держать!', 'Ты молодец', 'Ещё одна ачивка в копилку'] },
+            wave:   { a: 'sway',   ms: 1500, em: 'happy',     say: ['О, ты вернулся!', 'Привет-привет!', 'Я ждал. Почти не скучал', 'Где пропадал?', 'С возвращением'] },
+            highfive:{ a: 'jump',  ms: 750,  em: 'happy',     chat: 12, say: ['Дай пять!', 'Есть контакт!', 'Пять! Рука у меня виртуальная', 'Бам! Пиксель к пикселю', 'Так держать, напарник'] },
+            eat:    { a: 'hop',    ms: 900,  em: 'happy',     chat: 16, say: ['Ням-ням!', 'Вкусно! Пиксельное', 'Хрум! Спасибо', 'Ещё бы одно. Шучу', 'Лучшее яблоко в терминале'] },
+            look:   { a: null,     ms: 2400, em: 'look' },
+            yawn:   { a: 'yawn',   ms: 1800, em: 'yawn' },
+            blink:  { a: null,     ms: 700,  em: 'blink' },
+            hop:    { a: 'hop',    ms: 600,  em: 'happy' },
+            sway:   { a: 'sway',   ms: 2000, em: 'normal' }
+        };
+        const SM_CLICK_POOL = ['jump', 'spin', 'flip', 'squish', 'wink', 'shake', 'dizzy', 'vanish', 'laugh', 'boo', 'dance', 'glitch', 'sleep', 'inflate', 'tilt', 'hiccup', 'sneeze'];
+        const SM_IDLE_POOL = ['look', 'yawn', 'blink', 'hop', 'sway', 'wink', 'tilt', 'hiccup', 'sneeze'];
+        const SM_IDLE_SAY = ['Я тут', 'Тихо...', 'Меня можно потрогать', 'Потаскай меня по экрану', 'Скучно. Нажми на меня', 'Я бы пошутил, но лень',
+            'Если зажать меня и не двигать, будет приятно', 'Попробуй меня бросить', 'Я считаю пиксели. Их много', 'Эй, ты там?', 'Умею танцевать. Просто тыкни'];
+        const SM_YAWN = ['Ааа-хм... Скучно', 'Зеваю. Это не намёк', 'Тихо тут. Хочется спать', 'Ты там живой?', 'Кто-то тут давно не тыкал призраков'];
+        const SM_BORED = ['Потягиваюсь. Костей нет, но хрустит', 'Может, поиграем? Просто тыкни', 'Я тут один с курсором', 'Скучаю по твоим кликам', 'Могу станцевать, если попросишь. Ну, тыкнешь'];
+        const SM_DROWSY = ['Глаза слипаются...', 'Ещё чуть-чуть и я отключусь', 'Режим энергосбережения...', 'Считаю овец. То есть байты'];
+        const SM_SNORE = ['Zzz...', 'Хр-р-р...', 'Zzz... яблоки... змейка...', 'Zz... 42...', 'Мм... байты...', 'Zzz... Зенит...'];
+        const SM_WAKE = ['Мм? Я не спал', 'О, ты здесь. Я просто моргал', 'Доброе утро? Или вечер?', 'Ой. Я что, заснул?'];
+        const SM_MILESTONES = { 10: 'Десять касаний. Я начинаю привыкать', 25: 'Ты любишь меня тыкать, да?', 50: 'У меня тоже есть чувства. Пиксельные',
+            100: 'Сотый клик! Мы теперь друзья', 250: 'Меня зовут Спати. Ты уже запомнил', 500: 'Пятьсот. Я записал тебя в друзья' };
+        const SM_WHEEL = ['Я не колёсико!', 'Вжух-вжух!', 'Кручусь, как просили', 'Прокрутка не сработает', 'Эй, это мне, а не странице'];
+        const SM_APPLE_SEE = ['О! Яблоко! Дашь?', 'Яблоко! Тыкни на него', 'Оно само упало, честно', 'Хочу это яблоко...'];
+        const SM_APPLE_MISS = ['Яблоко ушло. Грущу', 'Эх, не успели', 'Ну и ладно. Я не голоден. Почти'];
+        const SM_EAT = ['Ням-ням!', 'Вкусно! Пиксельное', 'Хрум! Спасибо', 'Лучшее яблоко в терминале', 'Ещё бы одно. Шучу'];
+        const SM_CMD = {
+            clear: { r: 'sneeze', p: 1,  say: ['Апчхи! Пыль со старых логов', 'Чисто. Даже я чихнул'] },
+            hacker:{ r: 'glitch', p: 1,  say: ['Я ничего не видел', 'Это точно легально?', 'Хакер... я в шоке'] },
+            off:   { r: 'yawn',   p: 1,  say: ['Спокойной ночи', 'Выключаемся? Я посплю'] },
+            echo:  { r: 'tilt',   p: .5, say: ['Эхо-эхо-эхо...', 'Повторяю за тобой. Нет, это ты повторяешь'] },
+            history:{ r: 'look',  p: .6, say: ['Ого, сколько всего ты набрал', 'Читаю твою историю. Тихо'] },
+            help:  { r: 'tilt',   p: .4, say: ['Подсказка? Я тоже иногда читаю', 'help — наш общий друг'] },
+            vol:   { r: 'sway',   p: .4, say: ['Громкость — это ответственность', 'Ушки берегите'] },
+            neofetch:{ r: 'wink', p: .6, say: ['Это моя прописка', 'Системная сводка. Я там главный'] },
+            export:{ r: 'hop',    p: .7, say: ['Сохраняемся? Умно', 'Прогресс в безопасности'] },
+            import:{ r: 'look',   p: .7, say: ['Загружаем прошлое...', 'Надеюсь, я там симпатичный'] }
+        };
+        const SM_CMD_LONG = { r: 'tilt', p: .7, say: ['Это что, роман?', 'Длинная команда. Я устал читать', 'Ого, целое сочинение'] };
+        // реакции на команды терминала (arg-aware: rm -rf, sudo, fork-бомба, повторы)
+        const SM_CMD_X = {
+            rmrf:     { r: 'glitch', em: 'surprised', p: 1, force: 1,
+                        say: ['НЕ НАДО! Я здесь живу!', 'Стой! Там же всё моё!', 'Положи rm! Медленно!', 'Я не готов исчезнуть!'],
+                        after: { ms: 3200, r: 'sway', em: 'happy', say: ['Фух. Система цела. Не пугай меня так', 'Отбились. Spatium OS стоит крепко', 'Я чуть не стал воспоминанием'] } },
+            forkbomb: { r: 'dizzy', em: 'dizzy', p: 1, force: 1,
+                        say: ['Это что за заклинание? Процессор греется', 'Процессы размножаются! Я боюсь!', 'Двоеточие со скобками? Это опасно'] },
+            sudo:     { r: 'shake', em: 'angry', p: 1, force: 1,
+                        say: ['Ты не в списке. Я тоже, но молчу', 'Sudo? Здесь все равны. Особенно ты', 'Права root? Рановато'] },
+            rm:       { r: 'tilt', p: .8, say: ['Что ты собрался удалять?', 'Осторожнее с rm. Тут всё родное'] },
+            snake:    { r: 'hop', em: 'happy', p: 1, say: ['Змейка! Я болею за тебя', 'Играем? Я на трибунах', 'Змейка! Я за тебя, а не за змею'] },
+            whoami:   { r: 'wink', p: .9, say: ['Ты — это ты. А я — Спати', 'Хороший вопрос. Спроси что-нибудь попроще'] },
+            ls:       { r: 'look', p: .5, say: ['Тут всё моё. Ну, почти', 'Смотрю, что в папке. Вроде ничего'] },
+            exit:     { r: 'sway', em: 'sad', p: 1, say: ['Уходишь? Я останусь. В тишине', 'Выход — это только слово'] },
+            card:     { r: 'wink', p: .8, say: ['Карточка! Покажешь друзьям?', 'Хвастаться — это нормально'] },
+            nick:     { r: 'tilt', p: .6, say: ['Новое имя? Запомню', 'Имя — это важно. Особенно твоё'] },
+            sfx:      { r: 'sway', p: .5, say: ['Тик-тик-тик. Люблю клавиши', 'Звуки клавиш — это музыка терминала'] },
+            mute:     { r: 'tilt', em: 'sad', p: .7, say: ['Тишина... Слышу, как бьётся курсор', 'Без звука тоже уютно'] },
+            tracks:   { r: 'sway', p: .6, say: ['Много треков. Выбирай', 'Люблю смотреть на плейлисты'] },
+            hello:    { r: 'wave', p: 1, say: ['Привет-привет!', 'О, поздоровался. Приятно'] },
+            time:     { r: 'look', p: .5, say: ['Для призрака время — понятие относительное', 'Я всегда знаю, который час. Но молчу'] }
+        };
+        SM_CMD_X.cd = SM_CMD_X.pwd = SM_CMD_X.cat = SM_CMD_X.ls;
+        SM_CMD_X.quit = SM_CMD_X.exit;
+        SM_CMD_X['привет'] = SM_CMD_X.hello;
+        SM_CMD_X.date = SM_CMD_X.time;
+        const smOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k) ? o[k] : null;
+        const SM_REPEAT = ['Ты повторяешься. Это ритуал?', 'Третий раз подряд. Я всё понял с первого', 'Эта команда тебе очень дорога, да?'];
+        let smCmdAt = 0, smLastCmdLine = '', smSameCmd = 0, smRepeatAt = 0;
+        function smCmdKey(name, cmd) {
+            const low = cmd.toLowerCase();
+            if (/:\(\)\s*\{/.test(cmd)) return 'forkbomb';
+            if (/(^|\s)rm(\s|$)/.test(low) && (/(^|\s)-\w*(rf|fr)\w*(\s|$)/.test(low) || /--no-preserve-root/.test(low))) return 'rmrf';
+            if (name === 'shutdown') return 'off';
+            return name;
+        }
+        function mascotCmd(name, cmd) {
+            try {
+                if (!isSpatiEnabled || !spatiMascot || !spatiMascot.classList.contains('show') || smHeld || smRaf || smDrag) return;
+                const now = Date.now();
+                const line = cmd.toLowerCase().replace(/\s+/g, ' ').trim();
+                smSameCmd = line === smLastCmdLine ? smSameCmd + 1 : 1;
+                smLastCmdLine = line;
+                if (smSameCmd >= 3 && now - smRepeatAt > 15000 && !smAsleep) {
+                    smRepeatAt = now; smCmdAt = now;
+                    setTimeout(() => {
+                        if (!isSpatiEnabled || smHeld || smRaf || smDrag || smAsleep) return;
+                        mascotReact('tilt', true); mascotSay(smPick(SM_REPEAT));
+                    }, 350);
+                    return;
+                }
+                const key = smCmdKey(name, cmd);
+                const e = smOwn(SM_CMD_X, key) || smOwn(SM_CMD, key) || (cmd.length > 60 ? SM_CMD_LONG : null);
+                if (!e) return;
+                if (smAsleep) { if (!e.force) return; smTouch(); }   // важное будит
+                if (!e.force && now - smCmdAt < 6000) return;
+                if (Math.random() > e.p) return;
+                smCmdAt = now;
+                setTimeout(() => {
+                    if (!isSpatiEnabled || smHeld || smRaf || smDrag || smAsleep) return;
+                    mascotReact(e.r, true);
+                    if (e.em) smEm(e.em, 1600);
+                    mascotSay(smPick(e.say));
+                    if (e.after) setTimeout(() => {
+                        if (!isSpatiEnabled || smHeld || smRaf || smDrag || smAsleep) return;
+                        mascotReact(e.after.r, true); smEm(e.after.em, 1600); mascotSay(smPick(e.after.say));
+                    }, e.after.ms);
+                }, 350);
+            } catch (err) {}
+        }
+
+        // --- яблоко: Спати просит угостить ---
+        const SM_APPLE_MAP = ['....##..', '...#....', '.######.', '########', '########', '########', '.######.', '..#..#..'];
+        let smApple = null, smAppleTimer = null, smAppleAt = Date.now();
+        function smAppleSvg() {
+            let r = '';
+            SM_APPLE_MAP.forEach((row, y) => { for (let x = 0; x < 8; x++) if (row[x] === '#') r += `<rect x="${x}" y="${y}" width="1" height="1"/>`; });
+            return `<svg viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${r}</svg>`;
+        }
+        function smSpawnApple() {
+            if (smApple || !spatiMascot) return;
+            const r = screen.getBoundingClientRect();
+            const toLeft = smPos.x + SM_W / 2 > r.width / 2;
+            const x = smClamp(toLeft ? smPos.x - 46 : smPos.x + SM_W + 8, 4, Math.max(4, r.width - 44));
+            const y = smClamp(smPos.y + SM_H - 44, 4, Math.max(4, r.height - 44));
+            const el = document.createElement('button');
+            el.type = 'button'; el.className = 'sm-apple'; el.setAttribute('aria-label', 'Яблоко для Спати');
+            el.innerHTML = smAppleSvg();
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            el.addEventListener('click', (e) => e.stopPropagation());
+            el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); smEatApple(); });
+            screen.appendChild(el);
+            smApple = el; smAppleAt = Date.now();
+            smEm('surprised', 900);
+            mascotSay(smPick(SM_APPLE_SEE));
+            clearTimeout(smAppleTimer);
+            smAppleTimer = setTimeout(() => smDropApple(true), 16000);
+        }
+        function smEatApple() {
+            const el = smApple;
+            if (!el) return;
+            smApple = null; clearTimeout(smAppleTimer);
+            smTouch();
+            el.classList.add('eaten');
+            el.style.left = (smPos.x + SM_W / 2 - 20) + 'px';
+            el.style.top = (smPos.y + SM_H * .4) + 'px';
+            setTimeout(() => el.remove(), 380);
+            setTimeout(() => {
+                if (!isSpatiEnabled) return;
+                smSaved.fed = (smSaved.fed || 0) + 1; smSave();
+                if (smSaved.fed >= 5) unlock('sm_feed5');
+                if (smSaved.fed >= 25) unlock('sm_feed25');
+                mascotReact('eat', true);
+                mascotSay(smSaved.fed === 1 ? 'Первое яблоко! Я твой должник' : smPick(SM_EAT));
+            }, 300);
+        }
+        function smDropApple(missed) {
+            const el = smApple;
+            if (!el) return;
+            smApple = null; clearTimeout(smAppleTimer);
+            el.classList.add('gone');
+            setTimeout(() => el.remove(), 420);
+            if (missed && isSpatiEnabled && !smAsleep) { smEm('sad', 1600); mascotSay(smPick(SM_APPLE_MISS)); }
+        }
+
+        const SM_BACK = [() => `С возвращением${SN()}. Я не скучал. Почти`, 'О, ты вернулся. Тут ничего не менялось', 'Долго ты. Я пересчитал все пиксели'];
+        const SM_COLOR = ['О, новый цвет!', 'Так я тоже красивее', 'Глаза привыкают', 'Теперь я в тон', 'Мне идёт. Скажи, что идёт'];
+        const SM_UNKNOWN = ['Такой команды нет', 'Опечатка?', 'Хм, не знаю такого', 'help — твой друг', 'Терминал не понял. Я тоже'];
+        const SM_MUSIC = ['Музыка! Люблю', 'О, трек. Качает', 'Ноги сами. То есть их нет', 'Давай погромче. Хотя нет'];
+        const SM_QUIET = ['Тишина...', 'Музыку выключили. Грустно', 'Стало тихо. Слышу себя'];
+        const SM_HOLD = ['Ой! Поставь на место', 'Эй, я лечу!', 'Осторожно, я нежный', 'Держи крепче!', 'Меня ещё никто так не носил', 'Я не багаж!', 'Только не урони'];
+        const SM_BORED_HOLD = ['Ну поставь уже...', 'Я тут вишу как флаг', 'Рука не устала?', 'Красивый вид отсюда. Хотя везде одинаково'];
+        const SM_THROW = ['Аааа!', 'Я лечу-у-у!', 'Только не в стену!', 'Свободное падение!', 'Мама, я пиксель-ракета!'];
+        const SM_BUMP = ['Бум!', 'Ай!', 'Стена!', 'Ох!', 'Мягкая посадка. Нет, жёсткая'];
+        const SM_LAND = ['Спасибо, тут уютнее', 'Новое место. Мне нравится', 'Ставь аккуратнее в следующий раз', 'Вид отсюда лучше', 'Тут сквозняк. Шучу, мне нравится'];
+        const SM_SHAKE = ['Укачивает...', 'Меня трясёт!', 'Я не коктейль!', 'Взбалтывать не надо'];
+
+        function mascotReact(name, quiet) {
+            const r = SM_R[name];
+            if (!r || !smReact) return;
+            if (smAsleep && name !== 'startle') return;
+            smLastReact = name;
+            smPlay(r.a, r.ms);
+            smEm(r.em, r.ms);
+            if (r.chat) mascotChatter(r.chat);
+            if (!quiet && r.say) mascotSay(smPick(r.say));
+        }
+        function mascotFlee() {
+            mascotSay('Всё, я домой!');
+            smPlay('vanish', 1400); smEm('surprised', 1400);
+            setTimeout(() => {
+                smMoved = false; smSave(); smLayout();
+            }, 520);
+        }
+        function mascotHome() {
+            if (!spatiMascot) return;
+            smMoved = false; smSave();
+            spatiMascot.classList.add('gliding');
+            smLayout();
+            smPlay('hop', 600); smEm('happy', 900);
+            setTimeout(() => spatiMascot.classList.remove('gliding'), 750);
+        }
+        function smTouch() {
+            const now = Date.now();
+            smLastTouch = now; smStage = 0; spatiActivity = now; smIdleAt = now + 15000;
+            if (smAsleep) smWakeState();
+        }
+        function smSleep() {
+            smAsleep = true; smSleptAt = Date.now(); smZzzAt = Date.now() + 1500;
+            spatiMascot.classList.add('asleep');
+            smPlay(null); smEm('sleepy');
+            mascotSay(smPick(SM_SNORE));
+        }
+        function smWakeState() {
+            smAsleep = false;
+            spatiMascot.classList.remove('asleep');
+            smEm('normal');
+        }
+        function smClick() {
+            const now = Date.now();
+            smClicks = smClicks.filter(t => now - t < 3500);
+            smClicks.push(now);
+            const n = smClicks.length;
+            if (smWasAsleep) { smWasAsleep = false; mascotReact('startle'); return; }
+            smSaved.clicks = (smSaved.clicks || 0) + 1; smSave();
+            const mile = SM_MILESTONES[smSaved.clicks];
+            if (mile) { mascotReact('cheer', true); mascotSay(mile); return; }
+            if (n === 2 && smClicks[1] - smClicks[0] < 420) { unlock('sm_high5'); mascotReact('highfive'); return; }
+            if (n >= 12) { smClicks = []; mascotFlee(); return; }
+            if (n >= 6) {
+                mascotReact(n % 2 ? 'laugh' : 'shake', n > 7);
+                if (n === 6) mascotSay('Щекотно! Хватит!');
+                if (n === 10) mascotSay('Ещё чуть-чуть и я сбегу!');
+                return;
+            }
+            if (spatiMood <= -2 && Math.random() < .5) { mascotReact('sulk'); return; }
+            let name;
+            do { name = smPick(SM_CLICK_POOL); } while (name === smLastReact);
+            mascotReact(name);
+        }
+
+        // --- перетаскивание и броски ---
+        function smStartHold() {
+            smHeld = true;
+            clearTimeout(smPetTimer); smWasAsleep = false;
+            cancelAnimationFrame(smRaf); smRaf = 0;
+            spatiMascot.classList.remove('flying');
+            smMoved = true;
+            document.body.classList.add('sm-moved');
+            smPlay(null);
+            spatiMascot.classList.add('held');
+            smEm('surprised');
+            mascotSay(smPick(SM_HOLD));
+            clearTimeout(smHoldTimer);
+            smHoldTimer = setTimeout(() => {
+                if (smHeld) { smEm('sad'); smSayCool(smPick(SM_BORED_HOLD), 800); }
+            }, 3500);
+        }
+        function smEndHold(vx, vy) {
+            smHeld = false;
+            clearTimeout(smHoldTimer);
+            spatiMascot.classList.remove('held');
+            smReact.style.transform = '';
+            const speed = Math.hypot(vx, vy);
+            if (speed > .45) {
+                smEm('surprised');
+                smSayCool(smPick(SM_THROW), 400);
+                smFly(vx, vy);
+            } else {
+                smEm('normal'); smPlay('land', 450); smSave();
+                if (Math.random() < .5) mascotSay(smPick(SM_LAND));
+            }
+        }
+        function smFly(vx, vy) {
+            spatiMascot.classList.add('flying');
+            let last = performance.now(), bounces = 0, lastBump = 0;
+            const step = (now) => {
+                if (!isSpatiEnabled) return;
+                const dt = Math.min(34, now - last); last = now;
+                const r = screen.getBoundingClientRect();
+                const maxX = r.width - SM_W, maxY = r.height - SM_H;
+                let x = smPos.x + vx * dt, y = smPos.y + vy * dt, hit = false;
+                if (x < 0) { x = 0; vx = Math.abs(vx) * .75; hit = true; } else if (x > maxX) { x = maxX; vx = -Math.abs(vx) * .75; hit = true; }
+                if (y < 0) { y = 0; vy = Math.abs(vy) * .75; hit = true; } else if (y > maxY) { y = maxY; vy = -Math.abs(vy) * .75; hit = true; }
+                const f = Math.pow(.955, dt / 16); vx *= f; vy *= f;
+                smSetPos(x, y);
+                smReact.style.transform = 'rotate(' + smClamp(vx * 22, -30, 30) + 'deg)';
+                if (hit && Math.hypot(vx, vy) > .12 && now - lastBump > 300) {
+                    lastBump = now; bounces++;
+                    smReact.className = 'sm-react'; void smReact.offsetWidth; smReact.classList.add('a-bump');
+                    smSayCool(smPick(SM_BUMP), 1500);
+                }
+                if (Math.hypot(vx, vy) < .05) {
+                    smRaf = 0;
+                    spatiMascot.classList.remove('flying');
+                    smReact.style.transform = '';
+                    if (bounces >= 3) { smPlay('dizzy', 1700); smEm('dizzy', 1700); mascotSay('Голова кружится...'); }
+                    else { smPlay('land', 450); smEm('normal'); }
+                    smSave();
+                    return;
+                }
+                smRaf = requestAnimationFrame(step);
+            };
+            smRaf = requestAnimationFrame(step);
+        }
+        if (spatiMascot) {
+            spatiMascot.addEventListener('click', (e) => e.stopPropagation());
+            let smWheelAt = 0;
+            spatiMascot.addEventListener('wheel', (e) => {
+                if (!isSpatiEnabled || !spatiMascot.classList.contains('show')) return;
+                e.preventDefault();
+                const now = Date.now();
+                if (now - smWheelAt < 1400 || smHeld || smRaf || smDrag) return;
+                smWheelAt = now; smTouch();
+                mascotReact('spin', true);
+                mascotSay(smPick(SM_WHEEL));
+            }, { passive: false });
+            spatiMascot.addEventListener('pointerenter', (e) => {
+                if (e.pointerType !== 'mouse' || smHeld || smRaf || smAsleep || !isSpatiEnabled) return;
+                const now = Date.now();
+                if (now - smHoverAt < 5000) return;
+                smHoverAt = now;
+                smEm('surprised', 700);
+                if (Math.random() < .2) mascotSay(smPick(['Хм?', 'Ты ко мне?', 'О, курсор!', 'Заметил меня?']));
+            });
+            spatiMascot.addEventListener('pointerdown', (e) => {
+                if (!isSpatiEnabled || !spatiMascot.classList.contains('show')) return;
+                e.preventDefault(); e.stopPropagation();
+                smWasAsleep = smAsleep; smTouch();
+                if (smRaf) { cancelAnimationFrame(smRaf); smRaf = 0; spatiMascot.classList.remove('flying'); smReact.style.transform = ''; }
+                try { spatiMascot.setPointerCapture(e.pointerId); } catch (err) {}
+                const r = screen.getBoundingClientRect();
+                smDrag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: e.clientX - r.left - smPos.x, oy: e.clientY - r.top - smPos.y,
+                    moved: false, samples: [], dir: 0, flips: [], dizzyAt: 0, pet: false };
+                clearTimeout(smPetTimer);
+                smPetTimer = setTimeout(() => {
+                    if (smDrag && !smDrag.moved) { smDrag.pet = true; smEm('happy'); }
+                }, 650);
+            });
+            spatiMascot.addEventListener('pointermove', (e) => {
+                const d = smDrag;
+                if (!d || e.pointerId !== d.id) return;
+                if (!d.moved) {
+                    if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 6) return;
+                    d.moved = true; smStartHold();
+                }
+                const r = screen.getBoundingClientRect();
+                const px = smPos.x;
+                smSetPos(e.clientX - r.left - d.ox, e.clientY - r.top - d.oy);
+                const t = performance.now();
+                d.samples.push({ t, x: smPos.x, y: smPos.y });
+                while (d.samples.length > 2 && t - d.samples[0].t > 110) d.samples.shift();
+                const a = d.samples[0], b = d.samples[d.samples.length - 1];
+                const vx = b.t > a.t ? (b.x - a.x) / (b.t - a.t) : 0;
+                smReact.style.transform = 'rotate(' + smClamp(vx * 18, -28, 28) + 'deg)';
+                // тряска: быстрая смена направления
+                const dx = smPos.x - px;
+                if (Math.abs(dx) > 3) {
+                    const dir = dx > 0 ? 1 : -1;
+                    if (d.dir && dir !== d.dir) d.flips.push(t);
+                    d.dir = dir;
+                    d.flips = d.flips.filter(x => t - x < 900);
+                    if (d.flips.length >= 6 && t - d.dizzyAt > 3000) {
+                        d.dizzyAt = t; d.flips = [];
+                        smEm('dizzy'); mascotSay(smPick(SM_SHAKE));
+                    }
+                }
+            });
+            const smUp = (e, cancel) => {
+                const d = smDrag;
+                if (!d || e.pointerId !== d.id) return;
+                smDrag = null;
+                clearTimeout(smPetTimer);
+                try { spatiMascot.releasePointerCapture(e.pointerId); } catch (err) {}
+                if (!d.moved) {
+                    if (cancel) { smWasAsleep = false; if (d.pet) smEm('normal'); return; }
+                    if (d.pet && !smWasAsleep) { smSaved.clicks = (smSaved.clicks || 0) + 1; smSave(); mascotReact('pet'); } else smClick();
+                    return;
+                }
+                let vx = 0, vy = 0;
+                const n = d.samples.length;
+                if (n > 1) {
+                    const a = d.samples[0], b = d.samples[n - 1];
+                    if (performance.now() - b.t < 90 && b.t > a.t) { vx = (b.x - a.x) / (b.t - a.t); vy = (b.y - a.y) / (b.t - a.t); }
+                }
+                smEndHold(vx, vy);
+            };
+            spatiMascot.addEventListener('pointerup', (e) => smUp(e, false));
+            spatiMascot.addEventListener('pointercancel', (e) => smUp(e, true));
+        }
+
+        // --- глаза следят за курсором ---
+        let smLookRaf = 0, smLookX = 0, smLookY = 0;
+        document.addEventListener('pointermove', (e) => {
+            smLookX = e.clientX; smLookY = e.clientY;
+            if (smLookRaf || !isSpatiEnabled || !spatiMascot) return;
+            smLookRaf = requestAnimationFrame(() => {
+                smLookRaf = 0;
+                const r = spatiMascot.getBoundingClientRect();
+                const dx = smLookX - (r.left + r.width / 2), dy = smLookY - (r.top + r.height * .4);
+                const dist = Math.hypot(dx, dy) || 1, k = Math.min(1, dist / 120);
+                smGaze.style.setProperty('--gx', (dx / dist * .38 * k).toFixed(2) + 'px');
+                smGaze.style.setProperty('--gy', (dy / dist * .3 * k).toFixed(2) + 'px');
+            });
+        }, { passive: true });
+
+        // --- Спати комментирует достижения ---
+        const smPl = (n, a, b, c) => { const m = Math.abs(n) % 100, k = m % 10; return m > 10 && m < 20 ? c : k > 1 && k < 5 ? b : k === 1 ? a : c; };
+        // для достижений с числом: [нужно, сколько сделано, «что осталось»]
+        function achProgress(a) {
+            const st = state.stats, sk = st.snake || {};
+            const times = (n) => `${n} ${smPl(n, 'раз', 'раза', 'раз')}`;
+            const mk = (need, cur, left) => ({ need, cur, left });
+            const G = {
+                visits: [{ regular: 3, regular10: 10, regular25: 25, regular50: 50, regular100: 100 }, () => st.visits || 0, (n) => `зайти в систему ещё ${times(n)}`],
+                cmds: [{ cmd10: 10, cmd50: 50, cmd100: 100, cmd200: 200, cmd500: 500, cmd1000: 1000 }, () => st.cmds || 0, (n) => `выполнить ещё ${n} ${smPl(n, 'команду', 'команды', 'команд')}`],
+                talks: [{ chatty: 5, spati_10: 10, spati_friend: 20, spati_50: 50, spati_legend: 100, spati_250: 250 }, () => st.spatiTalks || 0, (n) => `задать мне ещё ${n} ${smPl(n, 'вопрос', 'вопроса', 'вопросов')}`],
+                colors: [{ rainbow: 5, chameleon: 15 }, () => (st.colors || []).length, (n) => `попробовать ещё ${n} ${smPl(n, 'цвет', 'цвета', 'цветов')}`],
+                games: [{ snake_games5: 5, snake_games25: 25 }, () => sk.games || 0, (n) => `сыграть ещё ${n} ${smPl(n, 'партию', 'партии', 'партий')}`],
+                apples: [{ snake_total200: 200, snake_total1000: 1000 }, () => sk.apples || 0, (n) => `съесть ещё ${n} ${smPl(n, 'яблоко', 'яблока', 'яблок')}`],
+                bonus: [{ snake_bonus5: 5 }, () => sk.bonus || 0, (n) => `съесть ещё ${n} ${smPl(n, 'бонусное яблоко', 'бонусных яблока', 'бонусных яблок')}`],
+                scmd: [{ spati_cmd5: 5, spati_cmd25: 25 }, () => st.spatiCmds || 0, (n) => `выполнить через меня ещё ${n} ${smPl(n, 'команду', 'команды', 'команд')}`],
+                fed: [{ sm_feed5: 5, sm_feed25: 25 }, () => smSaved.fed || 0, (n) => `накормить меня ещё ${n} ${smPl(n, 'яблоком', 'яблоками', 'яблоками')}`],
+                click: [{ nerves: 30 }, () => clickCount, (n) => `кликнуть по экрану ещё ${times(n)} за заход`],
+                logo: [{ logo5: 5, logo25: 25 }, () => logoClicks, (n) => `кликнуть по логотипу S_ ещё ${times(n)}`],
+                unk: [{ unknown5: 5, unknown20: 20, unknown50: 50 }, () => unknownRuns, (n) => `ввести ещё ${n} ${smPl(n, 'несуществующую команду', 'несуществующие команды', 'несуществующих команд')}`],
+                help: [{ help3: 3 }, () => helpRuns, (n) => `открыть help ещё ${times(n)}`],
+                echo: [{ echo10: 10 }, () => echoRuns, (n) => `использовать echo ещё ${times(n)}`],
+                clr: [{ clear5: 5 }, () => clearRuns, (n) => `очистить экран ещё ${times(n)}`],
+                sess: [{ cmd_session100: 100 }, () => sessionCmds, (n) => `выполнить ещё ${n} ${smPl(n, 'команду', 'команды', 'команд')} за заход`],
+                spree: [{ color_spree: 50 }, () => colorSpree, (n) => `сменить цвет ещё ${times(n)}`],
+                skip: [{ skipper: 10, skipper100: 100 }, () => skipCount, (n) => `переключить трек ещё ${times(n)}`],
+                ended: [{ listener10: 10 }, () => endedTracks, (n) => `дослушать ещё ${n} ${smPl(n, 'трек', 'трека', 'треков')}`],
+                hack: [{ paranoid: 3 }, () => hackerRuns, (n) => `запустить режим хакера ещё ${times(n)}`]
+            };
+            for (const k in G) {
+                const need = G[k][0][a.id];
+                if (need) return mk(need, G[k][1](), G[k][2]);
+            }
+            // по времени (в минутах)
+            const minLeft = (sec) => Math.max(1, Math.ceil(sec / 60));
+            if (a.id === 'dj_hour') return mk(3600, musicSeconds, () => `слушать музыку ещё ${minLeft(3600 - musicSeconds)} мин`);
+            if (a.id === 'marathon' || a.id === 'long_session') {
+                const need = a.id === 'marathon' ? 600 : 3600, cur = Math.floor((Date.now() - achSessionStart) / 1000);
+                return mk(need, cur, () => `просидеть в системе ещё ${minLeft(need - cur)} мин`);
+            }
+            return null;
+        }
+        const SM_ACH_DONE = ['Это уже у тебя!', 'Открыто. Горжусь', 'Есть такое. Красиво', 'Уже в коллекции'];
+        const SM_ACH_SECRET = ['Секрет! Я не расскажу', 'Тут тайна. Нажми — будет подсказка', 'Скрытое. Я бы подсказал, но молчу', 'Хм, сам хотел бы знать'];
+        let smAchAt = 0, smAchId = '';
+        function mascotAchHover(a, force) {
+            try {
+                if (!isSpatiEnabled || !spatiMascot || !spatiMascot.classList.contains('show') || smAsleep || smHeld || smDrag || smRaf) return;
+                const now = Date.now();
+                if (smAchId === a.id && now - smAchAt < 6000) return;
+                if (!force && now - smAchAt < 1800) return;
+                const done = !!state.ach[a.id], secret = a.hidden && !done;
+                let text = '', em = 'look';
+                if (secret) text = smPick(SM_ACH_SECRET);
+                else if (done) { if (Math.random() < .5) return; text = smPick(SM_ACH_DONE); em = 'happy'; }
+                else {
+                    const p = achProgress(a);
+                    if (!p) return;
+                    const n = Math.max(1, p.need - p.cur);
+                    text = `До «${a.title}»: ${p.left(n)}${n <= 3 ? '. Почти!' : ''}`;
+                }
+                smAchAt = now; smAchId = a.id;
+                smEm(em, 1800);
+                mascotSay(text);
+            } catch (e) {}
+        }
+        let smAchOpenAt = 0;
+        function mascotAchOpen() {
+            try {
+                if (!isSpatiEnabled || !spatiMascot || !spatiMascot.classList.contains('show') || smAsleep || smHeld || smDrag) return;
+                const now = Date.now();
+                if (now - smAchOpenAt < 4000) return;
+                smAchOpenAt = now;
+                const total = ACHIEVEMENTS.length, got = unlockedCount(), pct = total ? Math.round(got / total * 100) : 0;
+                let text;
+                if (got === 0) text = smPick(['Пока пусто. Зато всё впереди', 'Ни одного? Давай начнём']);
+                else if (pct < 10) text = smPick(['Первые шаги. Дальше — больше', 'Начало положено']);
+                else if (pct < 25) text = smPick(['Неплохо! Но есть куда расти', 'Уже что-то. Продолжай']);
+                else if (pct < 50) text = smPick(['Ого, уже прилично!', 'Коллекция растёт. Нравится']);
+                else if (pct < 75) text = `Вау, как много! ${got} из ${total}`;
+                else if (pct < 100) text = smPick(['Вау, как много! Осталось совсем чуть-чуть', 'Почти всё собрал. Горжусь']);
+                else text = smPick(['Все до одного?! Ты легенда', 'Сто процентов. Снимаю шляпу']);
+                setTimeout(() => {
+                    if (!achWindowOpen || !isSpatiEnabled || smHeld || smAsleep) return;
+                    mascotReact(pct >= 50 ? 'cheer' : 'look', true);
+                    mascotSay(text);
+                }, 500);
+            } catch (e) {}
+        }
+
+        // --- при наборе текста Спати смотрит на строку ввода ---
+        if (hiddenInput && commandInputText) {
+            hiddenInput.addEventListener('input', () => {
+                if (!isSpatiEnabled || !spatiMascot || smAsleep || smHeld || !spatiMascot.classList.contains('show')) return;
+                const tr = commandInputText.getBoundingClientRect();
+                const r = spatiMascot.getBoundingClientRect();
+                const dx = tr.right - (r.left + r.width / 2), dy = tr.top + tr.height / 2 - (r.top + r.height * .4);
+                const dist = Math.hypot(dx, dy) || 1;
+                smGaze.style.setProperty('--gx', (dx / dist * .38).toFixed(2) + 'px');
+                smGaze.style.setProperty('--gy', (dy / dist * .3).toFixed(2) + 'px');
+            });
+        }
+
+        // --- сам по себе: скучает, зевает, засыпает, оглядывается ---
+        setInterval(() => {
+            if (!isSpatiEnabled || !spatiMascot || !spatiMascot.classList.contains('show')) return;
+            if (smHeld || smRaf || smDrag || document.hidden) return;
+            const now = Date.now();
+            if (smAsleep) {
+                if (spatiActivity > smSleptAt + 500) {
+                    smWakeState(); smStage = 2; smLastTouch = now - 100000;
+                    mascotReact('yawn', true); mascotSay(smPick(SM_WAKE));
+                } else if (now >= smZzzAt) {
+                    smZzzAt = now + 6500 + Math.random() * 3000;
+                    mascotSay(smPick(SM_SNORE));
+                }
+                return;
+            }
+            if (isTyping) return;
+            if (!smApple && now - smAppleAt > 90000 && now - smLastTouch > 30000 && now - spatiActivity < 20000 && Math.random() < .08
+                && !document.querySelector('.ach-window:not(.hidden), .music-player-modal:not(.hidden)')) { smSpawnApple(); return; }
+            const idle = now - smLastTouch;
+            if (smStage < 1 && idle > 40000 * smTimeK()) { smStage = 1; mascotReact('yawn', true); mascotSay(smPick(SM_YAWN)); return; }
+            if (smStage < 2 && idle > 80000 * smTimeK()) { smStage = 2; mascotReact('stretch', true); mascotSay(smPick(SM_BORED)); return; }
+            if (smStage < 3 && idle > 130000 * smTimeK()) { smStage = 3; smEm('sleepy', 4000); mascotSay(smPick(SM_DROWSY)); return; }
+            if (smStage < 4 && idle > 190000 * smTimeK() && now - spatiActivity > 45000 * smTimeK()) { smStage = 4; smSleep(); return; }
+            if (now < smIdleAt) return;
+            smIdleAt = now + 12000 + Math.random() * 18000;
+            let pool = SM_IDLE_POOL.slice();
+            if (!bgAudio.paused) pool.push('sway', 'dance', 'hop', 'sway');
+            if (spatiMood >= 2) pool.push('hop', 'dance', 'jump');
+            if (spatiMood <= -2) pool = ['sulk', 'sulk', 'look', 'blink'];
+            mascotReact(smPick(pool), true);
+            if (Math.random() < .25) mascotSay(smPick(smIdleLines()));
+        }, 2500);
+
+        // --- реакции на события системы ---
+        const smEvAt = {};
+        const SM_EV_CD = { ach: 4000, color: 7000, unknown: 9000, play: 20000, pause: 20000, back: 1000 };
+        function mascotEvent(type) {
+            try {
+                if (!isSpatiEnabled || !spatiMascot || !spatiMascot.classList.contains('show') || smHeld || smRaf || smDrag) return;
+                if (smAsleep && type !== 'back' && !(SM_SYS[type] && SM_SYS[type].wake)) return;
+                const now = Date.now();
+                if (now - (smEvAt[type] || 0) < (SM_EV_CD[type] || 5000)) return;
+                smEvAt[type] = now;
+                if (type === 'ach') mascotReact('cheer');
+                else if (type === 'back') { smTouch(); mascotReact('wave'); const b = smPick(SM_BACK); mascotSay(typeof b === 'function' ? b() : b); }
+                else if (type === 'play') { mascotReact('dance', true); mascotSay(smPick(SM_MUSIC)); }
+                else if (type === 'pause') { smEm('sad', 1400); mascotSay(smPick(SM_QUIET)); }
+                else if (type === 'color') { smPlay('hop', 600); smEm('surprised', 900); mascotSay(smPick(SM_COLOR)); }
+                else if (type === 'unknown') { smEm('sad', 1400); if (Math.random() < .5) mascotSay(smPick(SM_UNKNOWN)); }
+                else if (SM_SYS[type]) smSysReact(type);
+            } catch (e) {}
+        }
+        bgAudio.addEventListener('play', () => mascotEvent('play'));
+        bgAudio.addEventListener('pause', () => { if (!bgAudio.ended) mascotEvent('pause'); });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) { smHiddenAt = Date.now(); return; }
+            const away = smHiddenAt ? Date.now() - smHiddenAt : 0;
+            if (away > 40000) mascotEvent('back');
+            if (isSpatiEnabled && away > 60000) unlock('afk_back');
+            if (isSpatiEnabled && away > 600000) unlock('afk_long');
+            smHiddenAt = 0;
+        });
+
+        // ==========================================================
+        // СПАТИ 3.0: болеет за змейку · время суток · системные события · зеркало в плеере
+        // ==========================================================
+
+        // ---------- 1. Змейка: Спати следит за игрой и болеет ----------
+        // Текст партии выводит сама змейка (say), а маскот добавляет эмоции, прыжки и реплики
+        // про то, что змейка не комментирует: опасность, «фух, успел!», комбо.
+        const smGame = { on: false, touchAt: 0, tick: 0, bubbleAt: 0, dangerAt: 0, dangerUsed: true, apples: 0 };
+        const SM_G_START  = ['Поехали!', 'Я болею за тебя!', 'Давай, змей!', 'Только не кусай себя'];
+        const SM_G_FIRST  = ['Первое яблоко! Хорошее начало', 'Есть! Дальше — больше', 'Начало положено!'];
+        const SM_G_COMBO  = ['Три подряд! Жми, жми, жми!', 'Яблоки летят одно за другим!', 'Комбо! Я записываю'];
+        const SM_G_BONUS  = ['Золотое! Ну ты даёшь!', 'Блестящий ход!', 'Вот это аппетит!'];
+        const SM_G_DANGER = ['Осторожно, впереди тупик!', 'Поворачивай! Поворачивай!', 'Ай-ай-ай, стена близко!', 'Не туда! Не туда!', 'Я закрываю глаза... нет, смотрю!'];
+        const SM_G_ESCAPE = ['Фух! Успел!', 'Вот это реакция!', 'Уф, чуть сердце не остановилось. Откуда у меня сердце?', 'Ловко вывернулся!', 'Я чуть не поседел. Призраки не седеют'];
+        const SM_G_PAUSE  = ['Перерыв? Я подержу место', 'Пауза. Дыши глубже'];
+        const SM_G_RESUME = ['Вернулись! Я не отвлекался', 'Погнали дальше'];
+
+        function smGameCan() {
+            return !!(isSpatiEnabled && spatiMascot && spatiMascot.classList.contains('show') && !smHeld && !smRaf && !smDrag);
+        }
+        function smGameBubble(text, cd) {
+            const now = Date.now();
+            if (now - smGame.bubbleAt < (cd || 6000)) return false;
+            smGame.bubbleAt = now; mascotSay(text);
+            return true;
+        }
+        // глаза Спати следят за головой змейки (px, py — координаты на холсте 320×320)
+        function smLook(px, py) {
+            const cv = document.getElementById('skCanvas');
+            if (!cv || !smGaze || !spatiMascot || smAsleep) return;
+            const cr = cv.getBoundingClientRect(), mr = spatiMascot.getBoundingClientRect();
+            if (!cr.width || !mr.width) return;
+            const dx = cr.left + px / 320 * cr.width - (mr.left + mr.width / 2);
+            const dy = cr.top + py / 320 * cr.height - (mr.top + mr.height * .4);
+            const dist = Math.hypot(dx, dy) || 1;
+            smGaze.style.setProperty('--gx', (dx / dist * .38).toFixed(2) + 'px');
+            smGaze.style.setProperty('--gy', (dy / dist * .3).toFixed(2) + 'px');
+        }
+        function smLookReset() {
+            if (!smGaze) return;
+            smGaze.style.setProperty('--gx', '0px');
+            smGaze.style.setProperty('--gy', '0px');
+        }
+        function mascotGame(type, d) {
+            try {
+                d = d || {};
+                if (type === 'close') { smGame.on = false; smLookReset(); return; }
+                if (!smGameCan()) return;
+                const now = Date.now();
+                smGame.on = true;
+                // пока идёт партия, Спати не скучает и не засыпает
+                if (type === 'open' || now - smGame.touchAt > 3000) { smGame.touchAt = now; smTouch(); }
+                if (type === 'open') { smGame.apples = 0; mascotReact('look', true); smLook(160, 160); return; }
+                if (type === 'watch') { if ((++smGame.tick & 1) === 0) smLook(d.x, d.y); return; }
+                const sulky = spatiMood <= -2;   // обиженный Спати молча косится на поле
+                if (type === 'start') {
+                    smGame.apples = 0; smGame.dangerUsed = true;
+                    if (sulky) { smEm('sad', 1500); return; }
+                    mascotReact('hop', true);
+                    if (Math.random() < .35) smGameBubble(smPick(SM_G_START), 3000);
+                    return;
+                }
+                if (type === 'over') {
+                    smLookReset();
+                    const s = d.score || 0;
+                    if (d.record) { mascotReact('dance', true); smEm('happy', 2600); }
+                    else if (sulky) smEm('sad', 1500);
+                    else if (s >= 20) mascotReact('cheer', true);
+                    else if (d.reason === 'wall' || d.reason === 'obstacle') { smPlay('bump', 300); smEm('dizzy', 1400); }
+                    else if (d.reason === 'self') { smPlay('tilt', 1200); smEm('sad', 1400); }
+                    else { smPlay('sway', 1000); smEm('sad', 1500); }
+                    return;
+                }
+                if (sulky) return;
+                if (type === 'resume') { mascotReact('look', true); if (Math.random() < .5) smGameBubble(smPick(SM_G_RESUME), 3000); return; }
+                if (type === 'pause')  { smEm('look', 1500); if (Math.random() < .5) smGameBubble(smPick(SM_G_PAUSE), 3000); return; }
+                if (type === 'eat') {
+                    smGame.apples++;
+                    smPlay(d.combo ? 'jump' : 'hop', d.combo ? 750 : 600); smEm('happy', 700);
+                    if (d.combo) smGameBubble(smPick(SM_G_COMBO), 4000);
+                    else if (smGame.apples === 1) smGameBubble(smPick(SM_G_FIRST), 3000);
+                    return;
+                }
+                if (type === 'bonus') {
+                    smPlay('jump', 750); smEm('happy', 1200);
+                    if (Math.random() < .5) smGameBubble(smPick(SM_G_BONUS), 4000);
+                    return;
+                }
+                if (type === 'level') { mascotReact('cheer', true); return; }
+                if (type === 'danger') {
+                    if (now - smGame.dangerAt < 7000) return;
+                    smGame.dangerAt = now; smGame.dangerUsed = false;
+                    smPlay('bump', 300); smEm('surprised', 900);
+                    smGameBubble(smPick(SM_G_DANGER), 2500);
+                    return;
+                }
+                if (type === 'escape') {
+                    if (smGame.dangerUsed || now - smGame.dangerAt > 2600) return;
+                    smGame.dangerUsed = true;
+                    smPlay('hop', 600); smEm('happy', 1200);
+                    smGameBubble(smPick(SM_G_ESCAPE), 1500);
+                }
+            } catch (e) {}
+        }
+
+        // ---------- 2. Время суток: ночью шёпот и сон, по вечерам совет про музыку ----------
+        function smNight() { return spPart() === 'night'; }
+        function smTimeK() { return smNight() ? .5 : 1; }   // ночью Спати засыпает вдвое быстрее
+        function smApplyTimeLook() { if (spatiMascot) spatiMascot.classList.toggle('night', smNight()); }
+        const SM_TIME_IDLE = {
+            morning: ['Утро. Самое время побить рекорд в змейке', 'Утром мысли ясные. Даже у призраков', 'С утра пикселей как будто больше'],
+            day:     ['День в разгаре. Не забудь размяться', 'Дневной свет мне не мешает. Я же электронный', 'Говорят, сейчас самое продуктивное время'],
+            evening: ['Вечер. Терминал светится особенно уютно', 'Вечерний режим: тихо и тепло', 'К вечеру курсор мигает спокойнее'],
+            night:   ['Тсс... ночь на дворе', 'Уже поздно. Я не осуждаю. Шепчу', 'Ночью даже пиксели засыпают']
+        };
+        function smIdleLines() {
+            const extra = SM_TIME_IDLE[spPart()].slice();
+            if (spPart() === 'evening' && bgAudio.paused) extra.push('Вечер без музыки? Напиши play', 'Тишина в вечерний час? Включи плеер');
+            return SM_IDLE_SAY.concat(extra, extra);   // реплики по времени суток звучат чаще
+        }
+        const SM_PART_CHANGE = {
+            morning: ['Рассвет по системному времени. Доброе утро!', 'Наступило утро. Я проснулся раньше будильника'],
+            day:     ['Наступил день. Процессор бодр', 'День начался. Время творить'],
+            evening: ['Вечереет. Терминал стал уютнее', 'Наступил вечер. Самое время для музыки'],
+            night:   ['Полночь. Перехожу на шёпот', 'Наступила ночь. Буду говорить тише']
+        };
+        const SM_LATE = ['Глубокая ночь. Тебе не пора отдохнуть?', 'Ты ещё не спишь? Я-то призрак, мне можно', 'Поздно уже. Сон — лучший патч для человека'];
+        let smLastPart = spPart(), smLateSaid = false;
+        setInterval(() => {
+            const p = spPart();
+            smApplyTimeLook();
+            const can = isSpatiEnabled && smGameCan() && !smAsleep && !isTyping && !smGame.on;
+            if (p !== smLastPart) {
+                smLastPart = p; smLateSaid = false;
+                if (can) { mascotReact(p === 'night' ? 'yawn' : 'wave', true); mascotSay(smPick(SM_PART_CHANGE[p])); }
+                return;
+            }
+            const h = new Date().getHours();
+            if (!smLateSaid && h >= 1 && h < 5 && can && Date.now() - spatiActivity < 15000) {
+                smLateSaid = true;   // один раз за заход
+                mascotReact('yawn', true); mascotSay(smPick(SM_LATE));
+            }
+        }, 20000);
+
+        // ---------- 3. Редкие системные события ----------
+        const SM_SYS = {
+            offline:   { r: 'tilt',   em: 'sad',       wake: 1, say: ['Интернет пропал. У нас, к счастью, свой, Spatium', 'Связь с внешним миром оборвалась. Я остаюсь с тобой', 'Оффлайн. Тишина в эфире'] },
+            online:    { r: 'hop',    em: 'happy',     say: ['Связь вернулась!', 'Снова онлайн. Я и не волновался', 'Интернет на месте. Можно выдыхать'] },
+            slownet:   { r: 'look',   em: 'sleepy',    say: ['Сеть еле дышит. Потерпим', 'Что-то интернет заторможенный. Как я по утрам'] },
+            lowbat:    { r: 'shake',  em: 'surprised', wake: 1, say: ['Батарея на исходе. Подключи зарядку?', 'Двадцать процентов. Я начинаю нервничать', 'Заряд низкий. Береги нас обоих'] },
+            critbat:   { r: 'glitch', em: 'dizzy',     wake: 1, say: ['Десять процентов! Мне плохо...', 'Критический заряд! Спасай!', 'Свет моргает... это не я. Это батарея'] },
+            plug:      { r: 'hop',    em: 'happy',     say: ['Зарядка! Чувствую жизнь!', 'Подключили. Теперь я бессмертен. Почти'] },
+            unplug:    { r: 'look',   em: 'surprised', say: ['Отключили от розетки? Живу на батарейке', 'Питание автономное. Я экономлю'] },
+            portrait:  { r: 'spin',   em: 'surprised', say: ['Экран повернули. Я стал выше!', 'Вертикальный режим! Теперь я башня'] },
+            landscape: { r: 'spin',   em: 'happy',     say: ['Вид пошире. Простор!', 'Горизонтальный режим. Мне нравится'] },
+            fsin:      { r: 'jump',   em: 'surprised', say: ['Во весь экран! Теперь я тут главный', 'Полный экран. Никого лишнего'] },
+            fsout:     { r: 'hop',    em: 'normal',    say: ['Вернулись в окошко. Тоже уютно', 'Из полного экрана — в обычный. Привыкаю'] },
+            installed: { r: 'dance',  em: 'happy',     say: ['Установили! Теперь я живу на твоём устройстве', 'Spatium OS — теперь приложение. Я переезжаю!'] }
+        };
+        Object.assign(SM_EV_CD, { offline: 15000, online: 15000, slownet: 60000, lowbat: 120000, critbat: 120000,
+            plug: 30000, unplug: 30000, portrait: 8000, landscape: 8000, fsin: 6000, fsout: 6000, installed: 5000 });
+        function smSysReact(type) {
+            const e = SM_SYS[type];
+            if (!e) return;
+            if (smGame.on && !e.wake) return;   // во время партии не отвлекаем, кроме важного
+            if (e.wake) smTouch();
+            mascotReact(e.r, true);
+            if (e.em) smEm(e.em, 1800);
+            setTimeout(() => { if (isSpatiEnabled && !smHeld && !smDrag && !smAsleep) mascotSay(smPick(e.say)); }, 250);
+        }
+        window.addEventListener('offline', () => mascotEvent('offline'));
+        window.addEventListener('online', () => mascotEvent('online'));
+        window.addEventListener('appinstalled', () => mascotEvent('installed'));
+        ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev =>
+            document.addEventListener(ev, () => mascotEvent((document.fullscreenElement || document.webkitFullscreenElement) ? 'fsin' : 'fsout')));
+        try {
+            const mq = window.matchMedia('(orientation: portrait)');
+            const onRot = () => mascotEvent(mq.matches ? 'portrait' : 'landscape');
+            if (mq.addEventListener) mq.addEventListener('change', onRot); else if (mq.addListener) mq.addListener(onRot);
+        } catch (e) { /* ignore */ }
+        try {
+            const conn = navigator.connection;
+            if (conn && conn.addEventListener) {
+                let slow = /2g/.test(conn.effectiveType || '');
+                conn.addEventListener('change', () => {
+                    const now = /2g/.test(conn.effectiveType || '');
+                    if (now && !slow) mascotEvent('slownet');
+                    slow = now;
+                });
+            }
+        } catch (e) { /* ignore */ }
+        try {
+            if (navigator.getBattery) navigator.getBattery().then((b) => {
+                let warned = !b.charging && b.level <= .1 ? 2 : !b.charging && b.level <= .2 ? 1 : 0;
+                let charging = b.charging;
+                const check = () => {
+                    if (b.charging || b.level > .25) warned = 0;
+                    else if (b.level <= .1 && warned < 2) { warned = 2; mascotEvent('critbat'); }
+                    else if (b.level <= .2 && warned < 1) { warned = 1; mascotEvent('lowbat'); }
+                    if (b.charging !== charging) { charging = b.charging; mascotEvent(charging ? 'plug' : 'unplug'); }
+                };
+                b.addEventListener('levelchange', check);
+                b.addEventListener('chargingchange', check);
+            }).catch(() => {});
+        } catch (e) { /* ignore */ }
+
+        // ---------- 4. Отражение в окне плеера ----------
+        // Мини-Спати сидит на верхней кромке блока трека, повторяет эмоции, движения, рот и взгляд
+        // настоящего Спати и качает головой в такт, пока играет музыка.
+        (function initPlayerMirror() {
+            const host = musicPlayerModal && musicPlayerModal.querySelector('.track-info');
+            if (!host || !smReact || !spatiMascot) return;
+            const box = document.createElement('div');
+            box.className = 'pm-spati';
+            box.setAttribute('aria-hidden', 'true');
+            box.title = 'Отражение Спати';
+            const inner = smReact.cloneNode(true);
+            inner.removeAttribute('id'); inner.removeAttribute('style');
+            inner.className = 'sm-react';
+            inner.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+            const note = document.createElement('span');
+            note.className = 'pm-note'; note.textContent = '\u266A';
+            box.appendChild(inner); box.appendChild(note);
+            host.appendChild(box);
+            const gaze = inner.querySelector('.sm-gaze');
+
+            const syncState = () => {
+                box.dataset.em = spatiMascot.dataset.em || 'normal';
+                ['open', 'think', 'asleep', 'night'].forEach(c => box.classList.toggle(c, spatiMascot.classList.contains(c)));
+            };
+            const syncAnim = () => {
+                const a = Array.from(smReact.classList).find(c => c.indexOf('a-') === 0) || '';
+                inner.className = 'sm-react';
+                if (a) { void inner.offsetWidth; inner.classList.add(a); }   // перезапуск, даже если движение повторилось
+            };
+            const syncGaze = () => {
+                if (!gaze) return;
+                ['--gx', '--gy'].forEach(k => gaze.style.setProperty(k, smGaze.style.getPropertyValue(k) || '0px'));
+            };
+            new MutationObserver(syncState).observe(spatiMascot, { attributes: true, attributeFilter: ['class', 'data-em'] });
+            new MutationObserver(syncAnim).observe(smReact, { attributes: true, attributeFilter: ['class'] });
+            if (smGaze) new MutationObserver(syncGaze).observe(smGaze, { attributes: true, attributeFilter: ['style'] });
+            const syncMusic = () => box.classList.toggle('playing', !bgAudio.paused && !bgAudio.ended);
+            ['play', 'pause', 'ended', 'playing'].forEach(ev => bgAudio.addEventListener(ev, syncMusic));
+            syncState(); syncMusic();
+
+            box.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                if (!isSpatiEnabled) return;
+                smTouch();
+                mascotReact(smPick(['wink', 'hop', 'sway']), false);
+            });
+        })();
+
+        function mascotToggle(on) {
+            if (!spatiMascot) return;
+            if (on) {
+                smLayout(); smApplyTimeLook();
+                smIdleAt = Date.now() + 9000; smLastTouch = Date.now(); smStage = 0; smAsleep = false; spatiMascot.classList.remove('asleep');
+                if (!smSaved.hint) {
+                    setTimeout(() => {
+                        if (isSpatiEnabled && !smHeld && !smSaved.hint) {
+                            smSaved.hint = 1; smSave();
+                            mascotSay('Меня можно трогать и таскать');
+                        }
+                    }, 7000);
+                }
+            } else {
+                cancelAnimationFrame(smRaf); smRaf = 0; smHeld = false; smDrag = null; smAsleep = false; clearTimeout(smPetTimer); smDropApple(false); smGame.on = false;
+                clearInterval(smTypeTimer); clearTimeout(smSayTimer); clearTimeout(smHoldTimer); clearTimeout(smEmTimer); clearTimeout(smAnimTimer);
+                spatiMascot.classList.remove('held', 'flying', 'gliding', 'asleep');
+                spatiMascot.dataset.em = 'normal';
+                smReact.className = 'sm-react'; smReact.style.transform = '';
+                smBubble.classList.remove('show');
+            }
+        }
+
         function printTextTyped(text, onComplete) {
             if (!terminalOutput) return;
             isTyping = true;
@@ -2322,12 +3389,20 @@ TAB - дополнить, ↑↓ - история
 
             currentTypingCallback = onComplete;
             let index = 0;
+            const line = activeTypingLine;
+            const spatiLine = isSpatiEnabled && !!spatiMascot && (forceSpati || /^СПАТИ:/.test(text));
 
             function typeNextChar() {
                 if (!isTyping) return;
                 if (index < text.length) {
-                    activeTypingLine.textContent += text.charAt(index);
+                    const ch = text.charAt(index);
+                    line.textContent += ch;
                     index++;
+                    if (spatiLine) {
+                        // рот хлопает на буквах и закрывается на пробелах и знаках
+                        if (/[a-zа-яё0-9]/i.test(ch)) { mouthFlip = !mouthFlip; mascotMouth(mouthFlip); }
+                        else mascotMouth(false);
+                    }
                     scrollToBottom();
                     currentTypingTimeout = setTimeout(typeNextChar, Math.floor(Math.random() * 40) + 50);
                 } else {
@@ -2335,16 +3410,37 @@ TAB - дополнить, ↑↓ - история
                     currentTypingTimeout = null;
                     activeTypingLine = null;
                     currentTypingCallback = null;
+                    if (spatiLine) mascotMouth(false);
                     // Опускаем скролл до конца после завершения печати
                     scrollToBottom();
                     if (onComplete) onComplete();
                 }
             }
-            typeNextChar();
+
+            if (!spatiLine) { typeNextChar(); return; }
+
+            // Спати «собирается с мыслями»: точки, глаза бегают, потом печатает
+            const thinkMs = Math.floor(Math.random() * 450) + 450;
+            const t0 = Date.now();
+            mascotThink(thinkMs);
+            function think() {
+                if (!isTyping) return;
+                if (Date.now() - t0 >= thinkMs) {
+                    line.textContent = '';
+                    mascotThink(0);
+                    typeNextChar();
+                    return;
+                }
+                line.textContent = '.'.repeat(1 + Math.floor((Date.now() - t0) / 200) % 3);
+                scrollToBottom();
+                currentTypingTimeout = setTimeout(think, 100);
+            }
+            think();
         }
 
         function printTextInstant(text) {
             if (!terminalOutput) return;
+            if (isSpatiEnabled && /^СПАТИ:/.test(text)) mascotChatter(text.length);
             const line = document.createElement('div');
             line.textContent = text;
             terminalOutput.appendChild(line);
@@ -2352,17 +3448,18 @@ TAB - дополнить, ↑↓ - история
         }
 
         let lastCmdRaw = '', echoRuns = 0, clearRuns = 0, helpRuns = 0, unknownRuns = 0, logoClicks = 0;
-        function unknownCmd() { unlock('unknown'); if (++unknownRuns >= 5) unlock('unknown5'); if (unknownRuns >= 20) unlock('unknown20'); if (unknownRuns >= 50) unlock('unknown50'); }
+        function unknownCmd() { unlock('unknown'); mascotEvent('unknown'); if (++unknownRuns >= 5) unlock('unknown5'); if (unknownRuns >= 20) unlock('unknown20'); if (unknownRuns >= 50) unlock('unknown50'); }
         if (logoWrapper) logoWrapper.addEventListener('click', () => { if (++logoClicks >= 5) unlock('logo5'); if (logoClicks >= 25) unlock('logo25'); });
 
-        function handleCommand(rawCmd) {
+        function handleCommand(rawCmd, quiet) {
             const cmd = rawCmd.trim();
             const mainCmd = cmd.split(' ')[0].toLowerCase().replace(/[,.:;!?]+$/, '');
 
-            printTextInstant(`> ${rawCmd}`);
+            if (!quiet) printTextInstant(`> ${rawCmd}`);
             if (cmd === '') return;
             unlock('first_cmd');
             procLog('shell', `exec ${mainCmd}`);
+            mascotCmd(mainCmd, cmd);
             state.stats.cmds++;
             if (++sessionCmds >= 100) unlock('cmd_session100');
             saveState();
@@ -2403,14 +3500,13 @@ TAB - дополнить, ↑↓ - история
             } else if (mainCmd === 'color') {
                 const colorVal = cmd.split(' ').slice(1).join(' ');
                 if (!colorVal) {
-                    printTextTyped("Укажите цвет. Пример: color matrix. Список: color help");
+                    printTextTyped("Укажите цвет. Пример: color red. Список: color help");
                 } else if (colorVal.toLowerCase() === 'help') {
                     unlock('color_help');
                     printColorHelp();
                 } else {
                     changeTerminalColor(colorVal);
                     if (state.stats.colors.includes('green') && colorVal.toLowerCase() === 'green') unlock('color_green');
-                    if (state.stats.colors.includes('matrix') && colorVal.toLowerCase() === 'matrix') unlock('color_matrix');
                     if (state.stats.colors.includes('red') && colorVal.toLowerCase() === 'red') unlock('color_red');
                     if (state.stats.colors.includes('white') && colorVal.toLowerCase() === 'white') unlock('color_white');
                 }
@@ -2781,215 +3877,20 @@ TAB - дополнить, ↑↓ - история
         });
 
         // ==========================================
-        // ДОЖДЬ МАТРИЦЫ, СКРИНСЕЙВЕР, ЗВУК КЛАВИШ
+        // ЗВУК КЛАВИШ
         // ==========================================
-        const MX_CHARS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789:.=*+-<>|'.split('');
-        const MX_FONT = '"IBM Plex Mono", "MS Gothic", "Hiragino Kaku Gothic ProN", "Noto Sans Mono CJK JP", monospace';
-        const MX_IDLE_MS = 60000;   // скринсейвер после минуты бездействия
-        const MX_STEP_MS = 45;      // шаг анимации (~22 кадра/с, как в фильме)
-        let matrixActive = false, matrixMode = 'cmd', matrixGuardUntil = 0, matrixWokeAt = 0;
-        let matrixLastActivity = Date.now();
-        let mxCanvas = null, mxCtx = null, mxHint = null, mxRaf = 0, mxHideTimer = 0, mxLastTs = 0, mxFrame = 0;
-        let mxW = 0, mxH = 0, mxSize = 16, mxCols = 0, mxDrops = [], mxSpeed = [], mxLast = [], mxMouse = null;
-        let mxColor = '#33ff33', mxHead = '#ccffcc';
-
-        function mxEnsure() {
-            if (mxCanvas) return;
-            mxCanvas = document.createElement('canvas');
-            mxCanvas.className = 'matrix-canvas';
-            mxCanvas.setAttribute('aria-hidden', 'true');
-            mxHint = document.createElement('div');
-            mxHint.className = 'matrix-hint';
-            mxHint.textContent = 'ЛЮБАЯ КЛАВИША ИЛИ КАСАНИЕ — ВЫХОД';
-            const overlay = screen.querySelector('.crt-overlay');
-            screen.insertBefore(mxCanvas, overlay);
-            screen.insertBefore(mxHint, overlay);
-            mxCtx = mxCanvas.getContext('2d');
-        }
-
-        // Цвет берём из текущей темы терминала, голова капли - почти белая
-        function mxReadColor() {
-            const v = getComputedStyle(screen).getPropertyValue('--crt-color').trim();
-            const rgb = /^#[0-9a-f]{6}$/i.test(v) ? hexToRgb(v) : [51, 255, 51];
-            mxColor = `rgb(${rgb.join(',')})`;
-            mxHead = `rgb(${rgb.map(x => Math.round(x + (255 - x) * 0.8)).join(',')})`;
-        }
-
-        function mxResize() {
-            if (!mxCanvas) return;
-            const w = screen.clientWidth, h = screen.clientHeight;
-            if (!w || !h || (w === mxW && h === mxH && mxCols)) return;
-            mxW = w; mxH = h;
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            mxSize = w < 600 ? 14 : 16;
-            mxCanvas.width = Math.round(w * dpr);
-            mxCanvas.height = Math.round(h * dpr);
-            mxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            mxCtx.fillStyle = '#000';
-            mxCtx.fillRect(0, 0, w, h);
-            mxCols = Math.ceil(w / mxSize);
-            const rows = Math.ceil(h / mxSize);
-            mxDrops = []; mxSpeed = []; mxLast = [];
-            for (let i = 0; i < mxCols; i++) {
-                mxDrops.push(-Math.floor(Math.random() * rows));
-                mxSpeed.push(Math.random() < 0.35 ? 2 : 1);
-                mxLast.push('');
-            }
-        }
-
-        function mxTick() {
-            const c = mxCtx, size = mxSize;
-            c.fillStyle = 'rgba(0,0,0,0.09)';
-            c.fillRect(0, 0, mxW, mxH);
-            c.font = `${size}px ${MX_FONT}`;
-            c.textAlign = 'center';
-            c.textBaseline = 'top';
-            mxFrame++;
-            if (mxFrame % 120 === 0) mxReadColor();
-            const glow = mxCols <= 140;
-            for (let i = 0; i < mxCols; i++) {
-                if (mxFrame % mxSpeed[i] !== 0) continue;
-                const y = mxDrops[i];
-                const x = i * size + size / 2;
-                if (y >= 0) {
-                    if (y >= 1 && mxLast[i]) {
-                        const py = (y - 1) * size;
-                        c.shadowBlur = 0;
-                        c.fillStyle = '#000';
-                        c.fillRect(i * size, py, size, size);
-                        c.fillStyle = mxColor;
-                        c.fillText(mxLast[i], x, py);
-                    }
-                    const ch = MX_CHARS[(Math.random() * MX_CHARS.length) | 0];
-                    mxLast[i] = ch;
-                    if (glow) { c.shadowColor = mxColor; c.shadowBlur = 8; }
-                    c.fillStyle = mxHead;
-                    c.fillText(ch, x, y * size);
-                    c.shadowBlur = 0;
-                }
-                if (y * size > mxH && Math.random() > 0.975) { mxDrops[i] = 0; mxLast[i] = ''; }
-                else mxDrops[i] = y + 1;
-            }
-        }
-
-        function mxLoop(ts) {
-            mxRaf = requestAnimationFrame(mxLoop);
-            if (ts - mxLastTs < MX_STEP_MS) return;
-            mxLastTs = ts;
-            mxTick();
-        }
-
-        function startMatrix(mode) {
-            if (matrixActive || !isBooted) return;
-            mxEnsure();
-            mxReadColor();
-            clearTimeout(mxHideTimer);
-            mxCanvas.style.display = 'block';
-            mxW = 0; mxH = 0; mxCols = 0;
-            mxResize();
-            matrixActive = true;
-            matrixMode = mode;
-            matrixGuardUntil = Date.now() + (mode === 'cmd' ? 700 : 900);
-            mxMouse = null;
-            void mxCanvas.offsetWidth;
-            mxCanvas.classList.add('on');
-            screen.classList.add('matrix-on');
-            mxHint.classList.remove('show');
-            if (mode === 'cmd') { void mxHint.offsetWidth; mxHint.classList.add('show'); }
-            if (hiddenInput) hiddenInput.blur();
-            cancelAnimationFrame(mxRaf);
-            mxLastTs = 0;
-            mxRaf = requestAnimationFrame(mxLoop);
-        }
-
-        function stopMatrix() {
-            if (!matrixActive) return;
-            const mode = matrixMode;
-            matrixActive = false;
-            matrixWokeAt = Date.now();
-            matrixLastActivity = matrixWokeAt;
-            spatiActivity = matrixWokeAt;
-            mxCanvas.classList.remove('on');
-            mxHint.classList.remove('show');
-            screen.classList.remove('matrix-on');
-            clearTimeout(mxHideTimer);
-            mxHideTimer = setTimeout(() => {
-                if (matrixActive) return;
-                cancelAnimationFrame(mxRaf);
-                mxCanvas.style.display = 'none';
-            }, 400);
-            if (mode === 'cmd') printTextInstant('>>> MATRIX ОТКЛЮЧЁН <<<');
-            unlock(mode === 'cmd' ? 'matrix' : 'screensaver');
-            if (isBooted && hiddenInput && !isTyping) hiddenInput.focus();
-        }
-
-        window.addEventListener('resize', () => { if (matrixActive) mxResize(); });
-        if (window.visualViewport) window.visualViewport.addEventListener('resize', () => { if (matrixActive) mxResize(); });
-        document.addEventListener('visibilitychange', () => { matrixLastActivity = Date.now(); });
-
-        // Любое действие: звук, учёт бездействия, выход из дождя (первое нажатие "съедается")
         ['keydown', 'pointerdown', 'touchstart', 'wheel'].forEach(ev => {
             window.addEventListener(ev, (e) => {
                 if (sfxBootPending) sfxLateBoot();
                 else if (sfxCtx && sfxCtx.state === 'suspended') sfxResume(sfxCtx);
-                matrixLastActivity = Date.now();
-                if (matrixActive) {
-                    e.stopPropagation();
-                    if (ev === 'keydown') {
-                        const system = e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key);
-                        if (!system) e.preventDefault();
-                    }
-                    if (Date.now() >= matrixGuardUntil) stopMatrix();
-                    return;
-                }
                 if (ev === 'keydown' && isBooted && !e.ctrlKey && !e.metaKey && !e.altKey
                     && !['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key) && !/^F\d+$/.test(e.key)) {
                     const sfxKind = { Enter: 'send', Tab: 'tab', ArrowUp: 'up', ArrowDown: 'down' }[e.key];
                     if (sfxKind && !isTyping && (e.target === hiddenInput || e.target === document.body)) sfxKey(sfxKind);
                 }
-            }, { capture: true, passive: false });
+            }, { capture: true, passive: true });
         });
 
-        window.addEventListener('mousemove', (e) => {
-            const now = Date.now();
-            if (!matrixActive) { matrixLastActivity = now; return; }
-            if (matrixMode !== 'saver' || now < matrixGuardUntil) return;
-            if (!mxMouse) { mxMouse = { x: e.clientX, y: e.clientY }; return; }
-            if (Math.abs(e.clientX - mxMouse.x) + Math.abs(e.clientY - mxMouse.y) > 8) stopMatrix();
-        }, { capture: true, passive: true });
-
-        // Клик, завершающий нажатие, которое разбудило экран, не должен ничего делать
-        window.addEventListener('click', (e) => {
-            if (matrixActive || Date.now() - matrixWokeAt < 350) { e.stopPropagation(); e.preventDefault(); }
-        }, true);
-
-        // Мобильные клавиатуры: если keydown не пришёл (key = Unidentified), щёлкаем по input
-        if (hiddenInput) {
-            hiddenInput.addEventListener('input', (e) => {
-                if (matrixActive || Date.now() - matrixWokeAt < 200) {
-                    e.stopImmediatePropagation();
-                    hiddenInput.value = currentInput;
-                    return;
-                }
-            }, true);
-        }
-
-        // Скринсейвер
-        setInterval(() => {
-            if (matrixActive) return;
-            const now = Date.now();
-            if (!isBooted || document.hidden || admOpen || isHackerMode || isTyping
-                || screen.classList.contains('crt-off') || terminalContainer.classList.contains('hidden')) {
-                matrixLastActivity = now;
-                return;
-            }
-            if (now - matrixLastActivity >= MX_IDLE_MS) startMatrix('saver');
-        }, 1000);
-
-        consoleCommands.matrix = function () {
-            printTextInstant('Просыпайся, Нео... Любая клавиша — выход.');
-            startMatrix('cmd');
-        };
         consoleCommands.sfx = function (args) {
             const a = (args[0] || '').toLowerCase();
             if (a === 'on' || a === 'вкл') sfxEnabled = true;
@@ -3000,6 +3901,87 @@ TAB - дополнить, ↑↓ - история
             if (sfxEnabled && sfxMuted()) printTextInstant('(общий звук отключён командой mute)');
             if (sfxEnabled) sfxKey('send');
         };
+
+        // ==========================================
+        // NEOFETCH
+        // ==========================================
+        (function initNeofetch() {
+            TAB_COMMANDS.push('neofetch');
+            const LOGO = [' ########', '##      ##', '##', ' ########', '        ##', '##      ##', ' ########'];
+            const dur = (ms) => {
+                const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+                return h ? `${h} ч ${m} мин` : m ? `${m} мин ${s % 60} с` : `${s} с`;
+            };
+            const colorName = () => {
+                const cur = document.documentElement.style.getPropertyValue('--crt-color').trim().toLowerCase();
+                if (!cur) return 'DEFAULT';
+                const n = Object.keys(colorPalette).find(k => String(colorPalette[k].color).toLowerCase() === cur);
+                return n ? n.toUpperCase() : 'СВОЙ';
+            };
+            const meter = (id) => (document.getElementById(id) || {}).textContent || '—';
+
+            consoleCommands.neofetch = function () {
+                unlock('neofetch');
+                const total = ACHIEVEMENTS.length, got = unlockedCount(), pct = Math.floor(got / total * 100);
+                const rank = rankFor(pct), up = dur(performance.now());
+                const st = state.stats, sn = st.snake;
+                const title = `${state.nick || 'guest'}@spatium`;
+                const rows = [
+                    ['ОС', 'Spatium OS · ядро 1.0'],
+                    ['Хост', 'tty0'],
+                    ['Аптайм', up],
+                    ['Визитов', `${st.visits || 1}${st.first ? ' · с ' + fmtDate(st.first) : ''}`],
+                    ['Ранг', rank],
+                    ['Достиж.', `${got}/${total} (${pct}%)`],
+                    ['Змейка', `рекорд ${sn.best} · партий ${sn.games}${sn.last ? ' · прошлая ' + sn.last.s : ''}`],
+                    ['Ресурсы', `CPU ${meter('v-cpu')} · MEM ${meter('v-mem')}`],
+                    ['Цвет', colorName()],
+                    ['Трек', `${trackLabel(currentTrackIndex)} ${bgAudio.paused ? '[||]' : '[>]'}`],
+                    ['Громк.', bgAudio.muted ? 'MUTED' : volPercent() + '%'],
+                    ['Звук', `клавиши ${sfxEnabled ? 'вкл' : 'выкл'}`],
+                    ['Спати', isSpatiEnabled ? 'онлайн' : 'спит']
+                ];
+
+                const box = elem('div', 'nf');
+                const logo = elem('div', 'nf-logo');
+                LOGO.forEach(l => logo.appendChild(elem('div', '', l)));
+                const us = elem('div');
+                us.appendChild(document.createTextNode('          '));
+                us.appendChild(elem('span', 'nf-us', '######'));
+                logo.appendChild(us);
+                box.appendChild(logo);
+
+                const info = elem('div', 'nf-info');
+                info.appendChild(elem('div', 'nf-title', title));
+                info.appendChild(elem('div', 'nf-sep', '-'.repeat(title.length)));
+                rows.forEach(([k, v]) => {
+                    const r = elem('div', 'nf-row');
+                    r.appendChild(elem('span', 'nf-k', k));
+                    r.appendChild(elem('span', 'nf-v', v));
+                    info.appendChild(r);
+                });
+                const sw = elem('div', 'nf-sw');
+                const names = Object.keys(colorPalette);
+                for (let i = 0; i < 8 && names.length; i++) {
+                    const c = elem('i');
+                    c.style.background = colorPalette[names[Math.floor(i * names.length / 8)]].color;
+                    sw.appendChild(c);
+                }
+                info.appendChild(sw);
+                box.appendChild(info);
+                terminalOutput.appendChild(box);
+                scrollToBottom();
+
+                if (isSpatiEnabled) {
+                    printTextInstant(spatiPick([
+                        `СПАТИ: Ранг ${rank}. ${pct < 25 ? 'Всё впереди' : pct < 75 ? 'Достойно' : 'Почти легенда'}`,
+                        'СПАТИ: Красиво. Скриншот сделаешь?',
+                        `СПАТИ: Аптайм ${up}. Я не устал, если что`,
+                        'СПАТИ: Это моя анкета. Заполнял сам'
+                    ]));
+                }
+            };
+        })();
 
         // ==========================================
         // ЗМЕЙКА (SNAKE.EXE)
@@ -3096,7 +4078,7 @@ TAB - дополнить, ↑↓ - история
             const KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
             let isOpen = false, phase = 'idle', timer = 0, newRecord = false;
             let wrap = !!sk.wrap, obst = !!sk.obst, speed = !!sk.speed, bodyCol = null;
-            let snake, dir, queue, food, bonus, score, apples, eatTimes, obs = [], level = 1, flashUntil = 0, oldBest = 0, lastEntry = null;
+            let snake, dir, queue, food, bonus, score, apples, eatTimes, obs = [], level = 1, flashUntil = 0, oldBest = 0, lastEntry = null, dangerNow = false;
 
             const beep = (o) => { const c = sfxReady(); if (c) sfxTone(c.currentTime + 0.001, o); };
             // вибрация (Android/Chrome; на iOS Safari не поддерживается — молча игнорируется)
@@ -3163,16 +4145,16 @@ TAB - дополнить, ↑↓ - история
                 if (elSpati) elSpati.textContent = '';
                 snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
                 dir = 'right'; queue = []; score = 0; apples = 0; eatTimes = []; bonus = null; food = null; newRecord = false;
-                obs = []; level = 1; flashUntil = 0; lastEntry = null;
+                obs = []; level = 1; flashUntil = 0; lastEntry = null; dangerNow = false;
                 food = spot(); phase = 'idle';
                 updateUi(); renderTop();
                 draw();
             }
 
-            function run() { phase = 'run'; draw(); clearTimeout(timer); timer = setTimeout(step, delay()); }
+            function run() { const was = phase; phase = 'run'; draw(); clearTimeout(timer); timer = setTimeout(step, delay()); if (was !== 'run') mascotGame(was === 'pause' ? 'resume' : 'start'); }
 
             function toggle() {
-                if (phase === 'run') { phase = 'pause'; clearTimeout(timer); sUn('snake_pause'); draw(); }
+                if (phase === 'run') { phase = 'pause'; clearTimeout(timer); sUn('snake_pause'); mascotGame('pause'); draw(); }
                 else if (phase === 'over') { reset(); run(); }
                 else run();
             }
@@ -3191,6 +4173,7 @@ TAB - дополнить, ↑↓ - история
                 beep({ type: 'triangle', f0: 440, f1: 880, dur: 0.15, gain: 0.06 });
                 if (obst && level >= 5) sUn('snake_lvl5');
                 say(obst ? S_LVL_OBS : S_LVL);
+                mascotGame('level', { level });
             }
 
             function eat(isBonus) {
@@ -3214,12 +4197,23 @@ TAB - дополнить, ↑↓ - история
                 [10, 25, 50, 100].forEach(m => { if (before < m && score >= m) say([S_MILE[m]], true); });
                 eatTimes.push(now); if (eatTimes.length > 3) eatTimes.shift();
                 if (eatTimes.length === 3 && now - eatTimes[0] <= 5000) sUn('snake_quick');
+                mascotGame(isBonus ? 'bonus' : 'eat', { score, combo: eatTimes.length === 3 && now - eatTimes[0] <= 5000 });
                 saveState();
+            }
+
+            // клетка впереди смертельна? (нужно, чтобы Спати охал и выдыхал)
+            function aheadDeadly() {
+                const h = snake[0], d = DIRS[dir];
+                let nx = h.x + d[0], ny = h.y + d[1];
+                if (nx < 0 || nx >= G || ny < 0 || ny >= G) { if (!wrap) return true; nx = (nx + G) % G; ny = (ny + G) % G; }
+                if (obs.some(o => o.x === nx && o.y === ny)) return true;
+                return snake.slice(0, -1).some(s => s.x === nx && s.y === ny);
             }
 
             function step() {
                 if (phase !== 'run') return;
                 dir = queue.length ? queue.shift() : dir;
+                const wasDanger = dangerNow; dangerNow = false;
                 const h = snake[0];
                 let nx = h.x + DIRS[dir][0], ny = h.y + DIRS[dir][1], wrapped = false;
                 if (nx < 0 || nx >= G || ny < 0 || ny >= G) {
@@ -3235,6 +4229,9 @@ TAB - дополнить, ↑↓ - история
                 if (eatF || eatB) eat(!!eatB); else snake.pop();
                 if (bonus && --bonus.ttl <= 0) bonus = null;
                 if (!food) return finish('full');
+                if (wasDanger) mascotGame('escape');
+                if (!queue.length && aheadDeadly()) { dangerNow = true; mascotGame('danger'); }
+                mascotGame('watch', { x: snake[0].x * C + C / 2, y: snake[0].y * C + C / 2 });
                 draw();
                 timer = setTimeout(step, delay());
             }
@@ -3273,6 +4270,7 @@ TAB - дополнить, ↑↓ - история
                 else if (prev && Math.random() < 0.7) pool = cmpLines(prev);
                 else pool = base;
                 say(pool, true);
+                mascotGame('over', { score, record: newRecord || reason === 'full', reason });
                 if (newRecord) { spatiMood = spatiClamp(spatiMood + 1); spatiMoodAt = Date.now(); }
                 renderTop();
                 draw();
@@ -3354,10 +4352,11 @@ TAB - дополнить, ↑↓ - история
                 if (hiddenInput) hiddenInput.blur();
                 reset(); sUn('snake_start');
                 say(spatiMood <= -2 ? S_SULK : S_OPEN, true);
+                mascotGame('open');
             }
             function close() {
                 if (!isOpen) return;
-                isOpen = false; clearTimeout(timer); phase = 'idle'; win.classList.add('hidden');
+                isOpen = false; clearTimeout(timer); phase = 'idle'; win.classList.add('hidden'); mascotGame('close');
                 if (isBooted && hiddenInput && window.matchMedia('(pointer: fine)').matches) hiddenInput.focus();
             }
 
