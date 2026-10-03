@@ -613,3 +613,24 @@ body.is-hidden *, body.is-hidden *::before, body.is-hidden *::after { animation-
     background: color-mix(in srgb, var(--crt-bg) 92%, #000); border: 1px solid var(--crt-color);
     box-shadow: 0 0 18px var(--crt-glow), 6px 6px 0 rgba(0,0,0,.6); pointer-events: none; animation: popIn .25s ease-out;
 }
+
+
+/* ---------- Перетаскиваемые окна ---------- */
+.player-header { cursor: move; touch-action: none; }
+.player-header button { cursor: pointer; }
+.win-moved { transform: none !important; animation: none !important; }
+.win-drag { opacity: .93; box-shadow: 0 0 34px var(--crt-glow), 12px 12px 0 rgba(0,0,0,.6); }
+
+/* ---------- Карточка прогресса ---------- */
+.card-window { width: 540px; }
+.card-body { padding: 12px; overflow-y: auto; min-height: 0; }
+.card-body canvas { display: block; width: 100%; height: auto; border: 1px solid var(--crt-color); box-shadow: 0 0 12px var(--dim2); }
+.card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.card-actions .player-btn { min-width: 110px; }
+
+
+/* ---------- Никнейм ---------- */
+.user-btn { display: inline-block; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+#statNick { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ach-nick { font-family: var(--font-ui); font-size: 11px; margin-bottom: 8px; word-break: break-all; text-shadow: 0 0 8px var(--crt-glow); }
+@media (max-width: 650px) { .user-btn { max-width: 80px; } }

@@ -26,6 +26,7 @@
         const playlistContainer = document.getElementById('playlistContainer');
 
         let isBooted = false;
+        let nickMode = null; // null | 'first' | 'rename': ввод идёт в никнейм, а не в команды
         let isTyping = false;
         let currentInput = '';
         
@@ -46,7 +47,7 @@
         const HISTORY_LIMIT = 50;
 
         function freshState() {
-            return { ach: {}, shown: {}, history: [], stats: { visits: 0, colors: [], tracks: [], spatiTalks: 0, cmds: 0, first: 0, snake: { best: 0, games: 0, apples: 0, bonus: 0, wrap: false } } };
+            return { nick: '', ach: {}, shown: {}, history: [], stats: { visits: 0, colors: [], tracks: [], spatiTalks: 0, cmds: 0, first: 0, snake: { best: 0, games: 0, apples: 0, bonus: 0, wrap: false } } };
         }
 
         function loadState() {
@@ -56,6 +57,7 @@
                 if (saved && typeof saved === 'object') {
                     if (saved.ach && typeof saved.ach === 'object') st.ach = saved.ach;
                     if (saved.shown && typeof saved.shown === 'object') st.shown = saved.shown;
+                    if (typeof saved.nick === 'string' && /^[\p{L}\p{N}][\p{L}\p{N}_.\- ]{1,15}$/u.test(saved.nick)) st.nick = saved.nick;
                     if (Array.isArray(saved.history)) st.history = saved.history.filter(x => typeof x === 'string').slice(-HISTORY_LIMIT);
                     if (saved.stats && typeof saved.stats === 'object') {
                         st.stats.visits = Number(saved.stats.visits) || 0;
@@ -262,7 +264,14 @@
             { id: 'snake_total1000', cat: 'ЗМЕЙКА', icon: 'trophy', title: 'ЗМЕИНЫЙ КОРОЛЬ', desc: 'Съешь 1000 яблок суммарно', rarity: 'legendary' },
             { id: 'spati_snake', cat: 'СПАТИ', icon: 'ghost', title: 'ТРЕНЕР', desc: 'Поговори со Спати о змейке', hidden: true, rarity: 'common' },
             { id: 'save_export', cat: 'СИСТЕМА', icon: 'disk', title: 'РЕЗЕРВНАЯ КОПИЯ', desc: 'Сохрани прогресс в файл', rarity: 'common' },
-            { id: 'save_import', cat: 'СИСТЕМА', icon: 'arrow', title: 'ВОСКРЕШЕНИЕ', desc: 'Загрузи прогресс из файла', rarity: 'rare' }
+            { id: 'save_import', cat: 'СИСТЕМА', icon: 'arrow', title: 'ВОСКРЕШЕНИЕ', desc: 'Загрузи прогресс из файла', rarity: 'rare' },
+            { id: 'win_drag', cat: 'СИСТЕМА', icon: 'cursor', title: 'ПЕРЕСТАНОВКА', desc: 'Перетащи любое окно за заголовок', rarity: 'common' },
+            { id: 'multiwin', cat: 'СИСТЕМА', icon: 'gear', title: 'МНОГОЗАДАЧНОСТЬ', desc: 'Держи открытыми плеер, достижения и змейку одновременно', rarity: 'rare' },
+            { id: 'share_card', cat: 'СИСТЕМА', icon: 'trophy', title: 'ПОХВАСТАТЬСЯ', desc: 'Создай карточку прогресса командой card', rarity: 'common' },
+            { id: 'share_send', cat: 'СИСТЕМА', icon: 'star', title: 'ДЕЛИМСЯ', desc: 'Скачай, скопируй или отправь карточку прогресса', rarity: 'rare' },
+            { id: 'nick_set', cat: 'СИСТЕМА', icon: 'prompt', title: 'ЗНАКОМСТВО', desc: 'Создай никнейм', rarity: 'common' },
+            { id: 'nick_change', cat: 'СИСТЕМА', icon: 'drop', title: 'НОВОЕ ИМЯ', desc: 'Смени никнейм', rarity: 'common' },
+            { id: 'nick_fake', cat: 'СИСТЕМА', icon: 'ghost', title: 'САМОЗВАНЕЦ', desc: 'Попробуй назваться именем системы', hidden: true, rarity: 'rare' }
         ];
         // ----- редкость -----
         const RARITIES = {
@@ -778,6 +787,7 @@
             const top = elem('div', 'ach-top');
             top.appendChild(iconBox(got === total ? 'trophy' : 'star', 'big'));
             const topText = elem('div', 'ach-top-text');
+            if (state.nick) topText.appendChild(elem('div', 'ach-nick', state.nick));
             topText.appendChild(elem('div', 'ach-rank-label', 'ЗВАНИЕ'));
             topText.appendChild(elem('div', 'ach-rank', rankFor(pct)));
             top.appendChild(topText);
@@ -834,7 +844,7 @@
             allBtn.addEventListener('click', () => { sfxKey('tab'); achView = 'all'; renderAchWindow(); achBody.scrollTop = 0; });
             achBody.appendChild(allBtn);
             const io = elem('div', 'ach-toolbar');
-            [['ЭКСПОРТ В ФАЙЛ', 'export'], ['ИМПОРТ ИЗ ФАЙЛА', 'import']].forEach(([label, key]) => {
+            [['ЭКСПОРТ', 'export'], ['ИМПОРТ', 'import'], ['КАРТОЧКА', 'card']].forEach(([label, key]) => {
                 const b = elem('button', 'player-btn', label);
                 b.type = 'button';
                 b.addEventListener('click', () => { sfxKey('tab'); consoleCommands[key](); });
@@ -1003,7 +1013,7 @@
         }
 
         function historyNav(dir) {
-            if (!state.history.length) return;
+            if (nickMode || !state.history.length) return;
             if (histIndex === state.history.length) histDraft = currentInput;
             histIndex = Math.min(state.history.length, Math.max(0, histIndex + dir));
             if (histIndex === state.history.length) {
@@ -1042,7 +1052,7 @@
         }
 
         function handleTab() {
-            if (isTyping || isHackerMode) return;
+            if (isTyping || isHackerMode || nickMode) return;
             unlock('tab');
             const lead = currentInput.match(/^\s*/)[0];
             const tokens = currentInput.slice(lead.length).split(' ');
@@ -1323,6 +1333,7 @@
                             isBooted = true;
                             showPendingToasts();
                             if (hiddenInput) hiddenInput.focus(); // Вызываем фокус после загрузки
+                            afterBoot();
                         }, 400);
                     }, 150);
                 }
@@ -1434,6 +1445,7 @@
                     hiddenInput.value = '';
                     if (commandInputText) commandInputText.textContent = '';
                     if (commandToExecute.trim() !== '') {
+                        if (nickMode) { handleNickInput(commandToExecute); return; }
                         pushHistory(commandToExecute.trim());
                         handleCommand(commandToExecute);
                     }
@@ -1512,6 +1524,8 @@
   snake    мини-игра змейка
   export   сохранить прогресс в файл
   import   загрузить прогресс из файла
+  card     карточка прогресса (картинка)
+  nick     показать / сменить никнейм
   off      выключение
 
 ПЛЕЕР:
@@ -1525,6 +1539,7 @@
   player   окно плеера
 
 TAB - дополнить, ↑↓ - история
+Окна двигаются за заголовок (двойной клик - на место).
 Скринсейвер включается через 1 мин без действий.`;
 
         // ----- управление плеером из консоли -----
@@ -1828,7 +1843,7 @@ TAB - дополнить, ↑↓ - история
             catch (e) { return { name: '' }; }
         })();
         const spatiSave = () => { try { localStorage.setItem(SPATI_KEY, JSON.stringify(spatiMem)); } catch (e) {} };
-        const SN = () => spatiMem.name ? ', ' + spatiMem.name : '';
+        const SN = () => { const n = spatiMem.name || state.nick; return n ? ', ' + n : ''; };
         const spPart = () => { const h = new Date().getHours(); return h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'day' : 'evening'; };
         const spOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
         const spInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -1918,7 +1933,7 @@ TAB - дополнить, ↑↓ - история
                     return spOne([`СПАТИ: Запомнил: ${spatiMem.name}. Приятно познакомиться`, `СПАТИ: ${spatiMem.name}. Хорошее имя. Записал`, `СПАТИ: Ок, ${spatiMem.name}. Теперь ты в базе`]);
                 }
                 if (/как меня зовут|ты знаешь мое имя|помнишь (мое )?имя/.test(q)) {
-                    return spatiMem.name ? `СПАТИ: Тебя зовут ${spatiMem.name}. Я помню` : 'СПАТИ: Не знаю. Скажи: меня зовут ...';
+                    return (spatiMem.name || state.nick) ? `СПАТИ: Тебя зовут ${spatiMem.name || state.nick}. Я помню` : 'СПАТИ: Не знаю. Скажи: меня зовут ...';
                 }
                 if (/забудь (мое )?имя/.test(q)) { spatiMem.name = ''; spatiSave(); return 'СПАТИ: Какое имя? Не помню. Всё стёрто'; }
             },
@@ -2470,7 +2485,7 @@ TAB - дополнить, ↑↓ - история
             bar.addEventListener('mousedown', (e) => e.preventDefault()); // не отбираем фокус у поля ввода
             bar.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
-                if (!btn || !isBooted || isTyping) return;
+                if (!btn || !isBooted || isTyping || nickMode) return;
                 unlock('pocket');
                 const key = btn.dataset.key;
                 const cmd = btn.dataset.cmd;
@@ -3305,6 +3320,380 @@ TAB - дополнить, ↑↓ - история
                 picker.click();
             };
         })();
+
+        // ==========================================
+        // ПЕРЕТАСКИВАЕМЫЕ ОКНА
+        // ==========================================
+        (function initWindows() {
+            const SEL = '.ach-window, .music-player-modal';
+            const POS_KEY = 'spatium_win_pos';
+            const order = [];
+            let saved = {};
+            try { saved = JSON.parse(localStorage.getItem(POS_KEY) || '{}') || {}; } catch (err) { saved = {}; }
+            const savePos = () => { try { localStorage.setItem(POS_KEY, JSON.stringify(saved)); } catch (err) { /* ignore */ } };
+            const box = () => screen.getBoundingClientRect();
+
+            // окна лежат под CRT-слоем (z-index 30), поэтому z-index только 20..24
+            function front(w) {
+                const i = order.indexOf(w);
+                if (i !== -1) order.splice(i, 1);
+                order.push(w);
+                order.forEach((el, k) => { el.style.zIndex = 20 + Math.min(k, 4); });
+            }
+
+            function place(w, l, t) {
+                const r = box(), W = w.offsetWidth || 300;
+                l = Math.max(-W + 90, Math.min(r.width - 90, l));
+                t = Math.max(0, Math.min(r.height - 40, t));
+                w.classList.add('win-moved');
+                w.style.left = l + 'px'; w.style.top = t + 'px'; w.style.right = 'auto';
+            }
+            const clampOne = (w) => place(w, parseFloat(w.style.left) || 0, parseFloat(w.style.top) || 0);
+
+            Object.keys(saved).forEach(id => {
+                const el = document.getElementById(id);
+                const p = saved[id];
+                if (el && Array.isArray(p) && isFinite(p[0]) && isFinite(p[1])) place(el, p[0], p[1]);
+            });
+
+            let drag = null;
+            screen.addEventListener('pointerdown', (e) => {
+                const w = e.target.closest && e.target.closest(SEL);
+                if (!w) return;
+                front(w);
+                const head = e.target.closest('.player-header');
+                if (!head || e.target.closest('button') || e.button > 0) return;
+                const wr = w.getBoundingClientRect();
+                drag = { w, head, id: e.pointerId, dx: e.clientX - wr.left, dy: e.clientY - wr.top, sx: e.clientX, sy: e.clientY, moved: false };
+                try { head.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+            });
+            screen.addEventListener('pointermove', (e) => {
+                if (!drag || e.pointerId !== drag.id) return;
+                if (!drag.moved) {
+                    if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) < 4) return;
+                    drag.moved = true;
+                    drag.w.classList.add('win-drag');
+                }
+                const r = box();
+                place(drag.w, e.clientX - r.left - drag.dx, e.clientY - r.top - drag.dy);
+            });
+            const endDrag = (e) => {
+                if (!drag || e.pointerId !== drag.id) return;
+                const { w, moved } = drag;
+                drag = null;
+                w.classList.remove('win-drag');
+                if (!moved) return;
+                if (w.id) { saved[w.id] = [parseFloat(w.style.left) || 0, parseFloat(w.style.top) || 0]; savePos(); }
+                unlock('win_drag');
+            };
+            screen.addEventListener('pointerup', endDrag);
+            screen.addEventListener('pointercancel', endDrag);
+
+            // двойной клик по заголовку - окно возвращается на своё место
+            screen.addEventListener('dblclick', (e) => {
+                if (!e.target.closest || e.target.closest('button')) return;
+                const head = e.target.closest('.player-header');
+                const w = head && head.closest(SEL);
+                if (!w) return;
+                w.classList.remove('win-moved');
+                ['left', 'top', 'right'].forEach(p => { w.style[p] = ''; });
+                if (w.id) { delete saved[w.id]; savePos(); }
+            });
+
+            let lastW = window.innerWidth;
+            window.addEventListener('resize', () => {
+                if (window.innerWidth === lastW) return; // экранная клавиатура меняет только высоту
+                lastW = window.innerWidth;
+                document.querySelectorAll('.win-moved').forEach(clampOne);
+            });
+
+            // открытое окно выходит на передний план
+            const trio = ['musicPlayerModal', 'achWindow', 'snakeWindow'];
+            new MutationObserver((muts) => {
+                for (const m of muts) {
+                    const w = m.target;
+                    if (!w.matches || !w.matches(SEL) || w.classList.contains('hidden')) continue;
+                    if (order[order.length - 1] !== w) {
+                        front(w);
+                        if (w.classList.contains('win-moved')) clampOne(w);
+                    }
+                }
+                if (trio.every(id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); })) unlock('multiwin');
+            }).observe(screen, { attributes: true, attributeFilter: ['class'], subtree: true });
+        })();
+
+        // ==========================================
+        // КАРТОЧКА ПРОГРЕССА (PNG для друзей)
+        // ==========================================
+        (function initCard() {
+            TAB_COMMANDS.push('card', 'share');
+            const W = 1200, H = 630;
+            const RC = { common: null, rare: '#4aa8ff', epic: '#c26bff', legendary: '#ffb627' };
+            const FONT = (s) => `${s}px "Press Start 2P", monospace`;
+            let blob = null;
+
+            function notice(text) {
+                printTextInstant(text);
+                const n = elem('div', 'io-note', text);
+                screen.appendChild(n);
+                setTimeout(() => n.remove(), 4200);
+            }
+
+            const win = elem('div', 'ach-window card-window hidden');
+            win.id = 'cardWindow';
+            const head = elem('div', 'player-header');
+            head.appendChild(elem('span', 'player-title', 'КАРТОЧКА ПРОГРЕССА'));
+            const x = elem('button', 'player-close-btn', '[X]');
+            x.type = 'button';
+            head.appendChild(x);
+            const body = elem('div', 'card-body');
+            const cv = document.createElement('canvas');
+            cv.width = W; cv.height = H;
+            const actions = elem('div', 'card-actions');
+            const mkBtn = (label, fn) => {
+                const b = elem('button', 'player-btn', label);
+                b.type = 'button';
+                b.addEventListener('click', () => { sfxKey('tab'); fn(); b.blur(); });
+                actions.appendChild(b);
+                return b;
+            };
+            body.append(cv, actions);
+            win.append(head, body);
+            screen.appendChild(win);
+            win.addEventListener('click', (e) => e.stopPropagation());
+
+            const fileName = () => `spatium-card-${new Date().toISOString().slice(0, 10)}.png`;
+            const shareText = () => `${state.nick ? state.nick + ' — ' : ''}прогресс в Spatium OS: ${unlockedCount()}/${ACHIEVEMENTS.length} достижений, рекорд в змейке ${state.stats.snake.best}`;
+
+            const bDl = mkBtn('СКАЧАТЬ PNG', () => {
+                if (!blob) return;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = fileName(); a.style.display = 'none';
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                unlock('share_send');
+                notice(`КАРТОЧКА СОХРАНЕНА: ${fileName()}`);
+            });
+            const bShare = mkBtn('ПОДЕЛИТЬСЯ', () => {
+                if (!blob) return;
+                const file = new File([blob], fileName(), { type: 'image/png' });
+                navigator.share({ files: [file], title: 'Spatium OS', text: shareText() })
+                    .then(() => unlock('share_send'))
+                    .catch(() => { /* пользователь закрыл меню */ });
+            });
+            const bCopy = mkBtn('КОПИРОВАТЬ', () => {
+                if (!blob) return;
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                    .then(() => { unlock('share_send'); notice('КАРТИНКА СКОПИРОВАНА В БУФЕР'); })
+                    .catch(() => notice('НЕ УДАЛОСЬ СКОПИРОВАТЬ. ИСПОЛЬЗУЙТЕ СКАЧАТЬ PNG'));
+            });
+            bShare.style.display = bCopy.style.display = 'none';
+
+            function px(c, name, x0, y0, size, color) {
+                const rows = ICONS[name] || ICONS.star, u = size / 8;
+                c.fillStyle = color;
+                rows.forEach((row, j) => { for (let i = 0; i < 8; i++) if (row[i] === '#') c.fillRect(x0 + i * u, y0 + j * u, Math.ceil(u), Math.ceil(u)); });
+            }
+            function fit(c, text, size, maxW) {
+                for (; size > 8; size--) { c.font = FONT(size); if (c.measureText(text).width <= maxW) return; }
+                c.font = FONT(8);
+            }
+
+            function render() {
+                const c = cv.getContext('2d');
+                const cs = getComputedStyle(screen);
+                const col = cs.getPropertyValue('--crt-color').trim() || '#33ff33';
+                const bg = cs.getPropertyValue('--crt-bg').trim() || '#001100';
+                const total = ACHIEVEMENTS.length, got = unlockedCount(), pct = Math.floor(got / total * 100);
+                const st = state.stats, sn = st.snake;
+                c.clearRect(0, 0, W, H);
+                c.fillStyle = bg; c.fillRect(0, 0, W, H);
+                c.fillStyle = col; c.globalAlpha = 0.07;
+                for (let i = 0; i < W; i += 40) c.fillRect(i, 0, 1, H);
+                for (let j = 0; j < H; j += 40) c.fillRect(0, j, W, 1);
+                c.globalAlpha = 0.05;
+                for (let j = 0; j < H; j += 4) c.fillRect(0, j, W, 2);
+                c.globalAlpha = 1;
+                c.strokeStyle = col; c.lineWidth = 3; c.shadowColor = col; c.shadowBlur = 14;
+                c.strokeRect(22, 22, W - 44, H - 44);
+                c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+
+                // шапка
+                c.fillStyle = col; c.shadowBlur = 12;
+                c.font = FONT(56); c.fillText('S_', 60, 120);
+                c.font = FONT(26); c.fillText('SPATIUM OS', 170, 112);
+                c.shadowBlur = 0;
+                c.textAlign = 'right';
+                if (state.nick) { c.shadowBlur = 10; fit(c, state.nick, 26, 480); c.fillText(state.nick, W - 60, 112); c.shadowBlur = 0; }
+                c.globalAlpha = 0.6; c.font = FONT(12);
+                c.fillText(new Date().toLocaleDateString('ru-RU'), W - 60, 142);
+                c.textAlign = 'left';
+
+                // звание и прогресс
+                c.font = FONT(13); c.fillText('ЗВАНИЕ', 60, 190); c.globalAlpha = 1;
+                const rank = rankFor(pct);
+                c.shadowBlur = 10; fit(c, rank, 30, 560); c.fillText(rank, 60, 238); c.shadowBlur = 0;
+                c.font = FONT(15); c.fillText(`ДОСТИЖЕНИЯ ${got}/${total}`, 60, 292);
+                c.textAlign = 'right'; c.fillText(`${pct}%`, 620, 292); c.textAlign = 'left';
+                c.lineWidth = 2; c.strokeRect(60, 308, 560, 28);
+                const segs = 28, sw = (560 - 8) / segs, on = Math.round(segs * got / total);
+                for (let i = 0; i < on; i++) c.fillRect(64 + i * sw, 312, sw - 3, 20);
+
+                // редкость
+                RARITY_ORDER.forEach((r, i) => {
+                    const list = ACHIEVEMENTS.filter(a => a.rarity === r);
+                    const g = list.filter(a => state.ach[a.id]).length;
+                    const rc = RC[r] || col, bx = 60 + i * 143;
+                    c.strokeStyle = rc; c.fillStyle = rc; c.lineWidth = 2;
+                    c.strokeRect(bx, 360, 133, 84);
+                    c.font = FONT(9); c.fillText(RARITIES[r].label, bx + 10, 386);
+                    fit(c, `${g}/${list.length}`, 20, 113); c.fillText(`${g}/${list.length}`, bx + 10, 426);
+                });
+
+                // статистика
+                c.fillStyle = col;
+                [['ЗАПУСКОВ', st.visits], ['КОМАНД', st.cmds], ['РЕКОРД ЗМЕЙКИ', sn.best],
+                 ['ЦВЕТОВ', `${st.colors.length}/${Object.keys(colorPalette).length}`], ['ТРЕКОВ', `${st.tracks.length}/${playlist.length}`], ['ПАРТИЙ ЗМЕЙКИ', sn.games]]
+                    .forEach(([k, v], i) => {
+                        const x0 = 60 + Math.floor(i / 3) * 290, y0 = 488 + (i % 3) * 38;
+                        c.globalAlpha = 0.6; c.font = FONT(11); c.fillText(k, x0, y0);
+                        c.globalAlpha = 1; c.font = FONT(14); c.fillText(String(v), x0, y0 + 20);
+                    });
+
+                // лучшие достижения
+                c.globalAlpha = 0.6; c.font = FONT(13); c.fillText('ЛУЧШИЕ ДОСТИЖЕНИЯ', 680, 190); c.globalAlpha = 1;
+                const best = ACHIEVEMENTS.filter(a => state.ach[a.id])
+                    .sort((a, b) => RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) || state.ach[b.id] - state.ach[a.id]).slice(0, 5);
+                if (!best.length) { c.globalAlpha = 0.6; c.font = FONT(12); c.fillText('ПОКА ПУСТО', 680, 240); c.globalAlpha = 1; }
+                best.forEach((a, i) => {
+                    const y0 = 214 + i * 74, rc = RC[a.rarity] || col;
+                    c.strokeStyle = rc; c.lineWidth = 2; c.strokeRect(680, y0, 56, 56);
+                    px(c, a.icon, 692, y0 + 12, 32, rc);
+                    c.fillStyle = rc; fit(c, a.title, 16, 390); c.fillText(a.title, 752, y0 + 26);
+                    c.globalAlpha = 0.7; c.font = FONT(10); c.fillText(RARITIES[a.rarity].label, 752, y0 + 46); c.globalAlpha = 1;
+                });
+
+                cv.toBlob((b) => {
+                    blob = b;
+                    let canShare = false;
+                    try { canShare = !!(b && navigator.canShare && navigator.canShare({ files: [new File([b], 'a.png', { type: 'image/png' })] })); } catch (err) { canShare = false; }
+                    bShare.style.display = canShare ? '' : 'none';
+                    bCopy.style.display = (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) ? '' : 'none';
+                }, 'image/png');
+            }
+
+            function open() {
+                if (!isBooted) return;
+                win.classList.remove('hidden');
+                if (hiddenInput) hiddenInput.blur();
+                unlock('share_card');
+                const ready = (document.fonts && document.fonts.load) ? document.fonts.load(FONT(16), 'АБВ0123').catch(() => {}) : Promise.resolve();
+                ready.then(render);
+            }
+            function close() { win.classList.add('hidden'); }
+
+            x.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+            window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !win.classList.contains('hidden')) close(); });
+
+            consoleCommands.card = function () {
+                open();
+                printTextInstant('КАРТОЧКА ПРОГРЕССА ГОТОВА. Её можно скачать, скопировать или отправить.');
+            };
+            consoleCommands.share = consoleCommands.card;
+        })();
+
+        // ==========================================
+        // НИКНЕЙМ: запрос при первом запуске, показ везде
+        // ==========================================
+        const NICK_RESERVED = ['admin', 'root', 'system', 'spati', 'spatium', 'guest', 'админ', 'система', 'спати', 'спатиум', 'администратор'];
+        const nickPromptEl = document.querySelector('.prompt');
+        const nickBtn = document.getElementById('userBtn');
+        TAB_COMMANDS.push('nick');
+        SECRET_HINTS.nick_fake = 'Назовись именем системы: admin, root или Спати';
+
+        function applyNick() {
+            const n = state.nick || '';
+            const a = document.getElementById('userNick'), b = document.getElementById('statNick');
+            if (a) a.textContent = n || '—';
+            if (b) b.textContent = n || '-';
+            document.title = n ? `${n} · Spatium OS` : 'Spatium OS';
+        }
+
+        // возвращает [чистое имя, текст ошибки]
+        function checkNick(raw) {
+            const n = String(raw).replace(/\s+/g, ' ').trim();
+            if (n.length < 2) return ['', 'СЛИШКОМ КОРОТКО: минимум 2 символа'];
+            if (n.length > 16) return ['', 'СЛИШКОМ ДЛИННО: максимум 16 символов'];
+            if (!/^[\p{L}\p{N}][\p{L}\p{N}_.\- ]*$/u.test(n)) return ['', 'ДОПУСТИМЫ БУКВЫ, ЦИФРЫ, ПРОБЕЛ И _ - .'];
+            if (NICK_RESERVED.includes(n.toLowerCase())) { unlock('nick_fake'); return ['', 'ЭТО ИМЯ ЗАРЕЗЕРВИРОВАНО СИСТЕМОЙ'] ; }
+            return [n, ''];
+        }
+
+        function startNickPrompt(mode) {
+            nickMode = mode;
+            if (nickPromptEl) nickPromptEl.textContent = 'НИК>\u00a0';
+            if (mode === 'first') {
+                printTextTyped('ПЕРВЫЙ ЗАПУСК. СОЗДАЙТЕ ПОЛЬЗОВАТЕЛЯ.', () => printTextInstant('Введите никнейм (2-16 символов: буквы, цифры, пробел, _ - .). Он появится на карточке прогресса и в системе.'));
+            } else {
+                printTextInstant('СМЕНА НИКНЕЙМА. Введите новое имя или «отмена».');
+            }
+            if (hiddenInput) hiddenInput.focus();
+        }
+
+        function endNickPrompt() {
+            nickMode = null;
+            if (nickPromptEl) nickPromptEl.textContent = '>\u00a0';
+            if (hiddenInput) hiddenInput.focus();
+        }
+
+        function commitNick(n) {
+            const first = !state.nick;
+            const changed = !first && state.nick !== n;
+            state.nick = n;
+            saveState();
+            applyNick();
+            endNickPrompt();
+            unlock('nick_set');
+            if (changed) unlock('nick_change');
+            if (first) printTextTyped(`ПОЛЬЗОВАТЕЛЬ СОЗДАН: ${n}. ДОБРО ПОЖАЛОВАТЬ.`, () => printTextInstant("Введите 'help' для списка команд."));
+            else printTextInstant(`НИКНЕЙМ ИЗМЕНЁН: ${n}`);
+        }
+
+        function handleNickInput(raw) {
+            const t = raw.trim();
+            printTextInstant(`НИК> ${t}`);
+            if (nickMode === 'rename' && /^(отмена|cancel|-)$/i.test(t)) {
+                endNickPrompt();
+                printTextInstant('СМЕНА ОТМЕНЕНА.');
+                return;
+            }
+            const [n, err] = checkNick(t);
+            if (err) { printTextInstant('ОШИБКА: ' + err); return; }
+            commitNick(n);
+        }
+
+        function afterBoot() {
+            if (!state.nick) startNickPrompt('first');
+            else printTextInstant(`С ВОЗВРАЩЕНИЕМ, ${state.nick}.`);
+        }
+
+        consoleCommands.nick = function (args) {
+            const arg = args.join(' ').trim();
+            if (!arg) {
+                printTextInstant(`НИКНЕЙМ: ${state.nick || '-'}\nСменить: nick НОВОЕ_ИМЯ (или нажмите на имя в верхней панели)`);
+                return;
+            }
+            const [n, err] = checkNick(arg);
+            if (err) { printTextInstant('ОШИБКА: ' + err); return; }
+            if (n === state.nick) { printTextInstant('ЭТО УЖЕ ВАШ НИКНЕЙМ.'); return; }
+            commitNick(n);
+        };
+        if (nickBtn) nickBtn.addEventListener('click', () => {
+            if (!isBooted || isTyping || nickMode) return;
+            startNickPrompt('rename');
+        });
+        applyNick();
 
         scheduleGlitch();
     });
