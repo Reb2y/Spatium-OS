@@ -594,6 +594,15 @@ body.is-hidden *, body.is-hidden *::before, body.is-hidden *::after { animation-
     box-shadow: inset 0 0 20px rgba(0,0,0,.6), 0 0 12px var(--dim2); touch-action: none; image-rendering: pixelated;
 }
 .snake-ctrl { display: flex; gap: 8px; margin-top: 10px; }
+.snake-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.snake-opts .player-btn { flex: none; font-size: 8px; padding: 8px 4px; white-space: nowrap; }
+.snake-top { margin-top: 10px; border: 1px solid var(--dim2); padding: 8px; font-size: 11px; }
+.sk-top-title { font-family: var(--font-ui); font-size: 8px; letter-spacing: 1px; margin-bottom: 6px; opacity: .8; }
+.sk-top-empty { font-size: 10px; opacity: .5; }
+.sk-top-row { display: grid; grid-template-columns: 22px 34px 1fr auto; gap: 6px; line-height: 1.7; opacity: .85; padding: 0 2px; }
+.sk-top-row span:nth-child(2) { font-weight: 600; }
+.sk-top-row span:last-child { font-size: 9px; opacity: .65; align-self: center; }
+.sk-top-row.new { opacity: 1; background: var(--dim); text-shadow: 0 0 8px var(--crt-glow); }
 .snake-pad { display: none; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(2, 46px); gap: 6px; justify-content: center; margin-top: 10px; }
 .snake-pad .player-btn { flex: none; font-size: 14px; padding: 0; touch-action: manipulation; }
 .snake-pad [data-d="up"] { grid-column: 2; grid-row: 1; }

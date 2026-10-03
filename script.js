@@ -47,7 +47,7 @@
         const HISTORY_LIMIT = 50;
 
         function freshState() {
-            return { nick: '', ach: {}, shown: {}, history: [], stats: { visits: 0, colors: [], tracks: [], spatiTalks: 0, cmds: 0, first: 0, snake: { best: 0, games: 0, apples: 0, bonus: 0, wrap: false } } };
+            return { nick: '', ach: {}, shown: {}, history: [], stats: { visits: 0, colors: [], tracks: [], spatiTalks: 0, cmds: 0, first: 0, snake: { best: 0, games: 0, apples: 0, bonus: 0, wrap: false, obst: false, speed: false, skin: 'theme', head: 'square', top: [], last: null } } };
         }
 
         function loadState() {
@@ -262,6 +262,9 @@
             { id: 'snake_all', cat: 'ЗМЕЙКА', icon: 'shield', title: 'ЗМЕЕЛОВ', desc: 'Открой все остальные достижения змейки', rarity: 'epic' },
             { id: 'snake_100', cat: 'ЗМЕЙКА', icon: 'crown', title: 'ВАСИЛИСК', desc: 'Набери 100 очков в одной партии', rarity: 'legendary' },
             { id: 'snake_total1000', cat: 'ЗМЕЙКА', icon: 'trophy', title: 'ЗМЕИНЫЙ КОРОЛЬ', desc: 'Съешь 1000 яблок суммарно', rarity: 'legendary' },
+            { id: 'snake_skin', cat: 'ЗМЕЙКА', icon: 'diamond', title: 'ПЕРЕОДЕВАНИЕ', desc: 'Смени скин или форму головы змейки', rarity: 'common' },
+            { id: 'snake_lvl5', cat: 'ЗМЕЙКА', icon: 'flag', title: 'ГЛУБОКИЙ УРОВЕНЬ', desc: 'Дойди до 5 уровня в режиме БЛОКИ', rarity: 'rare' },
+            { id: 'snake_turbo', cat: 'ЗМЕЙКА', icon: 'bolt', title: 'ТУРБОЗМЕЯ', desc: 'Набери 15 очков в режиме УСКОРЕНИЕ', rarity: 'rare' },
             { id: 'spati_snake', cat: 'СПАТИ', icon: 'ghost', title: 'ТРЕНЕР', desc: 'Поговори со Спати о змейке', hidden: true, rarity: 'common' },
             { id: 'save_export', cat: 'СИСТЕМА', icon: 'disk', title: 'РЕЗЕРВНАЯ КОПИЯ', desc: 'Сохрани прогресс в файл', rarity: 'common' },
             { id: 'save_import', cat: 'СИСТЕМА', icon: 'arrow', title: 'ВОСКРЕШЕНИЕ', desc: 'Загрузи прогресс из файла', rarity: 'rare' },
@@ -2096,9 +2099,9 @@ TAB - дополнить, ↑↓ - история
 
         // --- болтовня: чем больше правил, тем «живее» ---
         const spatiRulesExtra = [
-            { re: /рекорд|сколько (я )?(набрал|очков)|мой счет/, ach: 'spati_snake', a: [() => {
+            { re: /рекорд|сколько (я )?(набрал|очков)|мой счет|(прошл|последн)\w* (парти|игр)/, ach: 'spati_snake', a: [() => {
                 const b = state.stats.snake.best;
-                return b ? `СПАТИ: Твой рекорд в змейке — ${b}. ${b >= 25 ? 'Впечатляет' : 'Есть куда расти'}` : 'СПАТИ: Рекорда пока нет. Скажи: запусти змейку';
+                return b ? `СПАТИ: Твой рекорд в змейке — ${b}. ${b >= 25 ? 'Впечатляет' : 'Есть куда расти'}${state.stats.snake.last ? '. Прошлая партия: ' + state.stats.snake.last.s : ''}` : 'СПАТИ: Рекорда пока нет. Скажи: запусти змейку';
             }] },
             { re: /змейк|змея|(^| )snake( |$)/, ach: 'spati_snake', a: [
                 "СПАТИ: Змейка — моя гордость. Скажи: запусти змейку",
@@ -3004,16 +3007,53 @@ TAB - дополнить, ↑↓ - история
         (function initSnake() {
             const win = document.getElementById('snakeWindow');
             if (!win) return;
-            const G = 20, C = 16;
+            const G = 20, C = 16, LVL_STEP = 8;
             const cv = document.getElementById('skCanvas'), cx = cv.getContext('2d');
-            const elScore = document.getElementById('skScore'), elBest = document.getElementById('skBest'), elLen = document.getElementById('skLen');
+            const elScore = document.getElementById('skScore'), elBest = document.getElementById('skBest'), elLen = document.getElementById('skLen'), elLvl = document.getElementById('skLvl');
             const btnGo = document.getElementById('skStart'), btnMode = document.getElementById('skMode');
+            const btnObst = document.getElementById('skObst'), btnSpeed = document.getElementById('skSpeed');
+            const btnSkin = document.getElementById('skSkin'), btnHead = document.getElementById('skHead');
+            const elTop = document.getElementById('skTop');
             const sk = state.stats.snake;
             const IDS = ACHIEVEMENTS.filter(a => a.cat === 'ЗМЕЙКА' && a.id !== 'snake_all').map(a => a.id);
             const sUn = (id) => { unlock(id); if (IDS.every(i => state.ach[i])) unlock('snake_all'); };
             SECRET_HINTS.snake_13 = 'Закончи партию в змейке ровно с 13 очками';
             TAB_COMMANDS.push('snake');
             SECRET_HINTS.spati_snake = 'Скажи: «спати змейка» или «спати запусти змейку»';
+
+            // ---- скины, формы головы и сохранённые настройки ----
+            const SKINS = [
+                { id: 'theme', name: 'ТЕМА', color: null },
+                { id: 'cyan', name: 'ЦИАН', color: '#2ee6ff' },
+                { id: 'pink', name: 'РОЗОВЫЙ', color: '#ff5fd2' },
+                { id: 'red', name: 'КРАСНЫЙ', color: '#ff4d4d' },
+                { id: 'lime', name: 'ЛАЙМ', color: '#b6ff3a' },
+                { id: 'violet', name: 'ФИОЛЕТ', color: '#a77bff' }
+            ];
+            const HEADS = [
+                { id: 'square', name: 'КВАДРАТ' }, { id: 'round', name: 'КРУГ' }, { id: 'diamond', name: 'РОМБ' },
+                { id: 'arrow', name: 'СТРЕЛКА' }, { id: 'eyes', name: 'ГЛАЗА' }
+            ];
+            if (!SKINS.some(k => k.id === sk.skin)) sk.skin = 'theme';
+            if (!HEADS.some(k => k.id === sk.head)) sk.head = 'square';
+            // данные могли прийти из импорта/старой версии — приводим к ожидаемому виду
+            const okEntry = (e) => e && Number.isFinite(+e.s) && Number.isFinite(+e.d) && +e.s >= 0;
+            sk.top = (Array.isArray(sk.top) ? sk.top : []).filter(okEntry)
+                .map(e => ({ s: Math.floor(+e.s), d: +e.d, w: e.w ? 1 : 0, o: e.o ? 1 : 0, v: e.v ? 1 : 0 }))
+                .sort((a, b) => b.s - a.s || b.d - a.d).slice(0, 5);
+            sk.last = okEntry(sk.last) ? { s: Math.floor(+sk.last.s), d: +sk.last.d } : null;
+
+            const pad2 = (n) => String(n).padStart(2, '0');
+            const fmtDate = (t) => { const d = new Date(t); return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${pad2(d.getFullYear() % 100)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+            const ago = (t) => {
+                const m = Math.floor((Date.now() - t) / 60000);
+                if (m < 2) return 'только что';
+                if (m < 60) return m + ' мин назад';
+                const h = Math.floor(m / 60);
+                return h < 24 ? h + ' ч назад' : Math.floor(h / 24) + ' дн. назад';
+            };
+            const tagsOf = (e) => [e.w ? 'ПОРТАЛЫ' : '', e.o ? 'БЛОКИ' : '', e.v ? 'УСК' : ''].filter(Boolean).join(' · ');
+            const setT = (el, v) => { v = String(v); if (el.textContent !== v) el.textContent = v; };
 
             // Спати комментирует игру (если он включён): в окне змейки и в терминале
             const elSpati = document.getElementById('skSpati');
@@ -3028,34 +3068,94 @@ TAB - дополнить, ↑↓ - история
                 printTextInstant(text);
             }
             const S_OPEN = ["СПАТИ: Змейка? Только не кусай себя", "СПАТИ: Играй. Я буду болеть молча",
-                () => sk.best ? `СПАТИ: Рекорд ${sk.best}. Попробуешь побить?` : "СПАТИ: Первая партия? Не страшно, врезаются все"];
+                () => sk.best ? `СПАТИ: Рекорд ${sk.best}. Попробуешь побить?` : "СПАТИ: Первая партия? Не страшно, врезаются все",
+                () => sk.last ? `СПАТИ: В прошлый раз было ${sk.last.s} (${ago(sk.last.d)}). Сегодня лучше?` : "СПАТИ: Прошлых партий в памяти нет. Начнём с чистого листа"];
             const S_SULK = ["СПАТИ: Играй сам. Я всё ещё обижен"];
             const S_LOW = ["СПАТИ: Быстро. Я даже моргнуть не успел", "СПАТИ: Разминка засчитана", "СПАТИ: Бывает. Яблоки никуда не денутся"];
             const S_MID = ["СПАТИ: Неплохо. Ещё разок?", "СПАТИ: Нормально. Хвост не жалко?", "СПАТИ: Достойно. Но можно длиннее"];
             const S_HIGH = ["СПАТИ: Вот это длина! Уважаю", "СПАТИ: Змея стала питоном. Достойно", "СПАТИ: Процессор впечатлён"];
             const S_WALL = ["СПАТИ: Стена не двигается. Проверено", "СПАТИ: Лбом о стену — классика"];
             const S_SELF = ["СПАТИ: Ты укусил себя. Типично для змей", "СПАТИ: Хвост оказался быстрее"];
-            const S_REC = [() => `СПАТИ: Новый рекорд — ${score}! Записал в лог золотыми буквами`, () => `СПАТИ: ${score}! Такого в моей базе ещё не было`];
+            const S_OBST = ["СПАТИ: Это не стена, это дизайн уровня", "СПАТИ: Блок стоял там давно. Ты его просто не заметил"];
+            const S_REC = [() => `СПАТИ: Новый рекорд — ${score}! Записал в лог золотыми буквами`, () => `СПАТИ: ${score}! Такого в моей базе ещё не было`,
+                () => oldBest ? `СПАТИ: Рекорд ${score}. Прошлый был ${oldBest}` : `СПАТИ: Первый рекорд — ${score}. Начало положено`];
             const S_13 = ["СПАТИ: Тринадцать. Не к добру"];
             const S_BONUS = ["СПАТИ: Золотое! Жадность — двигатель прогресса", "СПАТИ: Блестит. Правильно взял"];
             const S_MILE = { 10: "СПАТИ: Десять! Процессор вспотел", 25: "СПАТИ: Двадцать пять. Ты точно не бот?", 50: "СПАТИ: Полтинник! Я в шоке", 100: "СПАТИ: Сто. Снимаю виртуальную шляпу" };
+            const S_LVL = [() => `СПАТИ: Уровень ${level}. Дальше только интереснее`, () => `СПАТИ: ${level}-й уровень. Темп растёт`];
+            const S_LVL_OBS = [() => `СПАТИ: Уровень ${level}. Я добавил пару блоков. Не благодари`, () => `СПАТИ: ${level}-й уровень. Поле стало теснее`];
+            // сравнение с прошлой партией
+            function cmpLines(prev) {
+                const p = prev.s, diff = score - p;
+                if (diff > 0) return [`СПАТИ: В прошлый раз было ${p}, сейчас ${score}. Растёшь`, `СПАТИ: ${score} против ${p} в прошлый раз. Прогресс налицо`, `СПАТИ: Лучше прошлой партии на ${diff}. Записал`];
+                if (diff < 0) return [`СПАТИ: В прошлый раз было ${p}. Сегодня на ${-diff} меньше. Бывает`, `СПАТИ: ${score} против ${p}. Прошлая попытка была удачнее`, `СПАТИ: В прошлый раз было ${p}. Реванш?`];
+                return [`СПАТИ: Снова ${p}, как в прошлый раз. Стабильность — признак мастерства`, `СПАТИ: Ровно столько же, сколько в прошлый раз. Подозрительно`];
+            }
 
             const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
             const KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
-            let isOpen = false, phase = 'idle', timer = 0, wrap = !!sk.wrap, newRecord = false;
-            let snake, dir, queue, food, bonus, score, apples, eatTimes;
+            let isOpen = false, phase = 'idle', timer = 0, newRecord = false;
+            let wrap = !!sk.wrap, obst = !!sk.obst, speed = !!sk.speed, bodyCol = null;
+            let snake, dir, queue, food, bonus, score, apples, eatTimes, obs = [], level = 1, flashUntil = 0, oldBest = 0, lastEntry = null;
 
             const beep = (o) => { const c = sfxReady(); if (c) sfxTone(c.currentTime + 0.001, o); };
-            const delay = () => Math.max(65, 140 - score * 1.5);
+            // вибрация (Android/Chrome; на iOS Safari не поддерживается — молча игнорируется)
+            const buzz = (p) => { try { if (isOpen && navigator.vibrate) navigator.vibrate(p); } catch (e) { /* ignore */ } };
+            const delay = () => speed ? Math.max(45, 125 - score * 3.5) : Math.max(65, 140 - score * 1.5);
+
+            const taken = (x, y) => snake.some(s => s.x === x && s.y === y)
+                || (food && food.x === x && food.y === y) || (bonus && bonus.x === x && bonus.y === y)
+                || obs.some(o => o.x === x && o.y === y);
 
             function spot() {
                 for (let i = 0; i < 400; i++) {
                     const x = rnd(0, G - 1), y = rnd(0, G - 1);
-                    if (snake.some(s => s.x === x && s.y === y)) continue;
-                    if ((food && food.x === x && food.y === y) || (bonus && bonus.x === x && bonus.y === y)) continue;
+                    if (!taken(x, y)) return { x, y };
+                }
+                return null;
+            }
+
+            // блок не появляется вплотную к голове, чтобы смерть всегда была «справедливой»
+            function obstSpot() {
+                const h = snake[0];
+                for (let i = 0; i < 300; i++) {
+                    const x = rnd(0, G - 1), y = rnd(0, G - 1);
+                    if (Math.abs(x - h.x) + Math.abs(y - h.y) < 5 || taken(x, y)) continue;
                     return { x, y };
                 }
                 return null;
+            }
+
+            function updateUi() {
+                const sc = SKINS.find(k => k.id === sk.skin), hd = HEADS.find(k => k.id === sk.head);
+                bodyCol = sc.color;
+                setT(btnMode, wrap ? 'ПОРТАЛЫ' : 'СТЕНЫ');
+                setT(btnObst, 'БЛОКИ: ' + (obst ? 'ВКЛ' : 'ВЫКЛ'));
+                setT(btnSpeed, 'ТЕМП: ' + (speed ? 'УСКОРЕНИЕ' : 'ОБЫЧНЫЙ'));
+                setT(btnSkin, 'СКИН: ' + sc.name);
+                setT(btnHead, 'ГОЛОВА: ' + hd.name);
+            }
+
+            function renderTop() {
+                if (!elTop) return;
+                elTop.textContent = '';
+                const title = document.createElement('div');
+                title.className = 'sk-top-title'; title.textContent = 'ТОП-5 ПАРТИЙ';
+                elTop.appendChild(title);
+                if (!sk.top.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'sk-top-empty'; empty.textContent = 'ПОКА ПУСТО — СЫГРАЙ ПАРТИЮ';
+                    elTop.appendChild(empty);
+                    return;
+                }
+                sk.top.forEach((e, i) => {
+                    const row = document.createElement('div');
+                    row.className = 'sk-top-row' + (e === lastEntry ? ' new' : '');
+                    [`${i + 1}.`, String(e.s), fmtDate(e.d), tagsOf(e)].forEach(t => {
+                        const s = document.createElement('span'); s.textContent = t; row.appendChild(s);
+                    });
+                    elTop.appendChild(row);
+                });
             }
 
             function reset() {
@@ -3063,7 +3163,9 @@ TAB - дополнить, ↑↓ - история
                 if (elSpati) elSpati.textContent = '';
                 snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
                 dir = 'right'; queue = []; score = 0; apples = 0; eatTimes = []; bonus = null; food = null; newRecord = false;
+                obs = []; level = 1; flashUntil = 0; lastEntry = null;
                 food = spot(); phase = 'idle';
+                updateUi(); renderTop();
                 draw();
             }
 
@@ -3079,8 +3181,16 @@ TAB - дополнить, ↑↓ - история
                 if (phase === 'over') return;
                 const last = queue.length ? queue[queue.length - 1] : dir;
                 const opp = DIRS[d][0] + DIRS[last][0] === 0 && DIRS[d][1] + DIRS[last][1] === 0;
-                if (d !== last && !opp && queue.length < 2) { queue.push(d); if (swipe) sUn('snake_swipe'); }
+                if (d !== last && !opp && queue.length < 2) { queue.push(d); buzz(8); if (swipe) sUn('snake_swipe'); }
                 if (phase !== 'run') run();
+            }
+
+            function levelUp() {
+                if (obst) for (let i = 0; i < 3 && obs.length < 40; i++) { const p = obstSpot(); if (p) obs.push(p); }
+                flashUntil = Date.now() + 1400;
+                beep({ type: 'triangle', f0: 440, f1: 880, dur: 0.15, gain: 0.06 });
+                if (obst && level >= 5) sUn('snake_lvl5');
+                say(obst ? S_LVL_OBS : S_LVL);
             }
 
             function eat(isBonus) {
@@ -3095,8 +3205,11 @@ TAB - дополнить, ↑↓ - история
                 if (score >= 50) sUn('snake_50');
                 if (score >= 100) sUn('snake_100');
                 if (wrap && score >= 30) sUn('snake_nowall');
+                if (speed && score >= 15) sUn('snake_turbo');
                 if (sk.apples >= 200) sUn('snake_total200');
                 if (sk.apples >= 1000) sUn('snake_total1000');
+                const nl = 1 + Math.floor(score / LVL_STEP);
+                while (level < nl) { level++; levelUp(); }
                 if (isBonus) say(S_BONUS);
                 [10, 25, 50, 100].forEach(m => { if (before < m && score >= m) say([S_MILE[m]], true); });
                 eatTimes.push(now); if (eatTimes.length > 3) eatTimes.shift();
@@ -3113,6 +3226,7 @@ TAB - дополнить, ↑↓ - история
                     if (!wrap) return finish('wall');
                     nx = (nx + G) % G; ny = (ny + G) % G; wrapped = true;
                 }
+                if (obs.some(o => o.x === nx && o.y === ny)) return finish('obstacle');
                 const eatF = food && nx === food.x && ny === food.y;
                 const eatB = bonus && nx === bonus.x && ny === bonus.y;
                 if ((eatF || eatB ? snake : snake.slice(0, -1)).some(s => s.x === nx && s.y === ny)) return finish('self');
@@ -3127,33 +3241,87 @@ TAB - дополнить, ↑↓ - история
 
             function finish(reason) {
                 phase = 'over'; clearTimeout(timer);
+                const prev = sk.last, now = Date.now();   // прошлая партия — до перезаписи
                 sk.games++;
+                oldBest = sk.best;
                 if (score > sk.best) { sk.best = score; newRecord = score > 0; }
+                sk.last = { s: score, d: now };
+                let place = 0;
+                if (score > 0) {
+                    lastEntry = { s: score, d: now, w: wrap ? 1 : 0, o: obst ? 1 : 0, v: speed ? 1 : 0 };
+                    sk.top.push(lastEntry);
+                    sk.top.sort((a, b) => b.s - a.s || b.d - a.d);
+                    sk.top = sk.top.slice(0, 5);
+                    place = sk.top.indexOf(lastEntry) + 1;
+                    if (!place) lastEntry = null;
+                }
                 saveState();
                 beep({ type: 'sawtooth', f0: 320, f1: 60, dur: 0.4, gain: 0.07, lp: [1400, 150] });
+                buzz([70, 40, 150]);
                 screen.classList.remove('shake'); void screen.offsetWidth; screen.classList.add('shake');
                 if (reason === 'wall') sUn('snake_wall');
                 if (reason === 'self') sUn('snake_self');
                 if (score === 13) sUn('snake_13');
                 if (sk.games >= 5) sUn('snake_games5');
                 if (sk.games >= 25) sUn('snake_games25');
-                const base = score < 5 ? S_LOW : score < 20 ? S_MID : S_HIGH;
-                say(newRecord ? S_REC : score === 13 ? S_13 : base.concat(reason === 'self' ? S_SELF : reason === 'wall' ? S_WALL : []), true);
+                const reasonPool = reason === 'self' ? S_SELF : reason === 'wall' ? S_WALL : reason === 'obstacle' ? S_OBST : [];
+                const base = (score < 5 ? S_LOW : score < 20 ? S_MID : S_HIGH).concat(reasonPool);
+                if (place) base.push(`СПАТИ: ${score} — это ${place}-е место в твоём топ-5`);
+                let pool;
+                if (newRecord) pool = S_REC;
+                else if (score === 13) pool = S_13;
+                else if (prev && Math.random() < 0.7) pool = cmpLines(prev);
+                else pool = base;
+                say(pool, true);
                 if (newRecord) { spatiMood = spatiClamp(spatiMood + 1); spatiMoodAt = Date.now(); }
+                renderTop();
                 draw();
+            }
+
+            function drawHead(s, c) {
+                const x = s.x * C, y = s.y * C, m = x + C / 2, n = y + C / 2;
+                cx.fillStyle = c;
+                if (sk.head === 'round') {
+                    cx.beginPath(); cx.arc(m, n, C / 2 - 1, 0, Math.PI * 2); cx.fill();
+                } else if (sk.head === 'diamond') {
+                    cx.beginPath(); cx.moveTo(m, y + 0.5); cx.lineTo(x + C - 0.5, n); cx.lineTo(m, y + C - 0.5); cx.lineTo(x + 0.5, n); cx.closePath(); cx.fill();
+                } else if (sk.head === 'arrow') {
+                    const a = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[dir];
+                    cx.save(); cx.translate(m, n); cx.rotate(a);
+                    cx.beginPath(); cx.moveTo(7, 0); cx.lineTo(-6, -7); cx.lineTo(-3, 0); cx.lineTo(-6, 7); cx.closePath(); cx.fill();
+                    cx.restore();
+                } else {
+                    cx.fillRect(x + 1, y + 1, C - 2, C - 2);
+                    if (sk.head === 'eyes') {
+                        const f = DIRS[dir], sd = [-f[1], f[0]];
+                        cx.shadowBlur = 0; cx.fillStyle = '#000';
+                        [-1, 1].forEach(k => cx.fillRect(Math.round(m + f[0] * 3 + sd[0] * 3.5 * k - 1.5), Math.round(n + f[1] * 3 + sd[1] * 3.5 * k - 1.5), 3, 3));
+                    }
+                }
             }
 
             function draw() {
                 const col = getComputedStyle(win).getPropertyValue('--crt-color').trim() || '#33ff33';
+                const bc = bodyCol || col;
                 cx.clearRect(0, 0, 320, 320);
                 cx.globalAlpha = 0.14; cx.fillStyle = col;
                 for (let x = 0; x < G; x++) for (let y = 0; y < G; y++) cx.fillRect(x * C + 7, y * C + 7, 2, 2);
+                // препятствия: полая рамка с крестом, чтобы не путать со змеёй
+                if (obs.length) {
+                    cx.strokeStyle = col; cx.lineWidth = 1;
+                    obs.forEach(o => {
+                        const x = o.x * C, y = o.y * C;
+                        cx.globalAlpha = 0.3; cx.fillStyle = col; cx.fillRect(x + 1, y + 1, C - 2, C - 2);
+                        cx.globalAlpha = 0.95; cx.strokeRect(x + 1.5, y + 1.5, C - 3, C - 3);
+                        cx.beginPath(); cx.moveTo(x + 3, y + 3); cx.lineTo(x + C - 3, y + C - 3); cx.moveTo(x + C - 3, y + 3); cx.lineTo(x + 3, y + C - 3); cx.stroke();
+                    });
+                }
                 const n = snake.length;
                 snake.forEach((s, i) => {
                     cx.globalAlpha = 0.5 + 0.5 * (1 - i / n);
-                    cx.shadowColor = col; cx.shadowBlur = i === 0 ? 10 : 0;
-                    cx.fillStyle = col;
-                    cx.fillRect(s.x * C + 1, s.y * C + 1, C - 2, C - 2);
+                    cx.shadowColor = bc; cx.shadowBlur = i === 0 ? 10 : 0;
+                    if (i === 0) drawHead(s, bc);
+                    else { cx.fillStyle = bc; cx.fillRect(s.x * C + 1, s.y * C + 1, C - 2, C - 2); }
                 });
                 cx.shadowBlur = 0; cx.globalAlpha = 1;
                 if (food) { cx.fillStyle = '#fff'; cx.shadowColor = '#fff'; cx.shadowBlur = 8; cx.fillRect(food.x * C + 4, food.y * C + 4, C - 8, C - 8); }
@@ -3163,17 +3331,21 @@ TAB - дополнить, ↑↓ - история
                     cx.fillStyle = '#000'; cx.shadowBlur = 0; cx.fillRect(bonus.x * C + 6, bonus.y * C + 6, C - 12, C - 12);
                 }
                 cx.shadowBlur = 0;
+                if (phase === 'run' && Date.now() < flashUntil) {
+                    cx.fillStyle = 'rgba(0,0,0,.7)'; cx.fillRect(0, 140, 320, 40);
+                    cx.fillStyle = col; cx.textAlign = 'center'; cx.font = '11px "Press Start 2P", monospace';
+                    cx.fillText(`УРОВЕНЬ ${level}`, 160, 165);
+                }
                 if (phase !== 'run') {
                     cx.fillStyle = 'rgba(0,0,0,.65)'; cx.fillRect(0, 0, 320, 320);
                     const t = phase === 'idle' ? ['SNAKE', '', 'ПРОБЕЛ ИЛИ ТАП', 'ДЛЯ СТАРТА']
                         : phase === 'pause' ? ['ПАУЗА']
-                        : ['ИГРА ОКОНЧЕНА', '', `СЧЁТ ${score}`].concat(newRecord ? ['', 'НОВЫЙ РЕКОРД!'] : []);
+                        : ['ИГРА ОКОНЧЕНА', '', `СЧЁТ ${score}`, `УРОВЕНЬ ${level}`].concat(newRecord ? ['', 'НОВЫЙ РЕКОРД!'] : []);
                     cx.fillStyle = col; cx.textAlign = 'center'; cx.font = '11px "Press Start 2P", monospace';
                     t.forEach((l, i) => cx.fillText(l, 160, 160 - (t.length - 1) * 12 + i * 24));
                 }
-                elScore.textContent = score; elBest.textContent = Math.max(sk.best, score); elLen.textContent = snake.length;
-                btnGo.textContent = { idle: 'СТАРТ', run: 'ПАУЗА', pause: 'ДАЛЬШЕ', over: 'ЗАНОВО' }[phase];
-                btnMode.textContent = wrap ? 'ПОРТАЛЫ' : 'СТЕНЫ';
+                setT(elScore, score); setT(elBest, Math.max(sk.best, score)); setT(elLen, snake.length); setT(elLvl, level);
+                setT(btnGo, { idle: 'СТАРТ', run: 'ПАУЗА', pause: 'ДАЛЬШЕ', over: 'ЗАНОВО' }[phase]);
             }
 
             function open() {
@@ -3202,11 +3374,30 @@ TAB - дополнить, ↑↓ - история
             win.addEventListener('click', (e) => e.stopPropagation());
             document.getElementById('snakeCloseBtn').addEventListener('click', (e) => { e.stopPropagation(); close(); });
             btnGo.addEventListener('click', () => { toggle(); btnGo.blur(); });
-            btnMode.addEventListener('click', () => {
-                btnMode.blur();
-                if (phase === 'run' || phase === 'pause') return;
-                wrap = !wrap; sk.wrap = wrap; saveState(); reset();
-            });
+
+            // режимы можно менять только вне партии — смена начинает поле заново
+            function flip(btn, apply) {
+                btn.addEventListener('click', () => {
+                    btn.blur();
+                    if (phase === 'run' || phase === 'pause') return;
+                    apply(); saveState(); reset();
+                });
+            }
+            flip(btnMode, () => { wrap = !wrap; sk.wrap = wrap; });
+            flip(btnObst, () => { obst = !obst; sk.obst = obst; });
+            flip(btnSpeed, () => { speed = !speed; sk.speed = speed; });
+            // внешний вид можно менять в любой момент
+            function cycle(btn, list, key) {
+                btn.addEventListener('click', () => {
+                    btn.blur();
+                    const i = list.findIndex(k => k.id === sk[key]);
+                    sk[key] = list[(i + 1) % list.length].id;
+                    saveState(); sUn('snake_skin'); updateUi(); draw();
+                });
+            }
+            cycle(btnSkin, SKINS, 'skin');
+            cycle(btnHead, HEADS, 'head');
+
             document.getElementById('skPad').addEventListener('pointerdown', (e) => {
                 const b = e.target.closest('button');
                 if (!b) return;
@@ -3224,14 +3415,22 @@ TAB - дополнить, ↑↓ - история
             cv.addEventListener('pointercancel', () => { p0 = null; });
 
             snakeApi = { open, close };
+            updateUi(); renderTop();
 
             consoleCommands.snake = function (args) {
-                if ((args[0] || '').toLowerCase() === 'best') {
-                    printTextInstant(`ЗМЕЙКА: РЕКОРД ${sk.best} · ПАРТИЙ ${sk.games} · ЯБЛОК ${sk.apples}`);
+                const a = (args[0] || '').toLowerCase();
+                if (a === 'best' || a === 'top') {
+                    const lines = [`ЗМЕЙКА: РЕКОРД ${sk.best} · ПАРТИЙ ${sk.games} · ЯБЛОК ${sk.apples}`];
+                    if (sk.last) lines.push(`ПРОШЛАЯ ПАРТИЯ: ${sk.last.s} (${fmtDate(sk.last.d)})`);
+                    if (sk.top.length) {
+                        lines.push('ТОП-5:');
+                        sk.top.forEach((e, i) => lines.push(`  ${i + 1}. ${String(e.s).padStart(3)}  ${fmtDate(e.d)}${tagsOf(e) ? '  ' + tagsOf(e) : ''}`));
+                    }
+                    printTextInstant(lines.join('\n'));
                     return;
                 }
                 open();
-                printTextInstant('SNAKE.EXE ЗАПУЩЕН. Стрелки/WASD, пробел — пауза, Esc — выход. (snake best — статистика)');
+                printTextInstant('SNAKE.EXE ЗАПУЩЕН. Стрелки/WASD, пробел — пауза, Esc — выход. (snake best — статистика и топ-5)');
             };
         })();
 
