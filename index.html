@@ -27,6 +27,10 @@
             <div class="glitch-line" id="glitchLine"></div>
         </div>
 
+        <div class="start-screen" id="startScreen" role="button" tabindex="0">
+            <div class="start-text">НАЖМИТЕ ЛЮБУЮ КЛАВИШУ<br>ИЛИ КОСНИТЕСЬ ЭКРАНА</div>
+        </div>
+
         <div class="boot-container" id="bootContainer">
             <div class="logo-loader">
                 <span class="static-s">S</span>
@@ -44,6 +48,7 @@
                 </div>
                 <span class="menubar-title">Spatium OS</span>
                 <span class="menubar-right">
+                    <button type="button" class="ach-btn spati-btn" id="spatiBtn" title="Включить/выключить Спати">СПАТИ</button>
                     <button type="button" class="ach-btn" id="achBtn" title="Достижения">
                         <span class="ach-btn-icon" id="achBtnIcon"></span><span id="achBarCount">0/0</span>
                     </button>
@@ -76,6 +81,7 @@
                         <span class="qk-sep"></span>
                         <button type="button" data-cmd="help">help</button>
                         <button type="button" data-cmd="ach">ach</button>
+                        <button type="button" data-cmd="snake">snake</button>
                         <button type="button" data-cmd="play">play</button>
                         <button type="button" data-cmd="pause">pause</button>
                         <button type="button" data-cmd="next">next</button>
@@ -120,6 +126,33 @@
             <div class="ach-body" id="achBody"></div>
         </div>
 
+        <div id="snakeWindow" class="ach-window snake-window hidden">
+            <div class="player-header">
+                <span class="player-title">SNAKE.EXE</span>
+                <button id="snakeCloseBtn" class="player-close-btn" type="button">[X]</button>
+            </div>
+            <div class="snake-body">
+                <div class="snake-stats">
+                    <span>СЧЁТ<b id="skScore">0</b></span>
+                    <span>РЕКОРД<b id="skBest">0</b></span>
+                    <span>ДЛИНА<b id="skLen">3</b></span>
+                </div>
+                <canvas id="skCanvas" width="320" height="320"></canvas>
+                <div class="snake-pad" id="skPad">
+                    <button type="button" class="player-btn" data-d="up">&uarr;</button>
+                    <button type="button" class="player-btn" data-d="left">&larr;</button>
+                    <button type="button" class="player-btn" data-d="down">&darr;</button>
+                    <button type="button" class="player-btn" data-d="right">&rarr;</button>
+                </div>
+                <div class="snake-ctrl">
+                    <button type="button" class="player-btn" id="skStart">СТАРТ</button>
+                    <button type="button" class="player-btn" id="skMode">СТЕНЫ</button>
+                </div>
+                <div class="snake-spati" id="skSpati"></div>
+                <div class="snake-help">СТРЕЛКИ / WASD · ПРОБЕЛ — ПАУЗА · ESC — ВЫХОД</div>
+            </div>
+        </div>
+
         <div id="musicPlayerModal" class="music-player-modal hidden">
             <div class="player-header">
                 <span class="player-title">SPATIUM PLAYER</span>
@@ -150,11 +183,11 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
     <script>
         (function () {
             const clock = document.getElementById('sysClock');
-            const tick = () => { clock.textContent = new Date().toLocaleTimeString('ru-RU'); };
+            const tick = () => { if (!document.hidden) clock.textContent = new Date().toLocaleTimeString('ru-RU'); };
             tick();
             setInterval(tick, 1000);
         })();
