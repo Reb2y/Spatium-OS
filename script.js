@@ -27,6 +27,7 @@
 
         let isBooted = false;
         let nickMode = null; // null | 'first' | 'rename': ввод идёт в никнейм, а не в команды
+        let inputHook = null; // функция: временно перехватывает ввод (текстовый квест)
         let isTyping = false;
         let currentInput = '';
         
@@ -46,8 +47,16 @@
         const STORE_KEY = 'spatium_os_v1';
         const HISTORY_LIMIT = 50;
 
+        function gamesFresh() {
+            return {
+                tetris: { best: 0, lines: 0, games: 0, maxLvl: 0, top: [], last: null },
+                word: { games: 0, wins: 0, streak: 0, bestStreak: 0, dist: [0, 0, 0, 0, 0, 0] },
+                quest: { runs: 0, ends: [] }
+            };
+        }
+
         function freshState() {
-            return { nick: '', ach: {}, shown: {}, history: [], stats: { visits: 0, colors: [], tracks: [], spatiTalks: 0, cmds: 0, first: 0, snake: { best: 0, games: 0, apples: 0, bonus: 0, wrap: false, obst: false, speed: false, skin: 'theme', head: 'square', top: [], last: null } } };
+            return { nick: '', ach: {}, shown: {}, history: [], stats: { visits: 0, colors: [], tracks: [], spatiTalks: 0, cmds: 0, first: 0, snake: { best: 0, games: 0, apples: 0, bonus: 0, wrap: false, obst: false, speed: false, skin: 'theme', head: 'square', top: [], last: null }, games: gamesFresh() } };
         }
 
         function loadState() {
@@ -67,6 +76,12 @@
                         if (Array.isArray(saved.stats.colors)) st.stats.colors = saved.stats.colors;
                         if (Array.isArray(saved.stats.tracks)) st.stats.tracks = saved.stats.tracks;
                         if (saved.stats.snake && typeof saved.stats.snake === 'object') st.stats.snake = Object.assign(st.stats.snake, saved.stats.snake);
+                        if (saved.stats.games && typeof saved.stats.games === 'object') {
+                            ['tetris', 'word', 'quest'].forEach(k => {
+                                const v = saved.stats.games[k];
+                                if (v && typeof v === 'object' && !Array.isArray(v)) Object.assign(st.stats.games[k], v);
+                            });
+                        }
                     }
                 }
             } catch (err) { /* localStorage недоступен: работаем без сохранения */ }
@@ -119,7 +134,7 @@
             apple: ['....##..', '...#....', '.######.', '########', '########', '########', '.######.', '..#..#..']
         };
 
-        const ACH_CATS = ['СИСТЕМА', 'ТЕРМИНАЛ', 'ЦВЕТА', 'ПЛЕЕР', 'СПАТИ', 'ЗМЕЙКА'];
+        const ACH_CATS = ['СИСТЕМА', 'ТЕРМИНАЛ', 'ЦВЕТА', 'ПЛЕЕР', 'СПАТИ', 'ЗМЕЙКА', 'ИГРЫ'];
 
         const ACHIEVEMENTS = [
             // ---- СИСТЕМА ----
@@ -270,6 +285,10 @@
             { id: 'snake_lvl5', cat: 'ЗМЕЙКА', icon: 'flag', title: 'ГЛУБОКИЙ УРОВЕНЬ', desc: 'Дойди до 5 уровня в режиме БЛОКИ', rarity: 'rare' },
             { id: 'snake_turbo', cat: 'ЗМЕЙКА', icon: 'bolt', title: 'ТУРБОЗМЕЯ', desc: 'Набери 15 очков в режиме УСКОРЕНИЕ', rarity: 'rare' },
             { id: 'spati_snake', cat: 'СПАТИ', icon: 'ghost', title: 'ТРЕНЕР', desc: 'Поговори со Спати о змейке', hidden: true, rarity: 'common' },
+            { id: 'sm_shake', cat: 'СПАТИ', icon: 'bolt', title: 'ВСТРЯСКА', desc: 'Аккуратно потряси телефон со Спати', hidden: true, rarity: 'common' },
+            { id: 'sm_offend', cat: 'СПАТИ', icon: 'skull', title: 'ПЕРЕБОР', desc: 'Тряхни телефон так, чтобы Спати обиделся', hidden: true, rarity: 'rare' },
+            { id: 'sm_tickle', cat: 'СПАТИ', icon: 'heart', title: 'ЩЕКОТУН', desc: 'Подержи палец на Спати, пока он не засмеётся', hidden: true, rarity: 'common' },
+            { id: 'sm_roll', cat: 'СПАТИ', icon: 'ghost', title: 'КОЛОБОК', desc: 'Смахни Спати свайпом, чтобы он покатился', hidden: true, rarity: 'common' },
             { id: 'save_export', cat: 'СИСТЕМА', icon: 'disk', title: 'РЕЗЕРВНАЯ КОПИЯ', desc: 'Сохрани прогресс в файл', rarity: 'common' },
             { id: 'save_import', cat: 'СИСТЕМА', icon: 'arrow', title: 'ВОСКРЕШЕНИЕ', desc: 'Загрузи прогресс из файла', rarity: 'rare' },
             { id: 'win_drag', cat: 'СИСТЕМА', icon: 'cursor', title: 'ПЕРЕСТАНОВКА', desc: 'Перетащи любое окно за заголовок', rarity: 'common' },
@@ -279,7 +298,42 @@
             { id: 'nick_set', cat: 'СИСТЕМА', icon: 'prompt', title: 'ЗНАКОМСТВО', desc: 'Создай никнейм', rarity: 'common' },
             { id: 'nick_change', cat: 'СИСТЕМА', icon: 'drop', title: 'НОВОЕ ИМЯ', desc: 'Смени никнейм', rarity: 'common' },
             { id: 'nick_fake', cat: 'СИСТЕМА', icon: 'ghost', title: 'САМОЗВАНЕЦ', desc: 'Попробуй назваться именем системы', hidden: true, rarity: 'rare' },
-            { id: 'neofetch', cat: 'ТЕРМИНАЛ', icon: 'gear', title: 'ПАСПОРТ СИСТЕМЫ', desc: 'Запусти команду neofetch', rarity: 'common' }
+            { id: 'neofetch', cat: 'ТЕРМИНАЛ', icon: 'gear', title: 'ПАСПОРТ СИСТЕМЫ', desc: 'Запусти команду neofetch', rarity: 'common' },
+            { id: 'photo_snap', cat: 'СПАТИ', icon: 'eye', title: 'ФОТОГРАФ', desc: 'Сфотографируй Спати командой photo', rarity: 'common' },
+            { id: 'photo_send', cat: 'СПАТИ', icon: 'star', title: 'ПАПАРАЦЦИ', desc: 'Скачай, скопируй или отправь фото Спати', rarity: 'rare' },
+            // ---- ИГРЫ ----
+            { id: 'tetris_start', cat: 'ИГРЫ', icon: 'power', title: 'ПАДАЮЩИЕ БЛОКИ', desc: 'Запусти тетрис командой tetris', rarity: 'common' },
+            { id: 'tetris_line', cat: 'ИГРЫ', icon: 'flag', title: 'ПЕРВАЯ ЛИНИЯ', desc: 'Собери первую линию в тетрисе', rarity: 'common' },
+            { id: 'tetris_tetris', cat: 'ИГРЫ', icon: 'star', title: 'ТЕТРИС!', desc: 'Убери четыре линии разом', rarity: 'rare' },
+            { id: 'tetris_lvl5', cat: 'ИГРЫ', icon: 'bolt', title: 'РАЗГОН', desc: 'Дойди до 5 уровня в тетрисе', rarity: 'rare' },
+            { id: 'tetris_5k', cat: 'ИГРЫ', icon: 'trophy', title: 'ПЯТЬ ТЫСЯЧ', desc: 'Набери 5000 очков в одной партии тетриса', rarity: 'rare' },
+            { id: 'tetris_20k', cat: 'ИГРЫ', icon: 'crown', title: 'МАСТЕР БЛОКОВ', desc: 'Набери 20000 очков в одной партии тетриса', rarity: 'epic' },
+            { id: 'tetris_games10', cat: 'ИГРЫ', icon: 'gear', title: 'УПОРНЫЙ СТРОИТЕЛЬ', desc: 'Сыграй 10 партий в тетрис', rarity: 'rare' },
+            { id: 'tetris_zero', cat: 'ИГРЫ', icon: 'skull', title: 'ПУСТОЙ СТАКАН', desc: 'Проиграй в тетрисе, не набрав ни одного очка', hidden: true, rarity: 'rare' },
+            { id: 'word_start', cat: 'ИГРЫ', icon: 'book', title: 'СЛОВО ЗА СЛОВО', desc: 'Запусти игру «Слово» командой word', rarity: 'common' },
+            { id: 'word_win', cat: 'ИГРЫ', icon: 'key', title: 'УГАДАЛ', desc: 'Угадай слово', rarity: 'common' },
+            { id: 'word_hint', cat: 'ИГРЫ', icon: 'bubble', title: 'ПОДСКАЗКА СПАТИ', desc: 'Попроси Спати о подсказке', rarity: 'common' },
+            { id: 'word_lose', cat: 'ИГРЫ', icon: 'skull', title: 'НЕ СЛОЖИЛОСЬ', desc: 'Не угадай слово за шесть попыток', rarity: 'common' },
+            { id: 'word_streak3', cat: 'ИГРЫ', icon: 'bolt', title: 'СЕРИЯ', desc: 'Угадай три слова подряд', rarity: 'rare' },
+            { id: 'word_win10', cat: 'ИГРЫ', icon: 'book', title: 'ЛИНГВИСТ', desc: 'Угадай 10 слов', rarity: 'rare' },
+            { id: 'word_first', cat: 'ИГРЫ', icon: 'eye', title: 'ЯСНОВИДЕЦ', desc: 'Угадай слово с первой попытки', hidden: true, rarity: 'epic' },
+            { id: 'quest_start', cat: 'ИГРЫ', icon: 'prompt', title: 'ПОБЕГ ИЗ ЯДРА', desc: 'Запусти текстовый квест командой quest', rarity: 'common' },
+            { id: 'quest_first', cat: 'ИГРЫ', icon: 'flag', title: 'ПЕРВАЯ КОНЦОВКА', desc: 'Дойди до любой концовки квеста', rarity: 'common' },
+            { id: 'quest_death', cat: 'ИГРЫ', icon: 'skull', title: 'КРИТИЧЕСКАЯ ОШИБКА', desc: 'Погибни в квесте', rarity: 'common' },
+            { id: 'quest_items', cat: 'ИГРЫ', icon: 'disk', title: 'КОЛЛЕКЦИОНЕР', desc: 'Собери дискету, карту и батарею за одно прохождение', rarity: 'rare' },
+            { id: 'quest_deaths', cat: 'ИГРЫ', icon: 'ghost', title: 'ВСЕ ПУТИ ВЕДУТ К СБОЮ', desc: 'Найди все три способа погибнуть в квесте', hidden: true, rarity: 'rare' },
+            { id: 'quest_all', cat: 'ИГРЫ', icon: 'trophy', title: 'ВСЕ КОНЦОВКИ', desc: 'Открой все пять счастливых концовок квеста', rarity: 'epic' },
+            { id: 'quest_truth', cat: 'ИГРЫ', icon: 'eye', title: 'ИСТИНА', desc: 'Найди секретную концовку квеста', hidden: true, rarity: 'epic' },
+            { id: 'games_hub', cat: 'ИГРЫ', icon: 'gear', title: 'ИГРОВОЙ ЦЕНТР', desc: 'Открой вкладку «Игры»', rarity: 'common' },
+            { id: 'games_all', cat: 'ИГРЫ', icon: 'diamond', title: 'ВСЕ ИГРЫ', desc: 'Сыграй в змейку, тетрис, «Слово» и квест', rarity: 'rare' },
+            { id: 'games_rank', cat: 'ИГРЫ', icon: 'crown', title: 'ВЕТЕРАН АРКАДЫ', desc: 'Набери 1000 очков общего табло', rarity: 'epic' },
+            { id: 'post_skip', cat: 'СИСТЕМА', icon: 'cursor', title: 'НЕТЕРПЕЛИВЫЙ', desc: 'Пропусти проверку BIOS при загрузке', rarity: 'common' },
+            { id: 'post_reboot', cat: 'СИСТЕМА', icon: 'power', title: 'ПЕРЕЗАГРУЗКА', desc: 'Перезагрузи систему командой reboot', rarity: 'common' },
+            { id: 'post_crash', cat: 'СИСТЕМА', icon: 'bug', title: 'СБОЙ ПРИ ЗАГРУЗКЕ', desc: 'Увидь сбой BIOS при запуске', hidden: true, rarity: 'rare' },
+            // ---- ГАРДЕРОБ ----
+            { id: 'wd_open', cat: 'СПАТИ', icon: 'eye', title: 'ПРИМЕРОЧНАЯ', desc: 'Загляни в гардероб Спати', rarity: 'common' },
+            { id: 'wd_full', cat: 'СПАТИ', icon: 'diamond', title: 'ПОЛНЫЙ ОБРАЗ', desc: 'Надень вещь на голову, лицо и тело и выбери скин', rarity: 'rare' },
+            { id: 'wd_looks', cat: 'СПАТИ', icon: 'crown', title: 'СТИЛИСТ', desc: 'Запиши три образа в гардеробе', rarity: 'epic' }
         ];
         // ----- редкость -----
         const RARITIES = {
@@ -316,6 +370,8 @@
         const achBtnIcon = document.getElementById('achBtnIcon');
         const achPanel = document.getElementById('achPanel');
         let achWindowOpen = false;
+        let wdRefreshHook = null, wdAwayOn = false, wdSayHook = null, wdUnlockHook = null; // гардероб Спати
+        let achReactHook = null; // реакция Спати на каждое показанное достижение (задаётся ниже, рядом с mascotEvent)
         let achView = 'stats';
         let achFilter = 'all';
         let achSort = 'cat'; // 'cat' - по разделам, 'rar' - по редкости
@@ -593,6 +649,467 @@
         }
 
         // Искры, вылетающие из иконки (эпическое и легендарное)
+        // ==========================================
+        // ЗВУКИ СПАТИ (WebAudio, без аудиофайлов)
+        // Не озвучка, а звуки: бупы, пружинки, хлопки, храп, хруст и т.д.
+        // Выключить: sfx spati off
+        // ==========================================
+        const SFX_SPATI_KEY = 'spatium_sfx_spati';
+        let sfxSpatiOn = true;
+        try { sfxSpatiOn = localStorage.getItem(SFX_SPATI_KEY) !== '0'; } catch (err) { /* ignore */ }
+        let smSfxQuiet = false, spLastAt = 0, spVol = 1;
+        const spLastKind = {};
+        const SP_EM = { sad: 1, angry: 1, dizzy: 1, surprised: 1 };
+        const SP_GAP = { say: 140, tick: 55, heart: 300, tickle: 200, bump: 160, snore: 1500, swish: 260, hover: 1200, poke: 120, blink: 2000, think: 400 };
+        const spR = (a, b) => a + Math.random() * (b - a);
+        function spT(t, o) { sfxTone(t, Object.assign({}, o, { gain: (o.gain || 0.1) * spVol })); }
+        function spB(t, dur, o) { sfxBurst(t, dur, Object.assign({}, o, { gain: (o.gain || 0.3) * spVol })); }
+        // шум с «плавающим» фильтром: вжух, свист, храп
+        function spSweep(t, dur, f0, f1, o) {
+            o = o || {};
+            const c = sfxCtx;
+            const src = c.createBufferSource();
+            src.buffer = sfxNoise;
+            const f = c.createBiquadFilter();
+            f.type = o.type || 'bandpass';
+            f.Q.value = o.q || 1.2;
+            f.frequency.setValueAtTime(f0, t);
+            f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+            const g = c.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime((o.gain || 0.15) * spVol, t + dur * (o.atk || 0.3));
+            g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+            src.connect(f).connect(g).connect(sfxMaster);
+            src.start(t, Math.random() * Math.max(0, 0.95 - dur));
+            src.stop(t + dur + 0.02);
+        }
+        const SP_SFX = {
+            // --- появление / уход ---
+            on: (t) => {
+                spT(t, { type: 'sine', f0: 330, f1: 660, dur: 0.16, gain: 0.09 });
+                spT(t + 0.13, { type: 'sine', f0: 660, f1: 990, dur: 0.14, gain: 0.08 });
+                spT(t + 0.27, { type: 'triangle', f0: 1760, dur: 0.2, gain: 0.04 });
+                spT(t + 0.33, { type: 'sine', f0: 2349, dur: 0.22, gain: 0.025 });
+            },
+            off: (t) => {
+                spT(t, { type: 'sine', f0: 660, f1: 150, dur: 0.4, gain: 0.08, lp: [2400, 220] });
+                spB(t + 0.36, 0.08, { type: 'lowpass', freq: 600, gain: 0.12 });
+            },
+            // --- реплики: пузырёк + «печатная машинка» (не голос) ---
+            say: (t) => { const f = spR(520, 700); spT(t, { type: 'sine', f0: f, f1: f * 1.4, dur: 0.05, gain: 0.04 }); },
+            tick: (t) => { spT(t, { type: 'triangle', f0: spR(1200, 1700), dur: 0.02, gain: 0.018 }); },
+            // --- реакции ---
+            jump: (t) => {
+                spT(t, { type: 'triangle', f0: 180, f1: 560, dur: 0.17, gain: 0.11 });
+                spT(t + 0.13, { type: 'sine', f0: 560, f1: 280, dur: 0.2, gain: 0.08 });
+            },
+            hop: (t) => { spT(t, { type: 'sine', f0: 300, f1: 520, dur: 0.09, gain: 0.06 }); },
+            spin: (t) => {
+                spSweep(t, 0.5, 400, 2600, { gain: 0.18, q: 1.5 });
+                spT(t, { type: 'sine', f0: 300, f1: 1000, dur: 0.45, gain: 0.04 });
+            },
+            flip: (t) => {
+                spSweep(t, 0.3, 600, 2200, { gain: 0.14 });
+                spT(t + 0.05, { type: 'triangle', f0: 500, f1: 1000, dur: 0.2, gain: 0.06 });
+                spT(t + 0.5, { type: 'sine', f0: 300, f1: 190, dur: 0.08, gain: 0.08 });
+            },
+            squish: (t) => {
+                spT(t, { type: 'sine', f0: 950, f1: 320, dur: 0.12, gain: 0.1 });
+                spT(t + 0.02, { type: 'triangle', f0: 1250, f1: 420, dur: 0.1, gain: 0.05 });
+                spT(t, { type: 'sine', f0: 150, f1: 80, dur: 0.1, gain: 0.14 });
+            },
+            wink: (t) => {
+                spT(t, { type: 'sine', f0: 1568, dur: 0.12, gain: 0.06 });
+                spT(t + 0.06, { type: 'sine', f0: 2093, dur: 0.16, gain: 0.04 });
+            },
+            shake: (t) => {
+                spT(t, { type: 'square', f0: 170, f1: 130, dur: 0.1, gain: 0.05, lp: [900, 300] });
+                spT(t + 0.13, { type: 'square', f0: 160, f1: 120, dur: 0.14, gain: 0.05, lp: [900, 300] });
+            },
+            dizzy: (t) => {
+                for (let i = 0; i < 5; i++) spT(t + i * 0.16, { type: 'sine', f0: i % 2 ? 300 : 480, f1: i % 2 ? 480 : 300, dur: 0.16, gain: 0.055 });
+            },
+            vanish: (t) => {
+                spB(t + 0.25, 0.25, { type: 'lowpass', freq: 900, gain: 0.22, atk: 0.02 });
+                spT(t + 0.2, { type: 'sine', f0: 1200, f1: 200, dur: 0.3, gain: 0.07 });
+                spT(t + 0.95, { type: 'sine', f0: 300, f1: 900, dur: 0.1, gain: 0.08 });
+                spB(t + 0.95, 0.06, { type: 'highpass', freq: 3000, gain: 0.12 });
+            },
+            laugh: (t) => {
+                [520, 470, 520, 440, 500].forEach((f, i) => spT(t + i * 0.12, { type: 'triangle', f0: f, f1: f * 0.85, dur: 0.07, gain: 0.07 }));
+            },
+            boo: (t) => {
+                spB(t, 0.06, { type: 'bandpass', freq: 1800, q: 0.8, gain: 0.3 });
+                spT(t + 0.02, { type: 'sawtooth', f0: 130, f1: 55, dur: 0.55, gain: 0.08, lp: [900, 140] });
+                spT(t + 0.02, { type: 'sine', f0: 195, f1: 82, dur: 0.5, gain: 0.05 });
+            },
+            // «танец» без мелодии: топот, щелчки пальцев и шарканье подошв
+            dance: (t) => {
+                for (let i = 0; i < 12; i++) {
+                    const tt = t + i * 0.2;
+                    if (i % 2 === 0) {
+                        spT(tt, { type: 'sine', f0: 120, f1: 55, dur: 0.12, gain: 0.12 });
+                        spB(tt, 0.04, { type: 'lowpass', freq: 500, gain: 0.2 });
+                    } else {
+                        spB(tt, 0.025, { type: 'bandpass', freq: 2800, q: 3, gain: 0.22 });
+                        spB(tt + 0.1, 0.02, { type: 'highpass', freq: 6000, gain: 0.07 });
+                    }
+                    if (i % 4 === 3) spSweep(tt + 0.05, 0.12, 1500, 3200, { gain: 0.05 });
+                }
+            },
+            glitch: (t) => {
+                for (let i = 0; i < 8; i++) {
+                    const d = i * 0.07 + spR(0, 0.03);
+                    spT(t + d, { type: 'square', f0: spR(180, 2800), dur: spR(0.03, 0.06), gain: 0.04 });
+                    if (i % 3 === 0) spB(t + d, 0.04, { type: 'highpass', freq: 3500, gain: 0.18 });
+                }
+            },
+            sleep: (t) => { [392, 330, 262].forEach((f, i) => spT(t + i * 0.3, { type: 'sine', f0: f, dur: 0.3, gain: 0.045 })); },
+            inflate: (t) => {
+                spSweep(t, 0.7, 300, 1500, { gain: 0.1, atk: 0.8 });
+                spT(t, { type: 'sine', f0: 200, f1: 800, dur: 0.7, gain: 0.05 });
+                spT(t + 0.85, { type: 'sine', f0: 1000, f1: 350, dur: 0.3, gain: 0.05 });
+                spB(t + 0.85, 0.2, { type: 'bandpass', freq: 2500, q: 0.6, gain: 0.08 });
+            },
+            tilt: (t) => {
+                spT(t, { type: 'sine', f0: 330, f1: 440, dur: 0.1, gain: 0.07 });
+                spT(t + 0.11, { type: 'sine', f0: 440, f1: 560, dur: 0.14, gain: 0.07 });
+            },
+            hiccup: (t) => {
+                spT(t, { type: 'triangle', f0: 300, f1: 560, dur: 0.05, gain: 0.12 });
+                spB(t, 0.03, { type: 'bandpass', freq: 1200, q: 1, gain: 0.2 });
+            },
+            sneeze: (t) => {
+                spT(t, { type: 'sine', f0: 400, f1: 500, dur: 0.1, gain: 0.06 });
+                spT(t + 0.12, { type: 'sine', f0: 500, f1: 650, dur: 0.1, gain: 0.07 });
+                spB(t + 0.3, 0.15, { type: 'bandpass', freq: 3000, q: 0.8, gain: 0.25 });
+                spT(t + 0.3, { type: 'sine', f0: 300, f1: 100, dur: 0.12, gain: 0.1 });
+            },
+            stretch: (t) => {
+                spT(t, { type: 'sawtooth', f0: 150, f1: 320, dur: 0.8, gain: 0.035, lp: [500, 1100] });
+                spT(t + 0.8, { type: 'sine', f0: 320, f1: 200, dur: 0.5, gain: 0.04 });
+            },
+            yawn: (t) => {
+                spT(t, { type: 'sine', f0: 300, f1: 470, dur: 0.45, gain: 0.055 });
+                spT(t + 0.45, { type: 'sine', f0: 470, f1: 180, dur: 0.6, gain: 0.055, lp: [1500, 300] });
+            },
+            sway: (t) => {
+                spT(t, { type: 'sine', f0: 620, f1: 760, dur: 0.18, gain: 0.02 });
+                spT(t + 0.18, { type: 'sine', f0: 760, f1: 640, dur: 0.2, gain: 0.02 });
+            },
+            look: (t) => {
+                spT(t, { type: 'sine', f0: 720, dur: 0.04, gain: 0.035 });
+                spT(t + 0.09, { type: 'sine', f0: 720, dur: 0.04, gain: 0.035 });
+            },
+            startle: (t) => {
+                spT(t, { type: 'square', f0: 800, f1: 1400, dur: 0.06, gain: 0.07 });
+                spT(t + 0.07, { type: 'sine', f0: 1400, dur: 0.06, gain: 0.05 });
+            },
+            pet: (t) => {
+                spT(t, { type: 'sine', f0: 440, f1: 520, dur: 0.25, gain: 0.05 });
+                spT(t + 0.05, { type: 'sine', f0: 880, dur: 0.3, gain: 0.03 });
+            },
+            sulk: (t) => {
+                spT(t, { type: 'sine', f0: 330, f1: 300, dur: 0.3, gain: 0.06, lp: [1200, 400] });
+                spT(t + 0.32, { type: 'sine', f0: 300, f1: 250, dur: 0.4, gain: 0.06 });
+            },
+            cheer: (t) => {
+                [523, 659, 784, 1047].forEach((f, i) => spT(t + i * 0.07, { type: 'sine', f0: f, dur: 0.14, gain: 0.07 }));
+                spT(t + 0.28, { type: 'triangle', f0: 2093, dur: 0.3, gain: 0.03 });
+            },
+            wave: (t) => {
+                spT(t, { type: 'sine', f0: 660, f1: 880, dur: 0.1, gain: 0.07 });
+                spT(t + 0.12, { type: 'sine', f0: 880, f1: 1100, dur: 0.14, gain: 0.07 });
+            },
+            highfive: (t) => {
+                spB(t, 0.06, { type: 'bandpass', freq: 2500, q: 0.9, gain: 0.3 });
+                spT(t, { type: 'sine', f0: 200, f1: 100, dur: 0.06, gain: 0.15 });
+                spT(t + 0.05, { type: 'sine', f0: 1320, dur: 0.14, gain: 0.05 });
+            },
+            eat: (t) => {
+                spT(t, { type: 'sine', f0: 440, f1: 520, dur: 0.1, gain: 0.06 });
+                spT(t + 0.12, { type: 'sine', f0: 520, f1: 660, dur: 0.12, gain: 0.06 });
+                spB(t + 0.28, 0.04, { type: 'bandpass', freq: 1500, q: 2, gain: 0.2 });
+                spB(t + 0.4, 0.04, { type: 'bandpass', freq: 1300, q: 2, gain: 0.2 });
+            },
+            // --- физика: схватили, бросили, ударился ---
+            grab: (t) => {
+                spT(t, { type: 'sine', f0: 450, f1: 700, dur: 0.07, gain: 0.07 });
+                spB(t, 0.03, { type: 'highpass', freq: 3500, gain: 0.1 });
+            },
+            throw: (t) => {
+                spSweep(t, 0.3, 300, 2400, { gain: 0.16 });
+                spT(t, { type: 'sine', f0: 300, f1: 900, dur: 0.22, gain: 0.05 });
+            },
+            bump: (t) => {
+                spT(t, { type: 'triangle', f0: 320, f1: 110, dur: 0.12, gain: 0.13 });
+                spB(t, 0.05, { type: 'lowpass', freq: 700, gain: 0.25 });
+            },
+            land: (t) => {
+                spT(t, { type: 'sine', f0: 130, f1: 65, dur: 0.11, gain: 0.14 });
+                spB(t, 0.05, { type: 'lowpass', freq: 400, gain: 0.18 });
+            },
+            roll: (t) => {
+                spSweep(t, 0.5, 200, 900, { type: 'lowpass', gain: 0.12 });
+                spT(t, { type: 'sine', f0: 110, f1: 220, dur: 0.45, gain: 0.04 });
+            },
+            // --- ласка и щекотка ---
+            tickle: (t) => {
+                const f = spR(650, 900);
+                spT(t, { type: 'triangle', f0: f, f1: f * 1.25, dur: 0.05, gain: 0.06 });
+                spT(t + 0.08, { type: 'triangle', f0: f * 1.25, f1: f, dur: 0.06, gain: 0.05 });
+            },
+            purr: (t) => {
+                for (let i = 0; i < 10; i++) spT(t + i * 0.06, { type: 'triangle', f0: 95, f1: 85, dur: 0.07, gain: 0.05 });
+                spT(t, { type: 'sine', f0: 880, dur: 0.2, gain: 0.035 });
+            },
+            heart: (t) => {
+                spT(t, { type: 'sine', f0: 988, dur: 0.1, gain: 0.035 });
+                spT(t + 0.07, { type: 'sine', f0: 1319, dur: 0.16, gain: 0.03 });
+            },
+            // --- яблоко ---
+            apple: (t) => {
+                spT(t, { type: 'sine', f0: 1200, f1: 600, dur: 0.1, gain: 0.06 });
+                spT(t + 0.09, { type: 'sine', f0: 600, f1: 1000, dur: 0.12, gain: 0.05 });
+                spT(t + 0.2, { type: 'triangle', f0: 1568, dur: 0.1, gain: 0.03 });
+            },
+            bite: (t) => {
+                spB(t, 0.045, { type: 'bandpass', freq: 2200, q: 2, gain: 0.35 });
+                spB(t + 0.08, 0.05, { type: 'bandpass', freq: 1700, q: 2, gain: 0.32 });
+                spT(t, { type: 'sine', f0: 200, f1: 110, dur: 0.06, gain: 0.1 });
+            },
+            // --- сон, фото, гардероб ---
+            snore: (t) => {
+                spSweep(t, 0.8, 220, 120, { type: 'lowpass', q: 0.7, gain: 0.18, atk: 0.45 });
+                spT(t, { type: 'sawtooth', f0: 80, f1: 62, dur: 0.8, gain: 0.035, lp: [300, 120] });
+            },
+            shutter: (t) => {
+                spB(t, 0.03, { type: 'highpass', freq: 3000, gain: 0.3 });
+                spT(t, { type: 'square', f0: 1800, dur: 0.02, gain: 0.04 });
+                spB(t + 0.07, 0.04, { type: 'highpass', freq: 2500, gain: 0.3 });
+            },
+            equip: (t) => {
+                spB(t, 0.1, { type: 'highpass', freq: 3500, gain: 0.15, atk: 0.03 });
+                spT(t, { type: 'sine', f0: 880, f1: 1320, dur: 0.08, gain: 0.05 });
+            },
+            // --- эмоции без анимации (тихие, не перебивают основной звук) ---
+            'em:sad': (t) => {
+                spT(t, { type: 'sine', f0: 392, f1: 330, dur: 0.18, gain: 0.05 });
+                spT(t + 0.16, { type: 'sine', f0: 330, f1: 262, dur: 0.25, gain: 0.05 });
+            },
+            'em:angry': (t) => { spT(t, { type: 'square', f0: 120, f1: 100, dur: 0.14, gain: 0.04, lp: [700, 250] }); },
+            'em:dizzy': (t) => {
+                for (let i = 0; i < 3; i++) spT(t + i * 0.12, { type: 'sine', f0: i % 2 ? 300 : 440, f1: i % 2 ? 440 : 300, dur: 0.12, gain: 0.04 });
+            },
+            'em:surprised': (t) => { spT(t, { type: 'sine', f0: 700, f1: 1000, dur: 0.07, gain: 0.05 }); },
+            // --- мелкие звуки интерфейса Спати ---
+            hover: (t) => { spT(t, { type: 'sine', f0: 900, f1: 1100, dur: 0.04, gain: 0.03 }); },
+            poke: (t) => {
+                spT(t, { type: 'triangle', f0: 700, f1: 480, dur: 0.035, gain: 0.06 });
+                spB(t, 0.02, { type: 'highpass', freq: 4000, gain: 0.08 });
+            },
+            blink: (t) => { spT(t, { type: 'sine', f0: 1800, dur: 0.012, gain: 0.014 }); },
+            think: (t) => { [500, 600, 720].forEach((f, i) => spT(t + i * 0.1, { type: 'sine', f0: f, dur: 0.07, gain: 0.035 })); },
+            glide: (t) => {
+                spSweep(t, 0.35, 500, 2000, { gain: 0.1 });
+                spT(t, { type: 'sine', f0: 300, f1: 600, dur: 0.3, gain: 0.03 });
+            },
+            cloth: (t) => {
+                spSweep(t, 0.25, 900, 500, { gain: 0.1 });
+                spB(t + 0.2, 0.05, { type: 'lowpass', freq: 500, gain: 0.12 });
+            },
+            error: (t) => {
+                spT(t, { type: 'square', f0: 220, dur: 0.09, gain: 0.045, lp: [1200, 600] });
+                spT(t + 0.11, { type: 'square', f0: 165, dur: 0.13, gain: 0.045, lp: [1200, 500] });
+            },
+            color: (t) => {
+                spT(t, { type: 'sine', f0: 784, f1: 1175, dur: 0.1, gain: 0.06 });
+                spT(t + 0.09, { type: 'sine', f0: 1568, dur: 0.14, gain: 0.04 });
+                spB(t + 0.09, 0.08, { type: 'highpass', freq: 5000, gain: 0.06 });
+            },
+            swish: (t) => { spSweep(t, 0.18, 800, 2400, { gain: 0.07 }); },
+            poof: (t) => {
+                spB(t, 0.16, { type: 'lowpass', freq: 1200, gain: 0.2, atk: 0.01 });
+                spT(t, { type: 'sine', f0: 600, f1: 200, dur: 0.12, gain: 0.06 });
+            },
+            'em:sleepy': (t) => { spT(t, { type: 'sine', f0: 330, f1: 250, dur: 0.35, gain: 0.035 }); },
+            // --- змейка: Спати болеет ---
+            pickup: (t) => {
+                spT(t, { type: 'sine', f0: 880, f1: 1320, dur: 0.06, gain: 0.07 });
+                spT(t + 0.05, { type: 'sine', f0: 1320, dur: 0.09, gain: 0.06 });
+            },
+            combo: (t) => { [660, 880, 1100, 1320].forEach((f, i) => spT(t + i * 0.05, { type: 'sine', f0: f, dur: 0.09, gain: 0.07 })); },
+            bonus: (t) => {
+                [1047, 1319, 1568, 2093, 2637].forEach((f, i) => spT(t + i * 0.05, { type: 'sine', f0: f, dur: 0.12, gain: 0.05 }));
+                spT(t + 0.25, { type: 'triangle', f0: 3136, dur: 0.25, gain: 0.02 });
+            },
+            alarm: (t) => { [880, 660, 880].forEach((f, i) => spT(t + i * 0.1, { type: 'square', f0: f, dur: 0.07, gain: 0.04, lp: [2000, 1200] })); },
+            relief: (t) => {
+                spSweep(t, 0.3, 1200, 400, { type: 'lowpass', gain: 0.08 });
+                spT(t, { type: 'sine', f0: 440, f1: 520, dur: 0.15, gain: 0.05 });
+            },
+            // --- звуки вещей из гардероба ---
+            'it:hat': (t) => {
+                spT(t, { type: 'sine', f0: 500, f1: 1000, dur: 0.06, gain: 0.07 });
+                spB(t + 0.03, 0.04, { type: 'bandpass', freq: 2200, q: 1, gain: 0.15 });
+            },
+            'it:face': (t) => {
+                spB(t, 0.02, { type: 'highpass', freq: 4000, gain: 0.2 });
+                spT(t + 0.02, { type: 'sine', f0: 1760, dur: 0.1, gain: 0.04 });
+            },
+            'it:body': (t) => { spSweep(t, 0.22, 1200, 600, { gain: 0.1 }); spB(t + 0.18, 0.04, { type: 'lowpass', freq: 600, gain: 0.1 }); },
+            'it:color': (t) => {
+                const f = spR(600, 1200);
+                spT(t, { type: 'sine', f0: f, f1: f * 1.3, dur: 0.08, gain: 0.06 });
+                spB(t, 0.05, { type: 'highpass', freq: 5000, gain: 0.08 });
+            },
+            'it:crown': (t) => {
+                spT(t, { type: 'sine', f0: 1568, dur: 0.35, gain: 0.07 });
+                spT(t + 0.1, { type: 'sine', f0: 2093, dur: 0.4, gain: 0.06 });
+                spT(t + 0.1, { type: 'triangle', f0: 4186, dur: 0.2, gain: 0.015 });
+            },
+            'it:halo': (t) => {
+                spT(t, { type: 'sine', f0: 1319, dur: 0.6, gain: 0.04 });
+                spT(t, { type: 'sine', f0: 1324, dur: 0.6, gain: 0.04 });
+                spT(t + 0.12, { type: 'sine', f0: 1976, dur: 0.5, gain: 0.025 });
+            },
+            'it:horns': (t) => { spT(t, { type: 'sawtooth', f0: 110, f1: 70, dur: 0.35, gain: 0.06, lp: [800, 150] }); },
+            'it:tophat': (t) => {
+                spB(t, 0.04, { type: 'bandpass', freq: 1500, q: 1, gain: 0.25 });
+                spT(t + 0.06, { type: 'sine', f0: 600, f1: 900, dur: 0.12, gain: 0.07 });
+            },
+            'it:sunglasses': (t) => {
+                spB(t, 0.03, { type: 'highpass', freq: 3500, gain: 0.25 });
+                spT(t + 0.08, { type: 'sine', f0: 2093, dur: 0.25, gain: 0.05 });
+            },
+            'it:mustache': (t) => {
+                spT(t, { type: 'sawtooth', f0: 300, f1: 150, dur: 0.25, gain: 0.05, lp: [2000, 400] });
+                spT(t + 0.04, { type: 'sine', f0: 600, f1: 300, dur: 0.2, gain: 0.04 });
+            },
+            'it:eyepatch': (t) => {
+                spB(t, 0.05, { type: 'lowpass', freq: 800, gain: 0.25 });
+                spT(t, { type: 'sine', f0: 180, f1: 120, dur: 0.07, gain: 0.1 });
+            },
+            'it:cape': (t) => {
+                spSweep(t, 0.35, 500, 1800, { gain: 0.14 });
+                spB(t + 0.32, 0.06, { type: 'lowpass', freq: 500, gain: 0.15 });
+            },
+            'it:wings': (t) => { for (let i = 0; i < 6; i++) spB(t + i * 0.055, 0.04, { type: 'bandpass', freq: 1400 + i * 120, q: 1, gain: 0.2 - i * 0.02 }); },
+            'it:bowtie': (t) => {
+                spT(t, { type: 'sine', f0: 500, f1: 1000, dur: 0.05, gain: 0.07 });
+                spB(t, 0.02, { type: 'highpass', freq: 4000, gain: 0.12 });
+            },
+            'it:backpack': (t) => { for (let i = 0; i < 8; i++) spB(t + i * 0.02, 0.012, { type: 'bandpass', freq: 1500 + i * 220, q: 3, gain: 0.18 }); },
+            'it:phones': (t) => {
+                spB(t, 0.02, { type: 'highpass', freq: 3000, gain: 0.25 });
+                spT(t + 0.04, { type: 'sine', f0: 70, f1: 45, dur: 0.18, gain: 0.16 });
+            },
+            'it:pirate': (t) => {
+                spT(t, { type: 'sawtooth', f0: 150, f1: 105, dur: 0.3, gain: 0.05, lp: [900, 250] });
+                spB(t + 0.25, 0.04, { type: 'lowpass', freq: 500, gain: 0.12 });
+            },
+            'it:cowboy': (t) => {
+                [3000, 3600, 3300].forEach((f, i) => spT(t + i * 0.05, { type: 'triangle', f0: f, dur: 0.08, gain: 0.03 }));
+                spT(t + 0.15, { type: 'triangle', f0: 330, f1: 247, dur: 0.3, gain: 0.05 });
+            },
+            'it:wizard': (t) => { [1047, 1319, 1568, 2093, 2637].forEach((f, i) => spT(t + i * 0.06, { type: 'sine', f0: f, dur: 0.18, gain: 0.04 })); },
+            'it:viking': (t) => {
+                spT(t, { type: 'sawtooth', f0: 196, dur: 0.5, gain: 0.05, lp: [900, 500] });
+                spT(t, { type: 'sawtooth', f0: 294, dur: 0.5, gain: 0.025, lp: [900, 500] });
+            },
+            'it:flame': (t) => {
+                spSweep(t, 0.5, 300, 1800, { gain: 0.14 });
+                for (let i = 0; i < 5; i++) spB(t + 0.1 + i * 0.07, 0.02, { type: 'highpass', freq: 3500, gain: 0.12 });
+            },
+            'it:pumpkin': (t) => { for (let i = 0; i < 4; i++) spT(t + i * 0.09, { type: 'sine', f0: i % 2 ? 260 : 330, f1: i % 2 ? 330 : 260, dur: 0.09, gain: 0.05 }); },
+            'it:sword': (t) => {
+                spSweep(t, 0.15, 2000, 6000, { type: 'highpass', gain: 0.1 });
+                spB(t + 0.14, 0.12, { type: 'bandpass', freq: 3500, q: 2, gain: 0.25 });
+                spT(t + 0.14, { type: 'triangle', f0: 1800, dur: 0.3, gain: 0.04 });
+                spT(t + 0.14, { type: 'triangle', f0: 2700, dur: 0.25, gain: 0.025 });
+            },
+            'it:jetpack': (t) => {
+                spSweep(t, 0.6, 300, 1500, { type: 'lowpass', gain: 0.2, q: 0.7 });
+                spT(t, { type: 'sawtooth', f0: 90, f1: 200, dur: 0.6, gain: 0.04, lp: [500, 900] });
+            },
+            'it:guitar': (t) => { [196, 247, 294, 392].forEach((f, i) => spT(t + i * 0.02, { type: 'triangle', f0: f, dur: 0.35, gain: 0.04 })); },
+            'it:balloon': (t) => {
+                spT(t, { type: 'sine', f0: 1400, f1: 2200, dur: 0.1, gain: 0.05 });
+                spT(t + 0.1, { type: 'sine', f0: 2200, f1: 1500, dur: 0.1, gain: 0.05 });
+            },
+            'it:bell': (t) => {
+                spT(t, { type: 'sine', f0: 1319, dur: 0.5, gain: 0.07 });
+                spT(t + 0.25, { type: 'sine', f0: 988, dur: 0.6, gain: 0.07 });
+                spT(t, { type: 'triangle', f0: 2638, dur: 0.25, gain: 0.02 });
+            },
+            'it:armor': (t) => {
+                spB(t, 0.06, { type: 'bandpass', freq: 2000, q: 2, gain: 0.25 });
+                spB(t + 0.1, 0.06, { type: 'bandpass', freq: 1600, q: 2, gain: 0.22 });
+                spT(t, { type: 'triangle', f0: 400, f1: 300, dur: 0.12, gain: 0.05 });
+            },
+            'it:rainbow': (t) => {
+                spT(t, { type: 'sine', f0: 523, f1: 2093, dur: 0.5, gain: 0.05 });
+                spT(t + 0.45, { type: 'sine', f0: 2637, dur: 0.2, gain: 0.03 });
+            },
+            'it:lava': (t) => {
+                spT(t, { type: 'sine', f0: 180, f1: 400, dur: 0.15, gain: 0.09 });
+                spT(t + 0.2, { type: 'sine', f0: 150, f1: 350, dur: 0.17, gain: 0.08 });
+                spB(t + 0.1, 0.1, { type: 'lowpass', freq: 400, gain: 0.12 });
+            },
+            'it:neon': (t) => {
+                [0, 0.13, 0.26].forEach((d, i) => spT(t + d, { type: 'sawtooth', f0: 100, dur: i === 2 ? 0.25 : 0.06, gain: 0.04, lp: [700, 400] }));
+                spT(t + 0.28, { type: 'sine', f0: 880, dur: 0.15, gain: 0.03 });
+            },
+            'it:ghost': (t) => {
+                spT(t, { type: 'sine', f0: 440, f1: 330, dur: 0.35, gain: 0.05 });
+                spT(t + 0.3, { type: 'sine', f0: 380, f1: 250, dur: 0.45, gain: 0.05, lp: [1500, 300] });
+            },
+            'it:galaxy': (t) => {
+                spSweep(t, 0.6, 3000, 300, { gain: 0.08 });
+                spT(t, { type: 'sine', f0: 1200, f1: 300, dur: 0.6, gain: 0.04 });
+            },
+            'it:tiger': (t) => { for (let i = 0; i < 5; i++) spT(t + i * 0.07, { type: 'sawtooth', f0: 95 - i * 3, dur: 0.07, gain: 0.05, lp: [600, 200] }); },
+            'it:party': (t) => {
+                spT(t, { type: 'sawtooth', f0: 500, f1: 700, dur: 0.25, gain: 0.05, lp: [1200, 2500] });
+                spB(t + 0.2, 0.15, { type: 'highpass', freq: 4000, gain: 0.12 });
+            },
+            'it:drip': (t) => { spT(t, { type: 'sine', f0: 1400, f1: 600, dur: 0.08, gain: 0.06 }); }
+        };
+        SP_SFX['it:glitch'] = SP_SFX.glitch;
+        SP_SFX['it:heart'] = SP_SFX.heart;
+        const SP_ALIAS = {
+            santa: 'bell', witch: 'wizard', party: 'party', bunny: 'balloon', helmet: 'armor', antenna: 'neon', grad: 'tophat', mushroom: 'balloon',
+            chef: 'tophat', hearts: 'heart', monocle: 'sunglasses', fangs: 'tiger', scar: 'sword', visor: 'neon', goggles: 'sunglasses', domino: 'eyepatch',
+            beard: 'mustache', tie: 'bowtie', suspenders: 'bowtie', medal: 'crown', lei: 'rainbow', lifebuoy: 'balloon', hoodie: 'body', apron: 'body',
+            tee: 'body', tear: 'drip', blush: 'face', freckles: 'face', starry: 'wizard', sprout: 'balloon', flower: 'face'
+        };
+        function spItemKind(slot, val) {
+            if (val === 'none' || val === 'never') return 'poof';
+            const a = SP_ALIAS[val] || val;
+            return SP_SFX['it:' + a] ? 'it:' + a : 'it:' + slot;
+        }
+        function sfxSpati(kind, force, vol) {
+            try {
+                if (!sfxSpatiOn || document.hidden) return;
+                if (!force && kind !== 'off' && !isSpatiEnabled) return;
+                const fn = SP_SFX[kind];
+                if (!fn) return;
+                const c = sfxEnsure();
+                if (!c || sfxMuted()) return;
+                // пока браузер не разрешил звук — молчим (иначе накопленные звуки вывалятся разом)
+                if (c.state === 'suspended') { sfxResume(c); return; }
+                if (c.state !== 'running') return;
+                const now = performance.now();
+                const isEm = kind.indexOf('em:') === 0;
+                if (isEm && now - spLastAt < 250) return;   // эмоция не дублирует звук действия
+                if (now - (spLastKind[kind] || 0) < (SP_GAP[kind] != null ? SP_GAP[kind] : 90)) return;
+                spLastKind[kind] = now;
+                if (!isEm && kind !== 'say' && kind !== 'tick') spLastAt = now;
+                spVol = (smNight() ? 0.55 : 1) * (vol || 1);   // ночью Спати шумит тише
+                fn(c.currentTime + 0.005);
+            } catch (err) { /* ignore */ }
+        }
+
         function spawnSparks(el, n, reach) {
             for (let i = 0; i < n; i++) {
                 const s = elem('span', 'ach-spark');
@@ -632,12 +1149,13 @@
             if (def.rarity === 'legendary' && !REDUCED_MOTION) el.appendChild(elem('div', 'ach-rays'));
             el.appendChild(iconBox(def.icon));
             const text = elem('div', 'ach-toast-text');
-            text.appendChild(elem('div', 'ach-head', ACH_HEAD[def.rarity] || ACH_HEAD.common));
+            text.appendChild(elem('div', 'ach-head', def.head || ACH_HEAD[def.rarity] || ACH_HEAD.common));
             text.appendChild(elem('div', 'ach-name', def.title));
             text.appendChild(elem('div', 'ach-desc', def.desc));
             el.appendChild(text);
             achToastStack.appendChild(el);
             sfxAchUnlock(def.rarity);
+            if (def.id && achById[def.id] && achReactHook) { try { achReactHook(def); } catch (e) { /* ignore */ } }
             toastActive++;
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 el.classList.add('show');
@@ -670,12 +1188,14 @@
             state.shown[id] = !deferToast;
             saveState();
             updateAchCount();
-            if (!deferToast) { enqueueToast(achById[id]); mascotEvent('ach'); }
+            if (!deferToast) enqueueToast(achById[id]); // Спати отреагирует в момент показа уведомления (см. achReactHook)
             // мета-достижения
             if (ACHIEVEMENTS.filter(a => a.hidden).every(a => state.ach[a.id])) unlock('secret_all', deferToast);
             if (unlockedCount() >= Math.ceil(ACHIEVEMENTS.length / 2)) unlock('half', deferToast);
             if (ACHIEVEMENTS.every(a => a.id === 'master' || state.ach[a.id])) unlock('master', deferToast);
             if (achWindowOpen) renderAchWindow();
+            if (wdUnlockHook) wdUnlockHook(id, deferToast);
+            if (wdRefreshHook) wdRefreshHook();
         }
 
         function showPendingToasts() {
@@ -685,6 +1205,7 @@
                     state.shown[a.id] = true;
                     changed = true;
                     enqueueToast(a);
+                    if (wdUnlockHook) wdUnlockHook(a.id, false);
                 }
             });
             if (changed) saveState();
@@ -881,7 +1402,11 @@
             "spati_ach": "Спроси Спати про достижения",
             "spati_hacker": "Заговори со Спати о взломе или хакерах",
             "spati_long": "Напиши Спати сообщение длиннее 50 символов",
-            "spati_10": "Задай Спати 10 вопросов"
+            "spati_10": "Задай Спати 10 вопросов",
+            "sm_shake": "Включи Спати и аккуратно потряси телефон",
+            "sm_offend": "Включи Спати и тряхни телефон изо всех сил",
+            "sm_tickle": "Зажми палец на Спати и не отпускай",
+            "sm_roll": "Быстро смахни Спати свайпом по экрану"
         };
         function achCard(a) {
             const done = !!state.ach[a.id];
@@ -891,6 +1416,19 @@
             const text = elem('div', 'ach-card-text');
             text.appendChild(elem('div', 'ach-card-title', secret ? '???' : a.title));
             text.appendChild(elem('div', 'ach-card-desc', secret ? 'Скрытое достижение' : a.desc));
+            if (!done && !secret) {
+                try {
+                    const pr = achProgress(a);
+                    if (pr && pr.need > 0) {
+                        const cur = Math.max(0, Math.min(pr.cur, pr.need));
+                        const bar = elem('div', 'ach-prog');
+                        const fill = elem('i');
+                        fill.style.width = (cur / pr.need * 100).toFixed(1) + '%';
+                        bar.appendChild(fill);
+                        text.append(bar, elem('div', 'ach-prog-label', `${cur}/${pr.need}`));
+                    }
+                } catch (e) { /* счётчик ещё не готов */ }
+            }
             if (!secret) text.appendChild(elem('div', 'ach-card-rarity', RARITIES[a.rarity].label));
             if (done) text.appendChild(elem('div', 'ach-card-date', fmtDate(state.ach[a.id])));
             card.appendChild(text);
@@ -1031,7 +1569,7 @@
         }
 
         function historyNav(dir) {
-            if (nickMode || !state.history.length) return;
+            if (nickMode || inputHook || !state.history.length) return;
             if (histIndex === state.history.length) histDraft = currentInput;
             histIndex = Math.min(state.history.length, Math.max(0, histIndex + dir));
             if (histIndex === state.history.length) {
@@ -1055,7 +1593,7 @@
             const cmd = tokens[0].toLowerCase();
             if (cmd === 'color') return Object.keys(colorPalette).concat(['help', 'random', 'clear', 'reset']);
             if (cmd === 'ach') return ['all', 'list', 'reset'];
-            if (cmd === 'sfx') return ['on', 'off'];
+            if (cmd === 'sfx') return ['on', 'off', 'spati'];
             if (cmd === 'history') return ['clear'];
             if (cmd === 'play') return playlist.map((_, i) => String(i + 1));
             return [];
@@ -1070,7 +1608,7 @@
         }
 
         function handleTab() {
-            if (isTyping || isHackerMode || nickMode) return;
+            if (isTyping || isHackerMode || nickMode || inputHook) return;
             unlock('tab');
             const lead = currentInput.match(/^\s*/)[0];
             const tokens = currentInput.slice(lead.length).split(' ');
@@ -1328,7 +1866,144 @@
             "СПАТИ: Тут я, тут", "СПАТИ: Да?", "СПАТИ: Внимание на экран", "СПАТИ: Ась?", "СПАТИ: Готов к работе"
         ];
 
-        function startBootSequence() {
+        // ==========================================
+        // BIOS / POST: проверка «железа» перед логотипом, иногда — редкий сбой с перезагрузкой
+        // ==========================================
+        const POST_CRASH_CHANCE = 0.07;   // шанс сбоя при обычной загрузке (не на первых запусках)
+        let rebooting = false;
+
+        function postBeep(freq, dur) {
+            try {
+                const c = sfxReady();
+                if (!c) return;
+                sfxTone(c.currentTime + 0.005, { type: 'square', f0: freq, f1: freq, dur, gain: 0.05 });
+            } catch (err) { /* звук необязателен */ }
+        }
+
+        function runPost(done, opt) {
+            opt = opt || {};
+            const crash = opt.crash != null ? !!opt.crash : (state.stats.visits >= 3 && Math.random() < POST_CRASH_CHANCE);
+            const k = state.stats.visits > 10 ? 0.6 : 1;   // постоянным гостям проверка идёт быстрее
+            const cores = navigator.hardwareConcurrency || 1;
+            const el = document.createElement('div');
+            el.className = 'post-screen';
+            el.innerHTML = '<div class="post-hd">SPATIUM BIOS v1.0</div><div class="post-sub">(C) 1987-2026 SPATIUM SYSTEMS</div><div class="post-log"></div><div class="post-skip">ЛЮБАЯ КЛАВИША — ПРОПУСТИТЬ</div>';
+            screen.appendChild(el);
+            const log = el.querySelector('.post-log');
+            const timers = [];
+            let finished = false, canSkip = false, memT = null;
+            const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+
+            function addLine(text, st, cls) {
+                const row = document.createElement('div');
+                row.className = 'post-line' + (cls ? ' ' + cls : '');
+                const a = document.createElement('span'), b = document.createElement('span');
+                a.textContent = text; b.className = 'post-st'; b.textContent = st || '';
+                row.append(a, b);
+                log.appendChild(row);
+                return { row, a, b };
+            }
+            function cleanup() {
+                timers.forEach(clearTimeout); clearInterval(memT);
+                window.removeEventListener('keydown', skip, true);
+                window.removeEventListener('pointerdown', skip, true);
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }
+            function finish() {
+                if (finished) return;
+                finished = true;
+                cleanup();
+                done();
+            }
+            function skip(e) {
+                if (!canSkip || finished) return;
+                if (e.type === 'keydown' && ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
+                e.stopPropagation(); e.preventDefault();
+                unlock('post_skip', true);
+                finish();
+            }
+            window.addEventListener('keydown', skip, true);
+            window.addEventListener('pointerdown', skip, true);
+            later(() => { canSkip = true; }, 350);
+
+            function crashAndReboot() {
+                canSkip = false;
+                unlock('post_crash', true);
+                postBeep(140, 0.35);
+                addLine('*** FATAL: PARITY ERROR AT 0x0003F7A0 ***', 'FAIL', 'err');
+                addLine('СБОЙ ПАМЯТИ. СИСТЕМА ОСТАНОВЛЕНА.', '', 'err');
+                screen.classList.add('crash-glitch');
+                el.classList.add('text-crash');
+                if (glitchLine) glitchLine.classList.add('glitch-active');
+                later(() => {
+                    screen.classList.remove('crash-glitch');
+                    el.classList.remove('text-crash');
+                    if (glitchLine) glitchLine.classList.remove('glitch-active');
+                    screen.classList.add('crt-off');
+                    sfxOff();
+                }, 1500);
+                later(() => {
+                    screen.classList.remove('crt-off');
+                    screen.classList.remove('power-on'); void screen.offsetWidth; screen.classList.add('power-on');
+                    log.textContent = '';
+                    addLine('АВАРИЙНАЯ ПЕРЕЗАГРУЗКА...', '', '');
+                    canSkip = true;
+                    later(() => { log.textContent = ''; sequence(false); }, 900);
+                }, 2400);
+            }
+
+            function sequence(mayCrash) {
+                const steps = [
+                    [`CPU ........... S-486DX 33MHz x${cores}`, 'OK', 170],
+                    [`VIDEO ......... CRT PHOSPHOR ${Math.round(screen.clientWidth)}x${Math.round(screen.clientHeight)}`, 'OK', 150],
+                    ['MEM'],
+                    [`KEYBOARD ...... ${('ontouchstart' in window) ? 'TOUCH' : 'PS/2'}`, 'OK', 140],
+                    ['AUDIO ......... WEBAUDIO PCM', sfxMuted() ? 'MUTE' : 'OK', 140],
+                    ['STORAGE ....... LOCAL 5120K', 'OK', 140],
+                    ['SPATI.SYS ..... ASSISTANT MODULE', 'OK', 160],
+                    ['BOOT DEVICE ... SPATIUM_OS', 'FOUND', 230]
+                ];
+                let i = 0;
+                function next() {
+                    if (finished) return;
+                    if (i >= steps.length) { postBeep(1046, 0.12); later(finish, 380 * k); return; }
+                    const s = steps[i++];
+                    if (s[0] === 'MEM') { memTest(); return; }
+                    addLine(s[0], s[1]);
+                    later(next, s[2] * k);
+                }
+                function memTest() {
+                    const total = 65536, stepK = 2048, line = addLine('MEMORY TEST ... 0K', '');
+                    let v = 0;
+                    memT = setInterval(() => {
+                        v += stepK;
+                        if (mayCrash && crash && v >= total * 0.55) {
+                            clearInterval(memT);
+                            line.a.textContent = `MEMORY TEST ... ${v}K`;
+                            line.b.textContent = 'ERR'; line.b.classList.add('err');
+                            crashAndReboot();
+                            return;
+                        }
+                        if (v >= total) {
+                            clearInterval(memT);
+                            line.a.textContent = `MEMORY TEST ... ${total}K`;
+                            line.b.textContent = 'OK';
+                            postBeep(880, 0.07);
+                            later(next, 120 * k);
+                            return;
+                        }
+                        line.a.textContent = `MEMORY TEST ... ${v}K`;
+                    }, 30 * k);
+                }
+                postBeep(660, 0.08);
+                later(next, 220 * k);
+            }
+            sequence(true);
+        }
+
+        function startBootSequence() { runPost(startLogoBoot); }
+
+        function startLogoBoot() {
             sfxBootAttempt();
             const duration = 1000;
             const intervalTime = 20;
@@ -1463,6 +2138,7 @@
                     hiddenInput.value = '';
                     if (commandInputText) commandInputText.textContent = '';
                     if (commandToExecute.trim() !== '') {
+                        if (inputHook) { inputHook(commandToExecute); return; }
                         if (nickMode) { handleNickInput(commandToExecute); return; }
                         pushHistory(commandToExecute.trim());
                         handleCommand(commandToExecute);
@@ -1537,11 +2213,17 @@
   hacker   режим хакера
   history  история команд
   ach      достижения
-  sfx      звуки клавиш вкл/выкл
+  sfx      звуки клавиш вкл/выкл (sfx spati — звуки Спати)
   snake    мини-игра змейка
+  tetris   тетрис (tetris best — статистика)
+  word     «Слово»: угадай слово со Спати
+  quest    текстовый квест, рассказчик — Спати
+  games    вкладка «Игры» и общее табло (games top)
+  reboot   перезагрузка с проверкой BIOS
   export   сохранить прогресс в файл
   import   загрузить прогресс из файла
   card     карточка прогресса (картинка)
+  photo    сфоткать Спати (PNG, копия, отправка)
   neofetch сводка о системе
   nick     показать / сменить никнейм
   off      выключение
@@ -1946,6 +2628,31 @@ TAB - дополнить, ↑↓ - история
         let snakeApi = null; // заполняется в initSnake
         const spatiActions = [
             (q) => {
+                if (/забудь (мой |мое )?(день рождения|днюху|др)/.test(q)) {
+                    delete spatiMem.bday; spatiSave(); smAccUpdate();
+                    return 'СПАТИ: Стёр дату. Колпак убираю';
+                }
+                if (!/(день рождения|днюх\w*|(^| )др( |$))/.test(q) || !/(у меня|мой|мое|моя|мою)/.test(q)) return;
+                if (/(когда|какой|помнишь|знаешь)/.test(q)) {
+                    const b = spatiMem.bday;
+                    return b ? `СПАТИ: Твой день рождения ${b.slice(3)}.${b.slice(0, 2)}. Я записал` : 'СПАТИ: Не знаю. Скажи: у меня день рождения 15 марта';
+                }
+                const MON = ['январ', 'феврал', 'март', 'апрел', 'ма[яйе]', 'июн', 'июл', 'август', 'сентябр', 'октябр', 'ноябр', 'декабр'];
+                let d = 0, m = 0;
+                const mm = q.match(/(\d{1,2}) (январ\w*|феврал\w*|март\w*|апрел\w*|ма[яйе]\w*|июн\w*|июл\w*|август\w*|сентябр\w*|октябр\w*|ноябр\w*|декабр\w*)/);
+                if (mm) { d = +mm[1]; m = MON.findIndex(r => new RegExp('^' + r).test(mm[2])) + 1; }
+                else {
+                    const nm = q.match(/(\d{1,2}) (\d{1,2})( |$)/);
+                    if (nm) { d = +nm[1]; m = +nm[2]; }
+                    else if (/сегодня/.test(q)) { const n = smDate(); d = n.d; m = n.m; }
+                }
+                if (!d || !m) return 'СПАТИ: Какого числа? Скажи: у меня день рождения 15 марта';
+                if (m < 1 || m > 12 || d < 1 || d > new Date(2024, m, 0).getDate()) return 'СПАТИ: Такой даты нет в календаре. Попробуй: 15 марта';
+                const pad = (n) => String(n).padStart(2, '0');
+                spatiMem.bday = pad(m) + '-' + pad(d); spatiSave();
+                return [spOne([`СПАТИ: Записал: ${pad(d)}.${pad(m)}. Подготовлю колпак`, `СПАТИ: ${pad(d)}.${pad(m)}. Не забуду. Обещаю`]), () => { smAccUpdate(); smSeasonGreet(); }];
+            },
+            (q) => {
                 if (!/^(вернись|вернись на место|иди домой|лети домой|иди на место|на место|иди сюда|ко мне)$/.test(q)) return;
                 mascotHome();
                 return spOne(['СПАТИ: Лечу на место', 'СПАТИ: Возвращаюсь. Не скучай', 'СПАТИ: Есть, на место']);
@@ -1973,6 +2680,7 @@ TAB - дополнить, ↑↓ - история
                 else if ((show.test(q) && /(информаци[а-я]* о системе|инфо о системе|систем[а-я]* (инфо|информаци)|сводк|neofetch|нефетч|характеристик)/.test(q)) || /что у тебя за система/.test(q)) { cmd = 'neofetch'; say = 'Вот моя анкета'; }
                 else if (/(сохрани|экспортируй|выгрузи|скачай|сделай бэкап|сделай резервн\w*)/.test(q) && /(прогресс|сохранени|достижени|данные|бэкап)/.test(q) || /экспорт прогресса/.test(q)) { cmd = 'export'; say = 'Сохраняю прогресс в файл'; }
                 else if (/(загрузи|импортируй|восстанови|верни)/.test(q) && /(прогресс|сохранени|бэкап|резервн)/.test(q) || /импорт прогресса/.test(q)) { cmd = 'import'; say = 'Открываю выбор файла'; }
+                else if (/(сфоткай|сфотографируй|сфотай|сфоткаемс|(сделай|давай|хочу) .*(фото|фотку|снимок|селфи)|селфи|поза[иь]руй)/.test(q) && !/карточк/.test(q)) { cmd = 'photo'; say = 'Открываю фотостудию'; }
                 else if ((show.test(q) || /(сделай|создай)/.test(q)) && /(карточк|визитк)/.test(q) || /поделиться прогрессом/.test(q)) { cmd = 'card'; say = 'Рисую карточку прогресса'; }
                 else if ((show.test(q) && /(треки|плейлист|список (треков|песен)|песни)/.test(q)) || /что в плейлисте|что сейчас играет|какой (сейчас )?трек/.test(q)) { cmd = 'tracks'; say = 'Вот плейлист'; }
                 else if (/(топ|статистик\w*|таблиц[а-я]* рекордов|рекорды)/.test(q) && /змейк/.test(q)) { cmd = 'snake best'; say = 'Смотрю таблицу рекордов'; }
@@ -2408,6 +3116,7 @@ TAB - дополнить, ↑↓ - история
         }
         function setMascot(on) {
             if (!spatiMascot) return;
+            sfxSpati(on ? 'on' : 'off');
             spatiMascot.classList.toggle('show', !!on);
             document.body.classList.toggle('spati-on', !!on);
             if (!on) { spatiMascot.classList.remove('open', 'think'); clearTimeout(mouthTimer); clearTimeout(thinkTimer); }
@@ -2423,7 +3132,7 @@ TAB - дополнить, ↑↓ - история
             if (!spatiMascot) return;
             clearTimeout(thinkTimer);
             spatiMascot.classList.toggle('think', ms > 0);
-            if (ms > 0) thinkTimer = setTimeout(() => spatiMascot.classList.remove('think'), ms + 60);
+            if (ms > 0) { sfxSpati('think'); thinkTimer = setTimeout(() => spatiMascot.classList.remove('think'), ms + 60); }
         }
 
         // ===== Маскот: клики, перетаскивание, броски, много анимаций =====
@@ -2473,6 +3182,7 @@ TAB - дополнить, ↑↓ - история
         window.addEventListener('resize', () => { if (spatiMascot && spatiMascot.classList.contains('show')) smLayout(); });
 
         function smEm(em, ms) {
+            if (!smSfxQuiet && SP_EM[em]) sfxSpati('em:' + em);
             clearTimeout(smEmTimer);
             spatiMascot.dataset.em = em || 'normal';
             if (ms) smEmTimer = setTimeout(() => {
@@ -2480,6 +3190,7 @@ TAB - дополнить, ↑↓ - история
             }, ms);
         }
         function smPlay(a, ms) {
+            if (a && !smSfxQuiet) sfxSpati(a);
             clearTimeout(smAnimTimer);
             smReact.className = 'sm-react';
             if (!smHeld && !spatiMascot.classList.contains('flying')) smReact.style.transform = '';
@@ -2489,10 +3200,12 @@ TAB - дополнить, ↑↓ - история
             smAnimTimer = setTimeout(() => { smReact.className = 'sm-react'; }, ms);
         }
         function mascotSay(text) {
+            if (wdAwayOn && wdSayHook) { wdSayHook(String(text)); return; }
             if (!smBubble || !spatiMascot || !isSpatiEnabled) return;
             if (smNight()) text = String(text).toLowerCase();   // ночью Спати говорит шёпотом
             clearInterval(smTypeTimer); clearTimeout(smSayTimer);
             smSayAt = Date.now();
+            if (!smAsleep) sfxSpati('say');
             const r = screen.getBoundingClientRect();
             const right = smPos.x + SM_W / 2 > r.width / 2;
             smBubble.className = 'sm-bubble show ' + (smPos.y < 70 ? 'down ' : 'up ') + (right ? 'r' : 'l') + (smNight() ? ' whisper' : '');
@@ -2505,6 +3218,7 @@ TAB - дополнить, ↑↓ - история
                     return;
                 }
                 const ch = text.charAt(i++);
+                if (ch === ' ' && i > 2 && !smAsleep) sfxSpati('tick');
                 smBubble.textContent += ch;
                 if (/[a-zа-яё0-9]/i.test(ch)) { mouthFlip = !mouthFlip; mascotMouth(mouthFlip); } else mascotMouth(false);
             }, 38);
@@ -2664,6 +3378,7 @@ TAB - дополнить, ↑↓ - история
             el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); smEatApple(); });
             screen.appendChild(el);
             smApple = el; smAppleAt = Date.now();
+            sfxSpati('apple');
             smEm('surprised', 900);
             mascotSay(smPick(SM_APPLE_SEE));
             clearTimeout(smAppleTimer);
@@ -2674,6 +3389,7 @@ TAB - дополнить, ↑↓ - история
             if (!el) return;
             smApple = null; clearTimeout(smAppleTimer);
             smTouch();
+            sfxSpati('bite');
             el.classList.add('eaten');
             el.style.left = (smPos.x + SM_W / 2 - 20) + 'px';
             el.style.top = (smPos.y + SM_H * .4) + 'px';
@@ -2713,9 +3429,11 @@ TAB - дополнить, ↑↓ - история
             if (!r || !smReact) return;
             if (smAsleep && name !== 'startle') return;
             smLastReact = name;
-            smPlay(r.a, r.ms);
-            smEm(r.em, r.ms);
+            sfxSpati(name);
+            smSfxQuiet = true;
+            try { smPlay(r.a, r.ms); smEm(r.em, r.ms); } finally { smSfxQuiet = false; }
             if (r.chat) mascotChatter(r.chat);
+            smFxOnReact(name);
             if (!quiet && r.say) mascotSay(smPick(r.say));
         }
         function mascotFlee() {
@@ -2729,6 +3447,7 @@ TAB - дополнить, ↑↓ - история
             if (!spatiMascot) return;
             smMoved = false; smSave();
             spatiMascot.classList.add('gliding');
+            sfxSpati('glide');
             smLayout();
             smPlay('hop', 600); smEm('happy', 900);
             setTimeout(() => spatiMascot.classList.remove('gliding'), 750);
@@ -2742,6 +3461,7 @@ TAB - дополнить, ↑↓ - история
             smAsleep = true; smSleptAt = Date.now(); smZzzAt = Date.now() + 1500;
             spatiMascot.classList.add('asleep');
             smPlay(null); smEm('sleepy');
+            sfxSpati('snore');
             mascotSay(smPick(SM_SNORE));
         }
         function smWakeState() {
@@ -2750,6 +3470,7 @@ TAB - дополнить, ↑↓ - история
             smEm('normal');
         }
         function smClick() {
+            sfxSpati('poke');
             const now = Date.now();
             smClicks = smClicks.filter(t => now - t < 3500);
             smClicks.push(now);
@@ -2782,8 +3503,10 @@ TAB - дополнить, ↑↓ - история
             document.body.classList.add('sm-moved');
             smPlay(null);
             spatiMascot.classList.add('held');
+            sfxSpati('grab');
             smEm('surprised');
-            mascotSay(smPick(SM_HOLD));
+            clearTimeout(smHoldSayT);
+            smHoldSayT = setTimeout(() => { if (smHeld) mascotSay(smPick(SM_HOLD)); }, 260);
             clearTimeout(smHoldTimer);
             smHoldTimer = setTimeout(() => {
                 if (smHeld) { smEm('sad'); smSayCool(smPick(SM_BORED_HOLD), 800); }
@@ -2791,11 +3514,13 @@ TAB - дополнить, ↑↓ - история
         }
         function smEndHold(vx, vy) {
             smHeld = false;
+            clearTimeout(smHoldSayT);
             clearTimeout(smHoldTimer);
             spatiMascot.classList.remove('held');
             smReact.style.transform = '';
             const speed = Math.hypot(vx, vy);
             if (speed > .45) {
+                sfxSpati('throw');
                 smEm('surprised');
                 smSayCool(smPick(SM_THROW), 400);
                 smFly(vx, vy);
@@ -2820,7 +3545,7 @@ TAB - дополнить, ↑↓ - история
                 smReact.style.transform = 'rotate(' + smClamp(vx * 22, -30, 30) + 'deg)';
                 if (hit && Math.hypot(vx, vy) > .12 && now - lastBump > 300) {
                     lastBump = now; bounces++;
-                    smReact.className = 'sm-react'; void smReact.offsetWidth; smReact.classList.add('a-bump');
+                    smReact.className = 'sm-react'; void smReact.offsetWidth; smReact.classList.add('a-bump'); sfxSpati('bump');
                     smSayCool(smPick(SM_BUMP), 1500);
                 }
                 if (Math.hypot(vx, vy) < .05) {
@@ -2853,6 +3578,7 @@ TAB - дополнить, ↑↓ - история
                 const now = Date.now();
                 if (now - smHoverAt < 5000) return;
                 smHoverAt = now;
+                sfxSpati('hover');
                 smEm('surprised', 700);
                 if (Math.random() < .2) mascotSay(smPick(['Хм?', 'Ты ко мне?', 'О, курсор!', 'Заметил меня?']));
             });
@@ -2864,18 +3590,23 @@ TAB - дополнить, ↑↓ - история
                 try { spatiMascot.setPointerCapture(e.pointerId); } catch (err) {}
                 const r = screen.getBoundingClientRect();
                 smDrag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: e.clientX - r.left - smPos.x, oy: e.clientY - r.top - smPos.y,
-                    moved: false, samples: [], dir: 0, flips: [], dizzyAt: 0, pet: false };
+                    moved: false, samples: [], dir: 0, flips: [], dizzyAt: 0, pet: false, tickle: false, px0: smPos.x, py0: smPos.y, t0: performance.now() };
                 clearTimeout(smPetTimer);
                 smPetTimer = setTimeout(() => {
-                    if (smDrag && !smDrag.moved) { smDrag.pet = true; smEm('happy'); }
+                    if (smDrag && !smDrag.moved) {
+                        smDrag.pet = true; smEm('happy'); sfxSpati('purr');
+                        if (!smWasAsleep) { smBurst('heart', 2); clearInterval(smHeartT); smHeartT = setInterval(smHeartBeat, 700); }
+                    }
                 }, 650);
+                smHoldFxStop();
+                smTickleStartT = setTimeout(smTickleStart, 1300);
             });
             spatiMascot.addEventListener('pointermove', (e) => {
                 const d = smDrag;
                 if (!d || e.pointerId !== d.id) return;
                 if (!d.moved) {
                     if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 6) return;
-                    d.moved = true; smStartHold();
+                    d.moved = true; smHoldFxStop(); smStartHold();
                 }
                 const r = screen.getBoundingClientRect();
                 const px = smPos.x;
@@ -2885,6 +3616,7 @@ TAB - дополнить, ↑↓ - история
                 while (d.samples.length > 2 && t - d.samples[0].t > 110) d.samples.shift();
                 const a = d.samples[0], b = d.samples[d.samples.length - 1];
                 const vx = b.t > a.t ? (b.x - a.x) / (b.t - a.t) : 0;
+                if (Math.abs(vx) > 1.1) sfxSpati('swish');
                 smReact.style.transform = 'rotate(' + smClamp(vx * 18, -28, 28) + 'deg)';
                 // тряска: быстрая смена направления
                 const dx = smPos.x - px;
@@ -2903,9 +3635,10 @@ TAB - дополнить, ↑↓ - история
                 const d = smDrag;
                 if (!d || e.pointerId !== d.id) return;
                 smDrag = null;
-                clearTimeout(smPetTimer);
+                clearTimeout(smPetTimer); smHoldFxStop();
                 try { spatiMascot.releasePointerCapture(e.pointerId); } catch (err) {}
                 if (!d.moved) {
+                    if (d.tickle) { smTickleEnd(); return; }
                     if (cancel) { smWasAsleep = false; if (d.pet) smEm('normal'); return; }
                     if (d.pet && !smWasAsleep) { smSaved.clicks = (smSaved.clicks || 0) + 1; smSave(); mascotReact('pet'); } else smClick();
                     return;
@@ -2916,6 +3649,7 @@ TAB - дополнить, ↑↓ - история
                     const a = d.samples[0], b = d.samples[n - 1];
                     if (performance.now() - b.t < 90 && b.t > a.t) { vx = (b.x - a.x) / (b.t - a.t); vy = (b.y - a.y) / (b.t - a.t); }
                 }
+                if (!cancel && smTrySwipe(d)) return;
                 smEndHold(vx, vy);
             };
             spatiMascot.addEventListener('pointerup', (e) => smUp(e, false));
@@ -2988,6 +3722,7 @@ TAB - дополнить, ↑↓ - история
                 const now = Date.now();
                 if (smAchId === a.id && now - smAchAt < 6000) return;
                 if (!force && now - smAchAt < 1800) return;
+                sfxSpati('look');
                 const done = !!state.ach[a.id], secret = a.hidden && !done;
                 let text = '', em = 'look';
                 if (secret) text = smPick(SM_ACH_SECRET);
@@ -3010,6 +3745,7 @@ TAB - дополнить, ↑↓ - история
                 const now = Date.now();
                 if (now - smAchOpenAt < 4000) return;
                 smAchOpenAt = now;
+                sfxSpati('think');
                 const total = ACHIEVEMENTS.length, got = unlockedCount(), pct = total ? Math.round(got / total * 100) : 0;
                 let text;
                 if (got === 0) text = smPick(['Пока пусто. Зато всё впереди', 'Ни одного? Давай начнём']);
@@ -3051,6 +3787,7 @@ TAB - дополнить, ↑↓ - история
                     mascotReact('yawn', true); mascotSay(smPick(SM_WAKE));
                 } else if (now >= smZzzAt) {
                     smZzzAt = now + 6500 + Math.random() * 3000;
+                    sfxSpati('snore');
                     mascotSay(smPick(SM_SNORE));
                 }
                 return;
@@ -3087,11 +3824,55 @@ TAB - дополнить, ↑↓ - история
                 else if (type === 'back') { smTouch(); mascotReact('wave'); const b = smPick(SM_BACK); mascotSay(typeof b === 'function' ? b() : b); }
                 else if (type === 'play') { mascotReact('dance', true); mascotSay(smPick(SM_MUSIC)); }
                 else if (type === 'pause') { smEm('sad', 1400); mascotSay(smPick(SM_QUIET)); }
-                else if (type === 'color') { smPlay('hop', 600); smEm('surprised', 900); mascotSay(smPick(SM_COLOR)); }
-                else if (type === 'unknown') { smEm('sad', 1400); if (Math.random() < .5) mascotSay(smPick(SM_UNKNOWN)); }
+                else if (type === 'color') { sfxSpati('color'); smSfxQuiet = true; smPlay('hop', 600); smEm('surprised', 900); smSfxQuiet = false; mascotSay(smPick(SM_COLOR)); }
+                else if (type === 'unknown') { sfxSpati('error'); smSfxQuiet = true; smEm('sad', 1400); smSfxQuiet = false; if (Math.random() < .5) mascotSay(smPick(SM_UNKNOWN)); }
                 else if (SM_SYS[type]) smSysReact(type);
             } catch (e) {}
         }
+        // --- реакция Спати на КАЖДОЕ достижение, своя для каждой редкости ---
+        const SM_ACH_SAY = {
+            common: ['Ура! Одно есть', 'Так держать!', 'Ещё одна ачивка в копилку', 'Неплохо!', 'Записал в журнал', 'Плюс один. Считаю'],
+            rare: ['О, редкое! Уважаю', 'Это уже серьёзно', 'Не каждый такое открывает', 'Редкость! Я впечатлён'],
+            epic: ['ЭПИК! Я в восторге!', 'Вау! Эпическое!', 'Такое выпадает не каждый день', 'Я аж засветился!'],
+            legendary: ['ЛЕГЕНДАРНОЕ?! Не верю своим пикселям!', 'Ты легенда. Серьёзно', 'Падаю ниц. Без ног, но падаю', 'Это войдёт в историю терминала!']
+        };
+        const SM_ACH_SULK = ['Ладно, молодец. Я всё ещё обижен', 'Поздравляю. Сквозь зубы', 'Хм. Неплохо. Но я дуюсь'];
+        const achReactQ = [];
+        let achReactBusy = false;
+        function pumpAchReact() {
+            if (achReactBusy || !achReactQ.length) return;
+            if (!isSpatiEnabled || !spatiMascot || !spatiMascot.classList.contains('show')) { achReactQ.length = 0; return; }
+            if (smHeld || smRaf || smDrag) { setTimeout(pumpAchReact, 600); return; }
+            achReactBusy = true;
+            const def = achReactQ.shift();
+            const rar = SM_ACH_SAY[def.rarity] ? def.rarity : 'common';
+            const crowded = achReactQ.length > 2;       // много подряд: реакции короче, но ни одна не пропадает
+            const sulky = spatiMood <= -2;
+            const at = (ms, fn) => setTimeout(() => { if (isSpatiEnabled) { try { fn(); } catch (e) { /* ignore */ } } }, ms);
+            let dur;
+            const go = () => {
+                if (!isSpatiEnabled) { achReactBusy = false; achReactQ.length = 0; return; }
+                if (rar !== 'common') { spatiMood = spatiClamp(spatiMood + 1); spatiMoodAt = Date.now(); }
+                if (sulky && rar === 'common') {
+                    dur = 1500; smEm('happy', 1200); mascotSay(smPick(SM_ACH_SULK));
+                } else if (rar === 'common') {
+                    dur = crowded ? 700 : 1000; mascotReact(smPick(['jump', 'hop']), true); mascotSay(smPick(SM_ACH_SAY.common));
+                } else if (rar === 'rare') {
+                    dur = crowded ? 900 : 1500; mascotReact(smPick(['spin', 'flip']), true); smEm('happy', 1500); mascotSay(smPick(SM_ACH_SAY.rare));
+                } else if (rar === 'epic') {
+                    dur = crowded ? 1300 : 2800; sfxSpati('cheer'); mascotReact('dance', true); smEm('surprised', 700); at(700, () => smEm('happy', 2100)); mascotSay(smPick(SM_ACH_SAY.epic));
+                } else {
+                    dur = crowded ? 1800 : 4400; sfxSpati('cheer'); mascotReact('flip', true); smEm('surprised', 900);
+                    mascotSay(smPick(SM_ACH_SAY.legendary));
+                    at(900, () => { mascotReact('dance', true); smEm('happy', 2600); });
+                    at(3600, () => { mascotReact('cheer', true); });
+                }
+                setTimeout(() => { achReactBusy = false; pumpAchReact(); }, dur);
+            };
+            if (smAsleep) { smTouch(); mascotReact('startle', true); setTimeout(go, 800); } else go();
+        }
+        achReactHook = function (def) { achReactQ.push(def); pumpAchReact(); };
+
         bgAudio.addEventListener('play', () => mascotEvent('play'));
         bgAudio.addEventListener('pause', () => { if (!bgAudio.ended) mascotEvent('pause'); });
         document.addEventListener('visibilitychange', () => {
@@ -3121,7 +3902,7 @@ TAB - дополнить, ↑↓ - история
         const SM_G_RESUME = ['Вернулись! Я не отвлекался', 'Погнали дальше'];
 
         function smGameCan() {
-            return !!(isSpatiEnabled && spatiMascot && spatiMascot.classList.contains('show') && !smHeld && !smRaf && !smDrag);
+            return !!(isSpatiEnabled && spatiMascot && spatiMascot.classList.contains('show') && !spatiMascot.classList.contains('wd-away') && !smHeld && !smRaf && !smDrag);
         }
         function smGameBubble(text, cd) {
             const now = Date.now();
@@ -3168,7 +3949,7 @@ TAB - дополнить, ↑↓ - история
                 if (type === 'over') {
                     smLookReset();
                     const s = d.score || 0;
-                    if (d.record) { mascotReact('dance', true); smEm('happy', 2600); }
+                    if (d.record) { sfxSpati('cheer'); mascotReact('dance', true); smEm('happy', 2600); }
                     else if (sulky) smEm('sad', 1500);
                     else if (s >= 20) mascotReact('cheer', true);
                     else if (d.reason === 'wall' || d.reason === 'obstacle') { smPlay('bump', 300); smEm('dizzy', 1400); }
@@ -3181,13 +3962,15 @@ TAB - дополнить, ↑↓ - история
                 if (type === 'pause')  { smEm('look', 1500); if (Math.random() < .5) smGameBubble(smPick(SM_G_PAUSE), 3000); return; }
                 if (type === 'eat') {
                     smGame.apples++;
-                    smPlay(d.combo ? 'jump' : 'hop', d.combo ? 750 : 600); smEm('happy', 700);
+                    sfxSpati(d.combo ? 'combo' : 'pickup'); smSfxQuiet = true;
+                    smPlay(d.combo ? 'jump' : 'hop', d.combo ? 750 : 600); smEm('happy', 700); smSfxQuiet = false;
                     if (d.combo) smGameBubble(smPick(SM_G_COMBO), 4000);
                     else if (smGame.apples === 1) smGameBubble(smPick(SM_G_FIRST), 3000);
                     return;
                 }
                 if (type === 'bonus') {
-                    smPlay('jump', 750); smEm('happy', 1200);
+                    sfxSpati('bonus'); smSfxQuiet = true;
+                    smPlay('jump', 750); smEm('happy', 1200); smSfxQuiet = false;
                     if (Math.random() < .5) smGameBubble(smPick(SM_G_BONUS), 4000);
                     return;
                 }
@@ -3195,21 +3978,23 @@ TAB - дополнить, ↑↓ - история
                 if (type === 'danger') {
                     if (now - smGame.dangerAt < 7000) return;
                     smGame.dangerAt = now; smGame.dangerUsed = false;
-                    smPlay('bump', 300); smEm('surprised', 900);
+                    sfxSpati('alarm'); smSfxQuiet = true;
+                    smPlay('bump', 300); smEm('surprised', 900); smSfxQuiet = false;
                     smGameBubble(smPick(SM_G_DANGER), 2500);
                     return;
                 }
                 if (type === 'escape') {
                     if (smGame.dangerUsed || now - smGame.dangerAt > 2600) return;
                     smGame.dangerUsed = true;
-                    smPlay('hop', 600); smEm('happy', 1200);
+                    sfxSpati('relief'); smSfxQuiet = true;
+                    smPlay('hop', 600); smEm('happy', 1200); smSfxQuiet = false;
                     smGameBubble(smPick(SM_G_ESCAPE), 1500);
                 }
             } catch (e) {}
         }
 
         // ---------- 2. Время суток: ночью шёпот и сон, по вечерам совет про музыку ----------
-        function smNight() { return spPart() === 'night'; }
+        function smNight() { return (smDbg && smDbg.night != null) ? !!smDbg.night : spPart() === 'night'; }
         function smTimeK() { return smNight() ? .5 : 1; }   // ночью Спати засыпает вдвое быстрее
         function smApplyTimeLook() { if (spatiMascot) spatiMascot.classList.toggle('night', smNight()); }
         const SM_TIME_IDLE = {
@@ -3309,6 +4094,1283 @@ TAB - дополнить, ↑↓ - история
             }).catch(() => {});
         } catch (e) { /* ignore */ }
 
+        // ==========================================================
+        // СПАТИ 4.0: тряска телефона · щекотка · свайп-«кувырок» · аксессуары · сезоны · частицы
+        // ==========================================================
+        const SM_SHAKE_MIN = 9;     // отклонение от g (м/с²), с которого начинается «удар»
+        const SM_SHAKE_HARD = 30;   // пик выше этого значения — слишком сильно, Спати обижается
+        // ---------- Гардероб Спати: данные ----------
+        const WD_KEY = 'spatium_wardrobe_v1';
+        const WD_SLOTS = {
+            hat: [
+                { id: 'beanie', name: 'ШАПКА' },
+                { id: 'santa', name: 'КОЛПАК ДЕДА' },
+                { id: 'witch', name: 'ШЛЯПА ВЕДЬМЫ' },
+                { id: 'party', name: 'КОЛПАК' },
+                { id: 'phones', name: 'НАУШНИКИ' },
+                { id: 'sprout', name: 'РОСТОК' },
+                { id: 'flower', name: 'ЦВЕТОК' },
+                { id: 'bow', name: 'БАНТ', ach: 'spati_hello' },
+                { id: 'catears', name: 'КОШАЧЬИ УШКИ', ach: 'spati_thanks' },
+                { id: 'bandana', name: 'БАНДАНА', ach: 'first_cmd' },
+                { id: 'cap', name: 'КЕПКА', ach: 'snake_10' },
+                { id: 'chef', name: 'ПОВАР', ach: 'sm_feed25' },
+                { id: 'bunny', name: 'УШКИ', ach: 'sm_tickle' },
+                { id: 'antenna', name: 'АНТЕННА', ach: 'pocket' },
+                { id: 'helmet', name: 'КАСКА', ach: 'speedrun' },
+                { id: 'grad', name: 'МАГИСТР', ach: 'orator' },
+                { id: 'cowboy', name: 'КОВБОЙ', ach: 'snake_swipe' },
+                { id: 'pirate', name: 'ТРЕУГОЛКА', ach: 'snake_self' },
+                { id: 'mushroom', name: 'ГРИБОК', ach: 'afk_back' },
+                { id: 'horns', name: 'РОЖКИ', ach: 'spati_rude' },
+                { id: 'halo', name: 'НИМБ', ach: 'save_export' },
+                { id: 'pumpkin', name: 'ТЫКВА', ach: 'paranoid' },
+                { id: 'wizard', name: 'КОЛПАК МАГА', ach: 'hacker_long' },
+                { id: 'viking', name: 'ШЛЕМ ВИКИНГА', ach: 'snake_games25' },
+                { id: 'tophat', name: 'ЦИЛИНДР', ach: 'spati_friend' },
+                { id: 'flame', name: 'ПЛАМЯ', ach: 'snake_turbo' },
+                { id: 'crown', name: 'КОРОНА', ach: 'half' }
+            ],
+            face: [
+                { id: 'glasses', name: 'ОЧКИ' },
+                { id: 'blush', name: 'РУМЯНЕЦ' },
+                { id: 'freckles', name: 'ВЕСНУШКИ' },
+                { id: 'tear', name: 'СЛЁЗКА' },
+                { id: 'tongue', name: 'ЯЗЫЧОК', ach: 'caps' },
+                { id: 'bandaid', name: 'ПЛАСТЫРЬ', ach: 'nerves' },
+                { id: 'clown', name: 'НОС КЛОУНА', ach: 'sm_high5' },
+                { id: 'whiskers', name: 'УСИКИ КОТА', ach: 'sm_roll' },
+                { id: 'sunglasses', name: 'ТЁМНЫЕ', ach: 'melomaniac' },
+                { id: 'fangs', name: 'КЛЫКИ', ach: 'unknown5' },
+                { id: 'scar', name: 'ШРАМ', ach: 'sm_offend' },
+                { id: 'hearts', name: 'СЕРДЕЧКИ', ach: 'spati_love' },
+                { id: 'monocle', name: 'МОНОКЛЬ', ach: 'math' },
+                { id: 'mustache', name: 'УСЫ', ach: 'spati_joke' },
+                { id: 'domino', name: 'МАСКА', ach: 'sudo' },
+                { id: 'beard', name: 'БОРОДА', ach: 'regular25' },
+                { id: 'goggles', name: 'ГОГЛЫ', ach: 'snake_lvl5' },
+                { id: 'visor', name: 'ВИЗОР', ach: 'hacker' },
+                { id: 'eyepatch', name: 'ПОВЯЗКА', ach: 'snake_wall' },
+                { id: 'starry', name: 'ЗВЁЗДОЧКИ', ach: 'spati_50' }
+            ],
+            body: [
+                { id: 'scarf', name: 'ШАРФ' },
+                { id: 'bowtie', name: 'БАБОЧКА' },
+                { id: 'tie', name: 'ГАЛСТУК' },
+                { id: 'suspenders', name: 'ПОДТЯЖКИ' },
+                { id: 'balloon', name: 'ШАРИК' },
+                { id: 'tee', name: 'ТЕЛЬНЯШКА', ach: 'regular' },
+                { id: 'bell', name: 'КОЛОКОЛЬЧИК', ach: 'sm_shake' },
+                { id: 'apron', name: 'ФАРТУК', ach: 'clear5' },
+                { id: 'hoodie', name: 'ТОЛСТОВКА', ach: 'long_session' },
+                { id: 'medal', name: 'МЕДАЛЬ', ach: 'snake_first' },
+                { id: 'lei', name: 'ГИРЛЯНДА', ach: 'rainbow' },
+                { id: 'guitar', name: 'ГИТАРА', ach: 'listener10' },
+                { id: 'backpack', name: 'РЮКЗАК', ach: 'snake_games5' },
+                { id: 'lifebuoy', name: 'СПАСКРУГ', ach: 'snake_nowall' },
+                { id: 'sword', name: 'МЕЧ', ach: 'snake_bonus5' },
+                { id: 'cape', name: 'ПЛАЩ', ach: 'snake_50' },
+                { id: 'armor', name: 'ДОСПЕХИ', ach: 'snake_all' },
+                { id: 'jetpack', name: 'РЕАКТИВНЫЙ РАНЕЦ', ach: 'cmd500' },
+                { id: 'wings', name: 'КРЫЛЬЯ', ach: 'snake_100' }
+            ],
+            color: [
+                { id: 'lime', name: 'ЛАЙМ', hex: '#9dff3a' },
+                { id: 'mint', name: 'МЯТА', hex: '#7dffc4' },
+                { id: 'peach', name: 'ПЕРСИК', hex: '#ffb08a' },
+                { id: 'red', name: 'КРАСНЫЙ', hex: '#ff5a5a', ach: 'color_red' },
+                { id: 'white', name: 'БЕЛЫЙ', hex: '#f2f2f2', ach: 'color_white' },
+                { id: 'pink', name: 'РОЗОВЫЙ', hex: '#ff7ab8', ach: 'sm_feed5' },
+                { id: 'orange', name: 'ОРАНЖЕВЫЙ', hex: '#ff8a1f', ach: 'color_clear' },
+                { id: 'yellow', name: 'ЖЁЛТЫЙ', hex: '#ffe84a', ach: 'time' },
+                { id: 'brown', name: 'КОРИЧНЕВЫЙ', hex: '#a0693a', ach: 'echo' },
+                { id: 'teal', name: 'БИРЮЗОВЫЙ', hex: '#14b8a6', ach: 'color_help' },
+                { id: 'blue', name: 'СИНИЙ', hex: '#4a7bff', ach: 'color_random' },
+                { id: 'cyan', name: 'ГОЛУБОЙ', hex: '#4fe3ff', ach: 'snake_25' },
+                { id: 'magenta', name: 'МАДЖЕНТА', hex: '#ff2bd6', ach: 'color' },
+                { id: 'purple', name: 'ФИОЛЕТОВЫЙ', hex: '#b57bff', ach: 'color_spree' },
+                { id: 'coal', name: 'УГОЛЬ', hex: '#1c1c1c', dark: true, ach: 'rmrf' },
+                { id: 'gold', name: 'ЗОЛОТОЙ', hex: '#ffc83d', ach: 'master' },
+                // узорчатые
+                { id: 'dots', name: 'ГОРОХ', hex: '#ff7ab8', ach: 'please' },
+                { id: 'camo', name: 'КАМУФЛЯЖ', hex: '#5a7a3a', ach: 'linux' },
+                { id: 'ice', name: 'ЛЁД', hex: '#b9ecff', ach: 'help3' },
+                { id: 'cow', name: 'КОРОВА', hex: '#f4f4f4', ach: 'echo10' },
+                { id: 'panda', name: 'ПАНДА', hex: '#f4f4f4', ach: 'spati_250' },
+                { id: 'tiger', name: 'ТИГР', hex: '#ff9a1f', ach: 'snake_100' },
+                { id: 'robot', name: 'РОБОТ', hex: '#a8afba', ach: 'cmd200' },
+                { id: 'circuit', name: 'ПЛАТА', hex: '#0b3d1a', dark: true, ach: 'history_cmd' },
+                { id: 'galaxy', name: 'ГАЛАКТИКА', hex: '#1b1450', dark: true, ach: 'secret_all' },
+                // живые (анимированные)
+                { id: 'toxic', name: 'ТОКСИК', hex: '#7dff2a', fx: true, ach: 'unknown50' },
+                { id: 'candy', name: 'КОНФЕТА', hex: '#ff7ab8', fx: true, ach: 'spati_love' },
+                { id: 'sunset', name: 'ЗАКАТ', hex: '#ff7a5a', fx: true, ach: 'afk_long' },
+                { id: 'chrome', name: 'ХРОМ', hex: '#c4cad4', fx: true, ach: 'regular100' },
+                { id: 'neon', name: 'НЕОН', hex: '#ffffff', fx: true, ach: 'light_show' },
+                { id: 'lava', name: 'ЛАВА', hex: '#ff5a1f', fx: true, ach: 'snake_total200' },
+                { id: 'ghost', name: 'ПРИЗРАК', hex: '#cfe8e0', fx: true, ach: 'spati_off' },
+                { id: 'glitch', name: 'ГЛИТЧ', hex: '#00f0ff', fx: true, ach: 'crash' },
+                { id: 'rainbow', name: 'РАДУЖНЫЙ', hex: '#ff5a5a', fx: true, ach: 'all_colors' }
+            ]
+        };
+        const WD_EXTRA = { hat: ['auto', 'none'], face: ['none'], body: ['none'], color: ['theme'] };
+        const WD_DEFAULT = { hat: 'auto', face: 'none', body: 'none', color: 'theme', seen: null, toasted: null, looks: null };
+        function wdLoad() {
+            const w = Object.assign({}, WD_DEFAULT);
+            w.toasted = [];
+            w.looks = [null, null, null];
+            try {
+                const sv = JSON.parse(localStorage.getItem(WD_KEY) || 'null');
+                if (sv && typeof sv === 'object') {
+                    Object.keys(WD_EXTRA).forEach(k => {
+                        if (typeof sv[k] === 'string' && (WD_EXTRA[k].includes(sv[k]) || WD_SLOTS[k].some(i => i.id === sv[k]))) w[k] = sv[k];
+                    });
+                    // старый режим «наушники всегда» превращаем в обычную вещь на голову
+                    if (sv.phones === 'always' && (sv.hat === undefined || sv.hat === 'auto')) w.hat = 'phones';
+                    if (Array.isArray(sv.seen)) w.seen = sv.seen.filter(x => typeof x === 'string');
+                    if (Array.isArray(sv.toasted)) w.toasted = sv.toasted.filter(x => typeof x === 'string');
+                    if (Array.isArray(sv.looks)) sv.looks.slice(0, 3).forEach((lk, n) => {
+                        if (!lk || typeof lk !== 'object') return;
+                        const o = {};
+                        const okAll = Object.keys(WD_EXTRA).every(k => {
+                            const good = typeof lk[k] === 'string' && (WD_EXTRA[k].includes(lk[k]) || WD_SLOTS[k].some(i => i.id === lk[k]));
+                            if (good) o[k] = lk[k];
+                            return good;
+                        });
+                        if (okAll) w.looks[n] = o;
+                    });
+                }
+            } catch (e) { /* ignore */ }
+            return w;
+        }
+        let wdState = wdLoad();
+        let wdOpen = false;
+        const wdSave = () => { try { localStorage.setItem(WD_KEY, JSON.stringify(wdState)); } catch (e) { /* ignore */ } };
+        const wdUnlocked = (it) => !it.ach || !!state.ach[it.ach];
+        const WD_ALL = [].concat(WD_SLOTS.hat, WD_SLOTS.face, WD_SLOTS.body, WD_SLOTS.color);
+        // первый запуск гардероба: всё, что уже открыто, считаем «просмотренным»
+        if (!wdState.seen) { wdState.seen = WD_ALL.filter(i => i.ach && wdUnlocked(i)).map(i => i.id); wdState.toasted = wdState.seen.slice(); wdSave(); }
+
+        // Уведомление об открытии косметики: приходит сразу после уведомления о достижении
+        const WD_SLOT_RU = { hat: 'ГОЛОВА', face: 'ЛИЦО', body: 'ОДЕЖДА', color: 'СКИН' };
+        const WD_SLOT_ICON = { hat: 'crown', face: 'eye', body: 'shield', color: 'drop' };
+        const wdSlotOf = (it) => ['hat', 'face', 'body', 'color'].find(s => WD_SLOTS[s].indexOf(it) >= 0);
+        wdUnlockHook = function (achId, deferToast) {
+            if (deferToast) return;
+            const a = achById[achId];
+            const heavy = !!a && (a.rarity === 'epic' || a.rarity === 'legendary');
+            let any = false;
+            WD_ALL.filter(i => i.ach === achId && wdUnlocked(i) && wdState.toasted.indexOf(i.id) < 0).forEach(i => {
+                wdState.toasted.push(i.id);
+                any = true;
+                const slot = wdSlotOf(i);
+                enqueueToast({
+                    rarity: heavy ? 'epic' : 'rare',
+                    icon: WD_SLOT_ICON[slot],
+                    head: 'НОВАЯ КОСМЕТИКА · ' + WD_SLOT_RU[slot],
+                    title: i.name,
+                    desc: 'Примерь в гардеробе Спати'
+                });
+            });
+            if (any) wdSave();
+        };
+
+        const R = (x, y, w, h, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;
+        const ACC_ART = {
+            // --- лицо ---
+            glasses: '<rect x="2.55" y="2.55" width="1.9" height="1.9" fill="none" stroke="#ffe27a" stroke-width=".4"/>'
+                + '<rect x="4.55" y="2.55" width="1.9" height="1.9" fill="none" stroke="#ffe27a" stroke-width=".4"/>'
+                + R(0, 3.2, 2.3, .4, '#ffe27a') + R(6.7, 3.2, 2.3, .4, '#ffe27a'),
+            sunglasses: R(2.5, 2.5, 2, 2, '#0c0c0c') + R(4.5, 2.5, 2, 2, '#0c0c0c') + R(0, 2.7, 2.5, .4, '#0c0c0c') + R(6.5, 2.7, 2.5, .4, '#0c0c0c') + R(2.8, 2.7, .6, .4, '#5a5a5a'),
+            hearts: '<rect x="2.5" y="2.5" width="2" height="2" fill="#ff4f8a" fill-opacity=".9"/><rect x="4.5" y="2.5" width="2" height="2" fill="#ff4f8a" fill-opacity=".9"/>'
+                + R(0, 3.2, 2.5, .4, '#ff4f8a') + R(6.5, 3.2, 2.5, .4, '#ff4f8a') + R(2.8, 2.8, .5, .5, '#ffd0e2') + R(4.8, 2.8, .5, .5, '#ffd0e2'),
+            monocle: '<rect x="4.55" y="2.55" width="1.9" height="1.9" fill="none" stroke="#ffc83d" stroke-width=".4"/>' + R(6.3, 3.6, .4, 2.6, '#ffc83d'),
+            mustache: R(2, 4, 5, 1, '#2a1a10') + R(1, 5, 1, 1, '#2a1a10') + R(7, 5, 1, 1, '#2a1a10'),
+            eyepatch: R(4.5, 2.5, 2, 2, '#111111') + R(0, 2.7, 4.5, .4, '#111111') + R(6.5, 2.7, 2.5, .4, '#111111'),
+            blush: R(1.5, 4, 1.5, 1, '#ff7ab8') + R(6, 4, 1.5, 1, '#ff7ab8'),
+            // --- голова ---
+            beanie: R(2, -1, 5, 1, '#2f6fd6') + R(3, -2, 3, 1, '#2f6fd6') + R(3.5, -3, 2, 1, '#ffffff') + R(1, 0, 7, 1, '#9cc4ff'),
+            santa: R(2, -1, 5, 1, '#e8383d') + R(3, -2, 4, 1, '#e8383d') + R(5, -3, 3, 1, '#e8383d') + R(8, -3, 1, 1, '#ffffff') + R(1, 0, 7, 1, '#ffffff'),
+            witch: R(4, -3, 2, 1, '#7a3fb8') + R(3, -2, 3, 1, '#7a3fb8') + R(3, -1, 3, 1, '#ff8a1f') + R(0, 0, 9, 1, '#7a3fb8'),
+            party: R(2, -1, 5, 1, '#ff4fa0') + R(3, -2, 3, 1, '#ff4fa0') + R(4, -3, 1, 1, '#4fe3ff') + R(3, -1, 1, 1, '#ffe66b') + R(5, -1, 1, 1, '#ffe66b') + R(4, -2, 1, 1, '#ffe66b'),
+            cap: R(3, -2, 3, 1, '#3b82f6') + R(2, -1, 5, 1, '#3b82f6') + R(1, 0, 8, 1, '#1e56b3'),
+            chef: R(2, -3, 5, 1, '#ffffff') + R(1, -2, 7, 1, '#ffffff') + R(2, -1, 5, 1, '#ffffff') + R(1, 0, 7, 1, '#d8d8d8'),
+            bunny: R(2, -4, 1, 4, '#ffffff') + R(6, -4, 1, 4, '#ffffff') + R(2, -3, 1, 2, '#ff9ec7') + R(6, -3, 1, 2, '#ff9ec7'),
+            horns: R(2, -1, 1, 1, '#e8383d') + R(1, -2, 1, 1, '#e8383d') + R(6, -1, 1, 1, '#e8383d') + R(7, -2, 1, 1, '#e8383d'),
+            halo: R(3, -4, 3, 1, '#ffe66b') + R(2, -3, 1, 1, '#ffe66b') + R(6, -3, 1, 1, '#ffe66b') + R(3, -2, 3, 1, '#ffe66b'),
+            tophat: R(2, -3, 5, 1, '#4a4a4a') + R(2, -2, 5, 1, '#e8383d') + R(2, -1, 5, 1, '#4a4a4a') + R(1, 0, 7, 1, '#8a8a8a'),
+            crown: R(2, -2, 1, 1, '#ffc83d') + R(4, -2, 1, 1, '#ffc83d') + R(6, -2, 1, 1, '#ffc83d') + R(2, -1, 5, 1, '#ffc83d') + R(4, -1, 1, 1, '#ff3355'),
+            // --- тело ---
+            scarf: R(0, 7, 9, 1, '#e8383d') + R(2, 7, 1, 1, '#ffffff') + R(5, 7, 1, 1, '#ffffff') + R(6, 8, 2, 2, '#c92d33') + R(6, 9, 2, 1, '#ffffff'),
+            bowtie: R(2, 7, 2, 2, '#e8383d') + R(5, 7, 2, 2, '#e8383d') + R(4, 7, 1, 2, '#7a1b1f'),
+            tee: R(0, 7, 9, 1, '#ffffff') + R(0, 8, 9, 1, '#3b82f6'),
+            medal: R(3, 7, 1, 1, '#e8383d') + R(5, 7, 1, 1, '#e8383d') + R(4, 8, 1, 1, '#ffc83d'),
+            backpack: R(1, 4, 1, 5, '#8a5a2b') + R(7, 4, 1, 5, '#8a5a2b') + R(-1, 5, 1, 3, '#b5762f') + R(9, 5, 1, 3, '#b5762f'),
+            cape: R(-1, 3, 1, 7, '#c2262e') + R(9, 3, 1, 7, '#c2262e') + R(-2, 5, 1, 5, '#c2262e') + R(10, 5, 1, 5, '#c2262e') + R(4, 7, 1, 1, '#ffc83d'),
+            wings: R(-2, 3, 2, 1, '#ffffff') + R(-3, 4, 3, 2, '#ffffff') + R(-2, 6, 2, 1, '#dfe9ff') + R(9, 3, 2, 1, '#ffffff') + R(9, 4, 3, 2, '#ffffff') + R(9, 6, 2, 1, '#dfe9ff'),
+            // --- наушники ---
+            phones: '<g class="ph-band">' + R(2, -1, 5, 1, '#d0d0d0') + R(1, 0, 1, 1, '#d0d0d0') + R(7, 0, 1, 1, '#d0d0d0') + R(0, 1, 1, 1, '#d0d0d0') + R(8, 1, 1, 1, '#d0d0d0') + '</g>'
+                + R(-1, 2, 2, 3, '#ff5ca8') + R(8, 2, 2, 3, '#ff5ca8') + R(-1, 2, 1, 3, '#c2377f') + R(9, 2, 1, 3, '#c2377f')
+        };
+        // ---------- Новая косметика: пиксельные рисунки ----------
+        Object.assign(ACC_ART, {
+            // --- голова ---
+            sprout: R(4, -1, 1, 1, '#3fae3a') + R(4, -2, 1, 1, '#3fae3a') + R(2, -3, 2, 1, '#5fd35a') + R(3, -2, 1, 1, '#5fd35a') + R(5, -3, 2, 1, '#5fd35a') + R(5, -2, 1, 1, '#5fd35a'),
+            flower: R(4, -3, 1, 1, '#ff7ab8') + R(3, -2, 1, 1, '#ff7ab8') + R(5, -2, 1, 1, '#ff7ab8') + R(4, -1, 1, 1, '#ff7ab8') + R(4, -2, 1, 1, '#ffe66b') + R(4, 0, 1, 1, '#3fae3a'),
+            bow: R(2, -2, 2, 2, '#ff4f8a') + R(5, -2, 2, 2, '#ff4f8a') + R(4, -2, 1, 2, '#c2285f') + R(2, -2, 1, 1, '#ff9ec7'),
+            catears: R(1, -1, 2, 1, '#6a6f7a') + R(1, -2, 1, 1, '#6a6f7a') + R(2, -1, 1, 1, '#ff9ec7') + R(6, -1, 2, 1, '#6a6f7a') + R(7, -2, 1, 1, '#6a6f7a') + R(6, -1, 1, 1, '#ff9ec7'),
+            bandana: R(1, -1, 7, 1, '#e8383d') + R(0, 0, 9, 1, '#e8383d') + R(7, 1, 2, 1, '#c92d33') + R(2, 0, 1, 1, '#ffffff') + R(5, 0, 1, 1, '#ffffff') + R(3, -1, 1, 1, '#ffffff'),
+            cowboy: R(3, -2, 3, 1, '#8a5a2b') + R(2, -1, 5, 1, '#8a5a2b') + R(2, -1, 5, 1, '#8a5a2b') + R(3, -1, 3, 1, '#ffc83d') + R(-1, 0, 11, 1, '#6b4420'),
+            pirate: R(2, -2, 5, 1, '#222222') + R(1, -1, 7, 1, '#222222') + R(0, 0, 9, 1, '#222222') + R(4, -1, 1, 1, '#ffffff') + R(3, 0, 1, 1, '#ffffff') + R(5, 0, 1, 1, '#ffffff') + R(1, -2, 1, 1, '#ffc83d'),
+            grad: R(0, -2, 9, 1, '#222222') + R(2, -1, 5, 1, '#222222') + R(4, -2, 1, 1, '#ffc83d') + R(8, -1, 1, 2, '#ffc83d'),
+            helmet: R(2, -2, 5, 1, '#ffc83d') + R(1, -1, 7, 1, '#ffc83d') + R(0, 0, 9, 1, '#e0a800') + R(4, -3, 1, 1, '#fff6b0') + R(4, -2, 1, 1, '#ffffff'),
+            antenna: R(4, -4, 1, 1, '#ff3355') + R(4, -3, 1, 3, '#9aa0aa') + R(3, -1, 3, 1, '#7d8591'),
+            wizard: R(4, -4, 1, 1, '#ffe66b') + R(3, -3, 3, 1, '#3a3fd6') + R(2, -2, 5, 1, '#3a3fd6') + R(2, -1, 5, 1, '#3a3fd6') + R(0, 0, 9, 1, '#2b2fa8') + R(4, -2, 1, 1, '#ffe66b') + R(3, -1, 1, 1, '#ffe66b'),
+            viking: R(2, -2, 5, 1, '#9aa0aa') + R(1, -1, 7, 1, '#9aa0aa') + R(1, 0, 7, 1, '#6f7580') + R(4, -1, 1, 2, '#ffc83d') + R(0, -1, 1, 1, '#ffffff') + R(-1, -2, 1, 1, '#ffffff') + R(8, -1, 1, 1, '#ffffff') + R(9, -2, 1, 1, '#ffffff'),
+            pumpkin: R(4, -3, 1, 1, '#2f8f2f') + R(2, -2, 5, 1, '#ff8a1f') + R(1, -1, 7, 1, '#ff8a1f') + R(0, 0, 9, 1, '#e06a00') + R(3, -1, 1, 1, '#2a1500') + R(5, -1, 1, 1, '#2a1500'),
+            flame: R(4, -4, 1, 1, '#ff8a1f') + R(3, -3, 3, 1, '#ff5a1f') + R(2, -2, 5, 1, '#ff8a1f') + R(2, -1, 5, 1, '#ff5a1f') + R(4, -3, 1, 1, '#ffe66b') + R(3, -2, 3, 1, '#ffe66b') + R(4, -1, 1, 1, '#ffe66b'),
+            mushroom: R(2, -2, 5, 1, '#e8383d') + R(1, -1, 7, 1, '#e8383d') + R(0, 0, 9, 1, '#d02d33') + R(3, -2, 1, 1, '#ffffff') + R(6, -1, 1, 1, '#ffffff') + R(1, -1, 1, 1, '#ffffff') + R(4, 0, 1, 1, '#ffffff'),
+            // --- лицо ---
+            freckles: R(1, 4, 1, 1, '#9a4d12') + R(2, 5, 1, 1, '#9a4d12') + R(7, 4, 1, 1, '#9a4d12') + R(6, 5, 1, 1, '#9a4d12') + R(2, 4, 1, 1, '#9a4d12') + R(6, 4, 1, 1, '#9a4d12'),
+            tear: R(3, 4, 1, 2, '#4fc3ff') + R(3, 6, 1, 1, '#2b8fd6'),
+            tongue: R(4, 7, 1, 1, '#ff5a7a') + R(4, 6, 1, 1, '#ff5a7a'),
+            scar: R(6, 2, 1, 1, '#ff3355') + R(6, 3, 1, 1, '#ff3355') + R(7, 4, 1, 1, '#ff3355') + R(7, 5, 1, 1, '#ff3355'),
+            clown: R(4, 4, 1, 1, '#ff2d4d') + R(1, 4, 1, 1, '#ff9ec7') + R(7, 4, 1, 1, '#ff9ec7'),
+            fangs: R(3, 5, 1, 1, '#ffffff') + R(5, 5, 1, 1, '#ffffff') + R(3, 6, 1, 1, '#ffffff') + R(5, 6, 1, 1, '#ffffff'),
+            whiskers: R(-1, 4, 2, .4, '#1a1a1a') + R(-1, 5, 2, .4, '#1a1a1a') + R(8, 4, 2, .4, '#1a1a1a') + R(8, 5, 2, .4, '#1a1a1a') + R(4, 4, 1, 1, '#ff9ec7'),
+            starry: R(3, 2, 1, 3, '#ffe66b') + R(2, 3, 3, 1, '#ffe66b') + R(5, 2, 1, 3, '#ffe66b') + R(4, 3, 3, 1, '#ffe66b') + R(3, 3, 1, 1, '#ffffff') + R(5, 3, 1, 1, '#ffffff'),
+            visor: R(0, 2, 9, 2, '#0a6b7a') + R(1, 2, 7, 1, '#00e5ff') + R(1, 3, 7, 1, '#00a8c2'),
+            goggles: '<rect x="2.5" y="2.5" width="2" height="2" fill="#9be3ff" fill-opacity=".5" stroke="#d98a00" stroke-width=".5"/><rect x="4.5" y="2.5" width="2" height="2" fill="#9be3ff" fill-opacity=".5" stroke="#d98a00" stroke-width=".5"/>'
+                + R(0, 3, 2.5, .5, '#7a4a00') + R(6.5, 3, 2.5, .5, '#7a4a00'),
+            domino: R(1, 2, 2, 2, '#1a1a1a') + R(4, 2, 1, 2, '#1a1a1a') + R(6, 2, 2, 2, '#1a1a1a') + R(0, 3, 1, 1, '#1a1a1a') + R(8, 3, 1, 1, '#1a1a1a'),
+            beard: R(2, 5, 1, 2, '#6b4a2b') + R(6, 5, 1, 2, '#6b4a2b') + R(1, 6, 1, 2, '#6b4a2b') + R(7, 6, 1, 2, '#6b4a2b') + R(2, 7, 5, 1, '#6b4a2b') + R(3, 8, 3, 1, '#6b4a2b'),
+            bandaid: R(6, 4, 2, 1, '#f2c9a0') + R(6.5, 4, 1, 1, '#d9a878') + R(7, 3, 1, 1, '#f2c9a0') + R(7, 5, 1, 1, '#f2c9a0'),
+            // --- тело ---
+            tie: R(4, 7, 1, 1, '#2b6bd6') + R(4, 8, 1, 2, '#2b6bd6') + R(3, 7, 1, 1, '#1d4ba0') + R(5, 7, 1, 1, '#1d4ba0'),
+            suspenders: R(2, 6, 1, 3, '#e8383d') + R(6, 6, 1, 3, '#e8383d') + R(2, 8, 5, 1, '#c92d33'),
+            balloon: R(9, 0, 2, 2, '#ff4f8a') + R(9, 0, 1, 1, '#ff9ec7') + R(9.8, 2, .4, 5, '#d0d0d0'),
+            bell: R(1, 7, 7, 1, '#e8383d') + R(4, 8, 1, 1, '#ffc83d') + R(4, 9, 1, 1, '#b8860b'),
+            apron: R(2, 7, 5, 2, '#f2f2f2') + R(1, 7, 1, 1, '#bbbbbb') + R(7, 7, 1, 1, '#bbbbbb') + R(3, 8, 3, 1, '#d8d8d8'),
+            hoodie: R(0, 7, 9, 2, '#6a4bd6') + R(2, 7, 5, 1, '#4a2fb0') + R(3, 8, 1, 1, '#ffffff') + R(5, 8, 1, 1, '#ffffff'),
+            lei: R(0, 7, 1, 1, '#ff5a8a') + R(1, 7, 1, 1, '#ffe66b') + R(2, 8, 1, 1, '#ff8a1f') + R(3, 8, 1, 1, '#6be38a') + R(4, 8, 1, 1, '#ff5a8a') + R(5, 8, 1, 1, '#ffe66b') + R(6, 8, 1, 1, '#ff8a1f') + R(7, 7, 1, 1, '#6be38a') + R(8, 7, 1, 1, '#ff5a8a'),
+            lifebuoy: R(0, 7, 9, 2, '#f2f2f2') + R(1, 7, 2, 2, '#e8383d') + R(6, 7, 2, 2, '#e8383d') + R(4, 7, 1, 2, '#e8383d'),
+            guitar: R(-3, 6, 3, 3, '#c2772b') + R(-2, 7, 1, 1, '#2a1500') + R(-2, 3, 1, 3, '#6b4420') + R(-2, 2, 1, 1, '#2a1500'),
+            sword: R(10, 3, 1, 5, '#dfe3ea') + R(9, 8, 3, 1, '#8a5a2b') + R(10, 9, 1, 1, '#8a5a2b') + R(10, 2, 1, 1, '#ffffff'),
+            armor: R(0, 7, 9, 2, '#aab0bb') + R(0, 7, 9, 1, '#dfe3ea') + R(4, 7, 1, 2, '#6f7580') + R(-1, 5, 1, 2, '#aab0bb') + R(9, 5, 1, 2, '#aab0bb'),
+            jetpack: R(-2, 4, 2, 5, '#9aa0aa') + R(9, 4, 2, 5, '#9aa0aa') + R(-2, 9, 2, 1, '#ff8a1f') + R(9, 9, 2, 1, '#ff8a1f') + R(-2, 10, 2, 1, '#ffe66b') + R(9, 10, 2, 1, '#ffe66b'),
+            // --- узоры скинов (рисуются поверх тела, глаза и рот не трогают) ---
+            dots: R(1, 2, 1, 1, '#ffffff') + R(7, 2, 1, 1, '#ffffff') + R(2, 4, 1, 1, '#ffffff') + R(6, 4, 1, 1, '#ffffff') + R(1, 6, 1, 1, '#ffffff') + R(7, 6, 1, 1, '#ffffff') + R(3, 8, 1, 1, '#ffffff') + R(5, 8, 1, 1, '#ffffff') + R(4, 1, 1, 1, '#ffffff'),
+            camo: R(1, 2, 2, 1, '#3a4f24') + R(6, 3, 2, 1, '#3a4f24') + R(2, 5, 1, 2, '#3a4f24') + R(6, 6, 2, 1, '#3a4f24') + R(3, 8, 2, 1, '#3a4f24') + R(5, 2, 1, 1, '#a3b36a') + R(1, 4, 1, 1, '#a3b36a') + R(7, 5, 1, 1, '#a3b36a') + R(5, 8, 1, 1, '#a3b36a'),
+            ice: R(2, 1, 2, 1, '#ffffff') + R(1, 2, 1, 2, '#ffffff') + R(7, 5, 1, 2, '#ffffff') + R(6, 8, 2, 1, '#ffffff') + R(0, 8, 3, 1, '#7fcfff') + R(8, 3, 1, 2, '#7fcfff'),
+            cow: R(1, 2, 2, 2, '#222222') + R(6, 4, 2, 2, '#222222') + R(1, 6, 2, 2, '#222222') + R(5, 7, 2, 1, '#222222') + R(4, 1, 2, 1, '#222222'),
+            panda: R(2, 0, 1, 1, '#111111') + R(6, 0, 1, 1, '#111111') + R(0, 5, 1, 3, '#111111') + R(8, 5, 1, 3, '#111111') + R(0, 9, 2, 1, '#111111') + R(7, 9, 2, 1, '#111111'),
+            tiger: R(4, 1, 1, 1, '#4a2400') + R(2, 2, 1, 1, '#4a2400') + R(6, 2, 1, 1, '#4a2400') + R(0, 4, 2, 1, '#4a2400') + R(7, 4, 2, 1, '#4a2400') + R(0, 6, 2, 1, '#4a2400') + R(7, 6, 2, 1, '#4a2400') + R(2, 7, 1, 1, '#4a2400') + R(6, 7, 1, 1, '#4a2400') + R(1, 8, 2, 1, '#4a2400') + R(6, 8, 2, 1, '#4a2400'),
+            robot: R(1, 1, 1, 1, '#555555') + R(7, 1, 1, 1, '#555555') + R(0, 7, 9, 1, '#7d8591') + R(0, 8, 1, 1, '#555555') + R(8, 8, 1, 1, '#555555') + R(4, 8, 1, 1, '#ff3355'),
+            circuit: R(1, 5, 3, 1, '#d8b43a') + R(1, 6, 1, 3, '#d8b43a') + R(6, 2, 1, 2, '#d8b43a') + R(6, 5, 2, 1, '#d8b43a') + R(7, 6, 1, 2, '#d8b43a') + R(2, 8, 3, 1, '#d8b43a') + R(1, 5, 1, 1, '#7dff9a') + R(7, 7, 1, 1, '#7dff9a'),
+            galaxy: R(1, 2, 1, 1, '#ffffff') + R(7, 3, 1, 1, '#ffffff') + R(2, 6, 1, 1, '#ffe66b') + R(6, 7, 1, 1, '#ffffff') + R(4, 8, 1, 1, '#b57bff') + R(7, 1, 1, 1, '#ffffff') + R(1, 8, 1, 1, '#4fe3ff')
+        });
+
+        // Правила показа для всех вещей и цвета скинов создаём из списка, чтобы не плодить CSS руками
+        (function injectWardrobeStyles() {
+            const roots = ['.spati-mascot', '.pm-spati', '.wd-spati', '.wd-flyer'];
+            const sel = (cls, tail) => roots.map(r => `${r}.${cls} ${tail}`).join(',');
+            const skinIds = WD_SLOTS.color.map(i => i.id);
+            let css = '';
+            Object.keys(ACC_ART).forEach(id => {
+                css += sel((skinIds.indexOf(id) >= 0 ? 'sk-' : 'acc-') + id, '.a-' + id) + '{display:inline}\n';
+            });
+            WD_SLOTS.color.forEach(i => {
+                if (i.hex && !i.fx) css += sel('sk-' + i.id, '.sm-body') + `,.wd-thumb.sk-${i.id} .sm-body{fill:${i.hex}}\n`;
+                if (i.dark) css += ['.sm-eyes', '.sm-mouth', '.sm-eye'].map(t => sel('sk-' + i.id, t)).join(',') + '{fill:#fff}\n';
+            });
+            const st = document.createElement('style');
+            st.textContent = css;
+            document.head.appendChild(st);
+        })();
+        const SM_ACC_CLASSES = ['acc-phones', 'has-hat', 'sm-halloween', 'sm-aprilfools']
+            .concat(WD_SLOTS.hat.map(i => 'acc-' + i.id), WD_SLOTS.face.map(i => 'acc-' + i.id), WD_SLOTS.body.map(i => 'acc-' + i.id), WD_SLOTS.color.map(i => 'sk-' + i.id));
+        var smDbg = { date: null, night: null };
+        let smHoldSayT = 0, smTickleStartT = 0, smTickleT = 0, smHeartT = 0, smTickleN = 0;
+
+        const SM_SHAKE_L = ['Ой-ой, всё поплыло!', 'Меня слегка укачало', 'Бульк... кружится голова', 'Мир качается. Или это я?', 'Лёгкая качка. Терпимо'];
+        const SM_SHAKE_H = ['Эй! Так нельзя! Я не погремушка!', 'Хватит! Мне это совсем не нравится', 'Я нежный, а ты меня трясёшь!', 'Это уже перебор. Я обиделся', 'Я призрак, а не шейкер!'];
+        const SM_TICKLE = ['Хи-хи! Щекотно!', 'Ай! Ха-ха! Не надо!', 'Хи... хи-хи-хи!'];
+        const SM_TICKLE_SULK = ['Не щекочи! Я обижен... ха-ха-ха!', 'Я же дуюсь! Хи-хи! Прекрати!'];
+        const SM_TICKLE2 = ['Ха-ха! Хватит, я лопну!', 'Ой, не могу! Ха-ха-ха!', 'Я же рассыплюсь на пиксели!'];
+        const SM_TICKLE3 = ['Всё-всё-всё! Сдаюсь!', 'Пощади! Ха-ха-ха!', 'Я больше не могу! Ха!'];
+        const SM_TICKLE_END = ['Фух... Ты коварный', 'Ещё чуть-чуть, и я бы лопнул', 'Ха... Ладно, это было приятно'];
+        const SM_TICKLE_END_LONG = ['Ой... отдышаться бы... Ха-ха', 'Ты мастер щекотки. Я рассыпался на пиксели', 'Весь вспотел. Пикселями'];
+        const SM_ROLL = ['Качусь!', 'Колобок, колобок!', 'Вжжжух!', 'Кувырком по терминалу!', 'Я шарик!'];
+        const SM_ROLL_DIZZY = ['Бр-р-р, закружился...', 'Столько оборотов... Мне и плохо, и хорошо', 'Земля, ты где?'];
+        const SM_PHONES_ON = ['Надел наушники. Теперь слышу только бит', 'Наушники на месте. Музыка только для нас двоих'];
+        const SM_GLASSES_ON = ['Ночью надо смотреть внимательнее. Надел очки', 'Очки для ночной смены. Выгляжу умнее?'];
+        const SM_SEASON = {
+            newyear:    ['С Новым годом! Я надел шапку', 'Новый год! Загадай желание, я подержу курсор', 'Ёлки нет, зато есть терминал и шапка'],
+            halloween:  ['Хэллоуин! Я теперь тыква. Бууу!', 'Сегодня мой праздник. Призраки в тренде', 'Сладость или гадость? У меня только байты'],
+            aprilfools: ['Первое апреля! Я перевернулся. Или это ты?', 'Сегодня никому не верю. Даже себе', 'С 1 апреля! Если что, это не баг']
+        };
+        const SM_BDAY = [() => `С днём рождения${SN()}! Я даже колпак нацепил`, () => `Сегодня твой день${SN()}! Поздравляю. Торт не обещаю`, () => 'День рождения! Загадай желание, я не подслушиваю'];
+
+        // ---------- 1. Аксессуары: пара rect поверх спрайта ----------
+        (function injectAccessories() {
+            const svg = spatiMascot && spatiMascot.querySelector('svg');
+            if (!svg || svg.querySelector('.sm-acc')) return;
+            const xml = '<svg xmlns="http://www.w3.org/2000/svg">'
+                + (() => { const sk = WD_SLOTS.color.map(i => i.id); const ids = Object.keys(ACC_ART); return sk.filter(id => ACC_ART[id]).concat(ids.filter(id => sk.indexOf(id) < 0)); })()
+                    .map(id => `<g class="sm-acc a-${id}">${ACC_ART[id]}</g>`).join('')
+                + '</svg>';
+            const doc = new DOMParser().parseFromString(xml, 'image/svg+xml');
+            Array.from(doc.documentElement.children).forEach(n => svg.appendChild(document.importNode(n, true)));
+        })();
+
+        // Дата берётся из системного времени (smDbg.date — только для проверки в консоли)
+        function smDate() {
+            if (smDbg.date) return smDbg.date;
+            const n = new Date();
+            return { m: n.getMonth() + 1, d: n.getDate(), y: n.getFullYear() };
+        }
+        function smSeason() {
+            const { m, d } = smDate();
+            if ((m === 12 && d >= 20) || (m === 1 && d <= 10)) return 'newyear';
+            if ((m === 10 && d >= 25) || (m === 11 && d === 1)) return 'halloween';
+            if (m === 4 && d === 1) return 'aprilfools';
+            return '';
+        }
+        function smIsWinter() { const m = smDate().m; return m === 12 || m <= 2; }
+        function smIsBirthday() {
+            const b = spatiMem.bday;
+            if (!b) return false;
+            const { m, d } = smDate();
+            return b === String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        }
+        let smAccReady = false;
+        // Что надето сейчас: голова (в том числе наушники), лицо, одежда и скин. Музыка ничего не снимает
+        function wdResolve(music) {
+            const on = new Set(), W = wdState, season = smSeason();
+            const ok = (slot, id) => { const it = WD_SLOTS[slot].find(x => x.id === id); return !!it && wdUnlocked(it); };
+            let hat = W.hat, face = W.face;
+            if (hat !== 'none' && hat !== 'auto' && !ok('hat', hat)) hat = 'auto';
+            if (face !== 'none' && !ok('face', face)) face = 'none';
+            if (hat === 'auto') hat = smIsBirthday() ? 'party' : season === 'newyear' ? 'santa' : season === 'halloween' ? 'witch' : smIsWinter() ? 'beanie' : 'none';
+            if (hat !== 'none') { on.add('acc-' + hat); if (hat !== 'phones') on.add('has-hat'); }
+            if (face !== 'none') on.add('acc-' + face);
+            if (W.body !== 'none' && ok('body', W.body)) on.add('acc-' + W.body);
+            const col = (W.color !== 'theme' && ok('color', W.color)) ? W.color : 'theme';
+            if (col !== 'theme') on.add('sk-' + col);
+            else if (season === 'halloween') on.add('sm-halloween');
+            if (season === 'aprilfools') on.add('sm-aprilfools');
+            return on;
+        }
+        function smAccUpdate() {
+            if (!spatiMascot) return;
+            const music = !bgAudio.paused && !bgAudio.ended;
+            const on = wdResolve(music);
+            const had = (c) => spatiMascot.classList.contains(c);
+            const newPhones = on.has('acc-phones') && !had('acc-phones'), newGlasses = on.has('acc-glasses') && !had('acc-glasses');
+            SM_ACC_CLASSES.forEach(c => spatiMascot.classList.toggle(c, on.has(c)));
+            if (smAccReady && smGameCan() && !smAsleep && !smGame.on) {
+                if (newPhones) smSayCool(smPick(SM_PHONES_ON), 4000);
+                else if (newGlasses) smSayCool(smPick(SM_GLASSES_ON), 4000);
+            }
+            smAccReady = true;
+            if (wdOpen) wdRender();
+        }
+        ['play', 'pause', 'ended'].forEach(ev => bgAudio.addEventListener(ev, smAccUpdate));
+
+        // Сезонное/праздничное приветствие — один раз за праздник
+        function smSeasonGreet() {
+            if (!smGameCan() || smAsleep || smGame.on || isTyping) return;
+            const t = smDate(), s = smSeason();
+            const sk = s ? s + ((s === 'newyear' && t.m === 1) ? t.y - 1 : t.y) : '';
+            const bk = smIsBirthday() ? 'bd' + t.y : '';
+            smSaved.sg = smSaved.sg || {};
+            if (bk && !smSaved.sg[bk]) {
+                smSaved.sg[bk] = 1; smSave();
+                mascotReact('dance', true); mascotSay(smPick(SM_BDAY)());
+                return;
+            }
+            if (sk && !smSaved.sg[sk]) {
+                smSaved.sg[sk] = 1; smSave();
+                mascotReact(s === 'halloween' ? 'boo' : s === 'aprilfools' ? 'flip' : 'wave', true);
+                mascotSay(smPick(SM_SEASON[s]));
+            }
+        }
+        setInterval(() => { smAccUpdate(); smSeasonGreet(); }, 30000);
+
+        // ---------- Гардероб Спати: окно, переезд Спати, анимации, комментарии ----------
+        const WD_SAY = {
+            hat: {
+                _: ['Так. Что у меня на голове? Чувствую, но не вижу', 'Голове стало уютнее', 'Сидит как влитая'],
+                none: ['Без головного убора свежо. Сквозняк, зато лёгкость', 'Голова свободна. Мысли тоже'],
+                auto: ['Сам решу по сезону. Календарь у меня есть', 'Авто так авто. Доверюсь датам'],
+                beanie: ['Шапка! Теперь мне тепло, даже в пикселях', 'Зимний режим включён'],
+                santa: ['Хо-хо-хо! Это колпак, а не борода', 'Теперь я Дед Мороз. Подарки в виде байтов'],
+                witch: ['Шляпа ведьмы. Могу превратить тебя в иконку', 'Бууу! Остроконечно и стильно'],
+                party: ['Праздничный колпак! Где торт?', 'Ура! Хлопушки только воображаемые'],
+                cap: ['Кепка набок. Я теперь с района, то есть с терминала', 'Спортивный стиль включён'],
+                chef: ['Колпак повара! Приготовлю тебе байт-салат', 'Шеф Спати у плиты. Плита это процессор'],
+                bunny: ['Ушки! Ушки на макушке!', 'Зайка-призрак. Прыг-скок'],
+                horns: ['Рожки. Я теперь чертёнок терминала', 'Только не говори админу'],
+                halo: ['Нимб. Я же хороший! Ну, почти', 'Ангел терминала на связи'],
+                tophat: ['Цилиндр. Теперь я джентльмен, а не призрак', 'Сэр Спати к вашим услугам'],
+                crown: ['Корона! Падайте ниц, сисадмины', 'Тяжела шапка Мономаха. Эта легче, пиксельная']
+            },
+            face: {
+                _: ['Лицо поменялось. Надеюсь, к лучшему', 'Смотрю на тебя по-новому'],
+                none: ['Лицо без украшений. Классика', 'Как есть. Два глаза и рот'],
+                auto: ['Ночью сам надену очки. Я предусмотрительный'],
+                glasses: ['Очки. Выгляжу умнее?', 'Теперь вижу все баги. Даже чужие'],
+                blush: ['Румянец! Это от процессора, не от смущения', 'Щёчки горят. Это нагрузка на CPU'],
+                sunglasses: ['Тёмные очки. Теперь я крутой, как терминатор', 'Яркий экран мне нипочём'],
+                hearts: ['Сердечки в глазах! Я влюблён в терминал', 'Мир в розовом свете. Даже ошибки милые'],
+                monocle: ['Монокль. Хм, весьма любопытно', 'Теперь я аристократ. Байты высшего сорта'],
+                mustache: ['Усы! Чувствую себя бывалым админом', 'Усы щекочутся. Или это пиксели?'],
+                eyepatch: ['Повязка. Йо-хо-хо, и бутылка электричества', 'Одноглазый Спати. Видел не такие логи']
+            },
+            body: {
+                _: ['Одежда! Тело согласно', 'Чувствую обновку'],
+                none: ['Налегке. Я же призрак, мне не холодно', 'Без одежды. В смысле, без пикселей сверху'],
+                scarf: ['Шарф. Мягкий и в полоску. Люблю', 'Тепло и стильно. Шея, правда, условная'],
+                bowtie: ['Бабочка. Сегодня я при параде', 'Бабочка на месте. Пора на приём'],
+                tee: ['Тельняшка! Полосатый, как зебра. Или как лог', 'Морской бриз и ни одного моря'],
+                medal: ['Медаль! За что? За то, что я просто есть', 'Награда нашла героя. Скромного'],
+                backpack: ['Рюкзак. Я готов к походу по директориям', 'Лямки держат. Внутри пара байтов и бутерброд'],
+                cape: ['Плащ! Теперь я супергерой терминала', 'Плащ развевается. Ветра нет, но я верю'],
+                wings: ['Крылья! Могу улететь из терминала. Не буду', 'Лечу! Ну, вишу в воздухе, но красиво']
+            },
+            color: {
+                _: ['Цвет сменился. Чувствую себя новым призраком'],
+                theme: ['Родной цвет. Как дома', 'Вернулся к цвету терминала. Классика'],
+                red: ['Красный! Тревога, тревога! Шучу', 'Я красный. Это от гнева. Нет, от стиля'],
+                white: ['Белый. Настоящее привидение', 'Бу! Сейчас я самый белый призрак на экране'],
+                pink: ['Розовый! Мне нравится. Не говори никому', 'Теперь я зефир. Ну, почти'],
+                cyan: ['Голубой. Прохладно и спокойно', 'Цвет ясного монитора'],
+                purple: ['Фиолетовый. Загадочно, как сбой памяти', 'Теперь я таинственный. Так и задумано'],
+                gold: ['Золото! Я теперь артефакт', 'Блестит. Прямо как идеальный код']
+            },
+            phones: {
+                auto: ['Наушники надеваются сами, когда играет музыка', 'Музыка зазвучит, и я надену'],
+                always: ['Наушники всегда. Музыка в голове постоянно', 'Теперь я вечно в наушниках. Не отвлекай'],
+                never: ['Без наушников. Слушаю тишину', 'Наушники сняты. Музыка будет без меня']
+            },
+            full: ['Голова, лицо, тело. Полный комплект! Я модный?', 'Образ собран! Можно на подиум терминала'],
+            poke: ['Не тыкай, я примеряю!', 'Ой! Щекотно. Давай лучше выбирать', 'Я тут красуюсь. Не мешай', 'Хи-хи! Дай мне покрутиться'],
+            hello: ['Примерочная открыта. Что надеваем?', 'Ого, гардероб! Поехали примерять', 'Я здесь. Давай соберём образ'],
+            helloOff: ['Меня выключили, но примерить можно. Это же превью'],
+            back: ['Вернулся. Как тебе новый образ?', 'Я снова на месте. Выгляжу отлично, да?', 'Переоделся. Теперь можно и поболтать']
+        };
+        const WD_REACT = {
+            hat:   { g: [0, -.55], a: 'hop',    em: 'happy' },
+            face:  { g: [0, 0],    a: 'tilt',   em: 'wink' },
+            body:  { g: [0, .55],  a: 'squish', em: 'happy' },
+            color: { g: [0, .5],   a: 'flip',   em: 'surprised' }
+        };
+        const WD_ANIM_OVR = { crown: 'jump', halo: 'sway', horns: 'shake', tophat: 'jump', sunglasses: 'sway', mustache: 'sway', eyepatch: 'sway', cape: 'spin', wings: 'jump', scarf: 'sway', bowtie: 'hop', backpack: 'hop' };
+        const WD_ANIM_MS = { hop: 600, jump: 750, spin: 950, flip: 850, squish: 650, tilt: 1250, sway: 1000, dance: 2600, shake: 600 };
+        Object.assign(WD_SAY.hat, {
+            phones: ['Наушники! Теперь только бит и я', 'Надел наушники. Музыку не слышу, но ритм чувствую'],
+            sprout: ['Из головы растёт росток. Полью себя позже', 'Фотосинтез в терминале. Почти'],
+            flower: ['Цветочек на макушке. Пахнет нулями и единицами', 'Весна в одном пикселе'],
+            bow: ['Бантик! Теперь я милашка', 'Бант сидит ровно. Проверил дважды'],
+            catears: ['Мяу! Ой, то есть бу', 'Кошачьи ушки. Мурр, терминал'],
+            bandana: ['Бандана. Готов к приключениям', 'Теперь я бывалый. И немного рэмбо'],
+            cowboy: ['Йи-ха! Самый быстрый призрак на диком западе', 'Ковбой Спати. Лассо из кабеля'],
+            pirate: ['Йо-хо-хо! Захватим сервер', 'Треуголка! Где мой попугай-эхо?'],
+            grad: ['Диплом по терминалу получен', 'Магистр байтов. Кисточка слева'],
+            helmet: ['Каска с фонариком. Иду искать баги в шахте', 'Безопасность превыше всего. Особенно в логах'],
+            antenna: ['Антенна! Ловлю вай-фай. Нет, только вайб', 'Приём, приём. Я на связи'],
+            wizard: ['Колпак мага. Абракадабра, sudo!', 'Магия ASCII. Все заклинания на латинице'],
+            viking: ['За Вальхаллу! Рога настоящие, пиксельные', 'Викинг Спати плывёт по тактам'],
+            pumpkin: ['Тыква на голове. Хэллоуин всегда со мной', 'Бууу! Свечка внутри. Шучу, это CPU'],
+            flame: ['Горю желанием! И немного процессором', 'Огонь на голове. Тушить не надо'],
+            mushroom: ['Грибок! Не ешь меня, я несъедобный', 'Красная шляпка в белый горошек. Классика']
+        });
+        Object.assign(WD_SAY.face, {
+            freckles: ['Веснушки! Весело и солнечно', 'Пиксельные веснушки. Каждая считана'],
+            tear: ['Слезинка. Я не плачу, это конденсат', 'Печально? Нет, просто драматично'],
+            tongue: ['Бе-е-е!', 'Язычок наружу. Дразнюсь'],
+            scar: ['Шрам. У каждого бага своя история', 'Суровый Спати. Вернулся из продакшена'],
+            clown: ['Красный нос! Хонк-хонк', 'Клоун Спати. Смешно, значит работает'],
+            fangs: ['Клыки. Ам! Шучу, я не кусаюсь', 'Вампир терминала. Пью только электричество'],
+            whiskers: ['Усики. Мур-мур', 'Теперь я немножко кот'],
+            starry: ['Глаза-звёзды! Всё блестит', 'Звёздочки в глазах. Это восторг'],
+            visor: ['Киберпанк-визор. Вижу тебя насквозь', 'Режим терминатора включён. Только не бойся'],
+            goggles: ['Гогглы. Лётчик-призрак на связи', 'Пыль, ветер и байты. Гогглы спасают'],
+            domino: ['Маска! Я тайный администратор', 'Загадочный Спати. Никто не узнает'],
+            beard: ['Борода! Теперь я мудрый хозяин сервера', 'Солидная борода. Пиксель к пикселю'],
+            bandaid: ['Пластырь. Это был сегфолт, ничего страшного', 'Заклеил баг. Пока держится']
+        });
+        Object.assign(WD_SAY.body, {
+            tie: ['Галстук. Деловой призрак', 'Идём на совещание. Я буду молчать'],
+            suspenders: ['Подтяжки. Держат штаны, которых нет', 'Подтяжки на месте. Стиль!'],
+            balloon: ['Шарик! Лечу? Нет, пока держусь', 'Праздник! Шарик не отпущу'],
+            hoodie: ['Толстовка. Худи-призрак, программист в законе', 'Уютно. Теперь можно кодить ночью'],
+            apron: ['Фартук. Готовлю байт-суп', 'Шеф-терминал на кухне'],
+            bell: ['Колокольчик! Дзинь. Теперь меня слышно', 'Дзинь-дзинь. Я пришёл'],
+            lei: ['Гирлянда. Праздник каждый день', 'Алоха, терминал!'],
+            lifebuoy: ['Спасательный круг. На случай переполнения буфера', 'Не утону в логах. Круг со мной'],
+            guitar: ['Гитара! Сыграю баг-рок', 'Три аккорда и сегфолт. Ну, рок!'],
+            sword: ['Меч! Побеждаю баги один за другим', 'Рыцарь Спати. Клинок из пикселей'],
+            armor: ['Доспехи! Файрвол во плоти', 'Теперь ни один вирус не пройдёт'],
+            jetpack: ['Реактивный ранец! Три, два, один...', 'Полетели! Ну, повисели чуть-чуть']
+        });
+        Object.assign(WD_SAY.color, {
+            orange: ['Оранжевый. Как закат в терминале', 'Апельсиновый призрак. Сочно'],
+            lime: ['Лайм! Кисленько', 'Свежий, как мята. Нет, как лайм'],
+            blue: ['Синий. Спокойный, как экран смерти. Шучу', 'Синий цвет. Тихо и глубоко'],
+            mint: ['Мятный. Свежо!', 'Мятная прохлада в каждом пикселе'],
+            yellow: ['Жёлтый. Как лампочка', 'Яркий и тёплый. Привет, солнышко'],
+            brown: ['Коричневый. Тёплый, как шоколад', 'Земляной цвет. Надёжно'],
+            peach: ['Персик. Мягкий и пушистый', 'Персиковый призрак. Сладко'],
+            teal: ['Бирюзовый. Морской бриз в терминале', 'Бирюза. Благородно'],
+            magenta: ['Маджента. Яркий до рези в глазах', 'Фуксия-призрак. Заметно издалека'],
+            coal: ['Уголь. Теперь я в тени', 'Чёрный как терминал без света'],
+            rainbow: ['Радуга! Переливаюсь всеми цветами', 'Я весь переливаюсь. Даже сам удивляюсь'],
+            lava: ['Лава! Горячо. Не трогай', 'Магма в пикселях. Вулкан Спати'],
+            ghost: ['Призрак на максималках. Почти невидим', 'Я почти прозрачный. Кто здесь?'],
+            glitch: ['Глитч! Это не баг, это стиль', 'Ррр... глитч... всё так и задумано'],
+            neon: ['Неон. Свечусь ярче монитора', 'Неоновая вывеска «Спати» на связи'],
+            sunset: ['Закат прямо на мне', 'Оранжевое, розовое, фиолетовое. Красота'],
+            chrome: ['Хром. Блестящий, как новый сервер', 'Зеркальный Спати. Смотрись на здоровье'],
+            candy: ['Конфетка! Сладкий, как лишний пробел', 'Полосатый леденец. Лизать не надо'],
+            toxic: ['Токсик! Не нюхай, это не опасно', 'Ядерно-зелёный. Радиация только в шутках'],
+            dots: ['Горошек! Весело и в горошек', 'Платье в горошек, только без платья'],
+            camo: ['Камуфляж. Меня тут нет', 'Спати в засаде. Ждёт баг'],
+            ice: ['Лёд. Холодный расчёт', 'Ледяной Спати. Подожди, не растаять бы'],
+            cow: ['Му! Я корова терминала', 'Пятнистая корова. Молока нет, только байты'],
+            panda: ['Панда. Ем бамбук и байты', 'Панда Спати. Мило и сонно'],
+            tiger: ['Тигр! Р-р-р... то есть бу', 'Полосатый и опасный. Для багов'],
+            robot: ['Робот. Бип-буп. Я теперь железный', 'Механический Спати. Смазывать не надо'],
+            circuit: ['Плата! Внутри меня схемы', 'Дорожки, контакты, пайка. Я весь в этом'],
+            galaxy: ['Галактика! Внутри целая вселенная', 'Звёзды на мне. Космос близко']
+        });
+        delete WD_SAY.face.auto;
+        Object.assign(WD_ANIM_OVR, {
+            phones: 'dance', pirate: 'sway', cowboy: 'jump', wizard: 'jump', viking: 'shake', flame: 'shake', pumpkin: 'shake',
+            sword: 'jump', jetpack: 'jump', guitar: 'sway', balloon: 'hop', bell: 'shake', armor: 'squish',
+            rainbow: 'spin', lava: 'shake', glitch: 'shake', neon: 'jump', ghost: 'sway', galaxy: 'spin', tiger: 'jump'
+        });
+
+        // ---------- Гардероб 2.0: слева примерочная, справа вкладки с вещами и образами ----------
+        Object.assign(WD_SAY, {
+            random: ['Случайный образ! Я и сам не знаю, что на мне', 'Закрыл глаза, схватил первое попавшееся. Как я?', 'Рулетка гардероба! Результат: интересно'],
+            clear: ['Всё снял. Я снова простой призрак', 'Гол как пиксель. Зато свободно', 'Чистый лист. Можно начинать заново'],
+            lookSave: ['Образ записан. Теперь я его не забуду', 'Сохранил! В этом я ещё покрасуюсь', 'Записал в память. Почти как бэкап'],
+            lookLoad: ['Переодеваюсь в мгновение ока!', 'О, знакомый образ. В нём я хорош', 'Хоп! И я снова в том самом'],
+            lookClear: ['Образ стёрт. Освободилось место', 'Ячейка пуста. Жду новых идей'],
+            lookEmpty: ['Ячейка пуста. Сначала собери образ', 'Тут пока ничего. Одень меня и запиши']
+        });
+        const WD_OFF = { hat: 'none', face: 'none', body: 'none', color: 'theme' };
+        const WD_SLOT_LIST = ['hat', 'face', 'body', 'color'];
+        const WD_TABS = [['hat', 'ГОЛОВА'], ['face', 'ЛИЦО'], ['body', 'ОДЕЖДА'], ['color', 'СКИН'], ['looks', 'ОБРАЗЫ']];
+        const WD_FILTERS = [['all', 'ВСЕ'], ['open', 'ОТКРЫТО'], ['locked', 'ЗАКРЫТО'], ['new', 'NEW']];
+        const WD_CAN_HOVER = (() => { try { return window.matchMedia('(hover: hover) and (pointer: fine)').matches; } catch (e) { return false; } })();
+
+        const wdWin = elem('div', 'ach-window wardrobe-window hidden');
+        wdWin.id = 'wardrobeWindow';
+        const wdHead = elem('div', 'player-header');
+        wdHead.appendChild(elem('span', 'player-title', 'ГАРДЕРОБ СПАТИ'));
+        const wdX = elem('button', 'player-close-btn', '[X]');
+        wdX.type = 'button';
+        wdHead.appendChild(wdX);
+        const wdBody = elem('div', 'ach-body wr-body');
+        wdWin.append(wdHead, wdBody);
+        screen.appendChild(wdWin);
+        wdWin.addEventListener('click', (e) => e.stopPropagation());
+
+        let wdStage = null, wdInner = null, wdGazeEl = null, wdSayEl = null;
+        let wrStageBox = null, wrSlotsEl = null, wrTabsEl = null, wrBarEl = null, wrListEl = null, wrInfoEl = null;
+        let wdNote = null, wdLastSay = '', wdTypeT = 0, wdAnimT = 0, wdEmT = 0, wdGazeT = 0, wdFlyT = 0, wdFlyer = null;
+        let wdChanged = false, wdTab = 'hat', wdFilter = 'all';
+
+        const wdPick = (arr) => {
+            let r = arr[Math.floor(Math.random() * arr.length)];
+            if (arr.length > 1 && r === wdLastSay) r = arr[(arr.indexOf(r) + 1) % arr.length];
+            return (wdLastSay = r);
+        };
+        const wdItemOf = (slot, id) => WD_SLOTS[slot].find(i => i.id === id) || null;
+        const wdRar = (it) => (it && it.ach && achById[it.ach]) ? achById[it.ach].rarity : 'base';
+        const wdIsNew = (it) => !!it && !!it.ach && wdUnlocked(it) && wdState.seen.indexOf(it.id) < 0;
+        function wdScrollTop() { if (wrListEl) wrListEl.scrollTop = 0; }
+        // что реально надето сейчас в слоте (с учётом режима АВТО)
+        function wdWorn(slot) {
+            const on = wdResolve(false);
+            const pre = slot === 'color' ? 'sk-' : 'acc-';
+            return WD_SLOTS[slot].find(i => on.has(pre + i.id)) || null;
+        }
+        function wrBtn(label, cls, fn) {
+            const b = elem('button', 'wr-btn' + (cls ? ' ' + cls : ''), label);
+            b.type = 'button';
+            b.addEventListener('click', (e) => { e.stopPropagation(); fn(); });
+            return b;
+        }
+
+        function wdBuild() {
+            wdBody.innerHTML = '';
+            const side = elem('aside', 'wr-side');
+            wrStageBox = elem('div', 'wr-stage');
+            wrStageBox.appendChild(elem('span', 'wr-tag', 'ПРИМЕРОЧНАЯ'));
+            wrStageBox.appendChild(elem('span', 'wr-tag prev', 'ПРИМЕРКА'));
+            wdStage = elem('div', 'wd-spati wait');
+            wdInner = elem('div', 'sm-react');
+            const svg = spatiMascot.querySelector('svg').cloneNode(true);
+            svg.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+            wdInner.appendChild(svg);
+            wdStage.appendChild(wdInner);
+            wdGazeEl = svg.querySelector('.sm-gaze');
+            wrStageBox.appendChild(wdStage);
+            wdStage.addEventListener('click', wdPoke);
+            wdSayEl = elem('div', 'wr-say');
+            wrSlotsEl = elem('div', 'wr-slots');
+            const acts = elem('div', 'wr-acts');
+            acts.append(wrBtn('СЛУЧАЙНО', '', wdRandom), wrBtn('СНЯТЬ ВСЁ', '', wdClearAll));
+            side.append(wrStageBox, wdSayEl, wrSlotsEl, acts);
+            const main = elem('section', 'wr-main');
+            wrTabsEl = elem('div', 'wr-tabs');
+            wrBarEl = elem('div', 'wr-bar');
+            wrListEl = elem('div', 'wr-list');
+            wrInfoEl = elem('div', 'wr-info');
+            main.append(wrTabsEl, wrBarEl, wrListEl, wrInfoEl);
+            wdBody.append(side, main);
+        }
+        function wdApplyStage(on) {
+            SM_ACC_CLASSES.forEach(c => wdStage.classList.toggle(c, on.has(c)));
+        }
+        function wdSyncStage() {
+            wdApplyStage(wdResolve(false));
+            wrStageBox.classList.remove('previewing');
+        }
+        // примерка: показываем вещь на Спати, не надевая её по-настоящему
+        function wdPreview(slot, val) {
+            if (!wdStage || !wdOpen) return;
+            const old = wdState[slot];
+            let on;
+            wdState[slot] = val;
+            try { on = wdResolve(false); } finally { wdState[slot] = old; }
+            wdApplyStage(on);
+            wrStageBox.classList.add('previewing');
+        }
+        function wdGaze(x, y) {
+            if (!wdGazeEl) return;
+            wdGazeEl.style.setProperty('--gx', x + 'px');
+            wdGazeEl.style.setProperty('--gy', y + 'px');
+        }
+        function wdPlay(a) {
+            if (a) sfxSpati(a, true, 0.6);
+            clearTimeout(wdAnimT);
+            wdInner.className = 'sm-react';
+            void wdInner.offsetWidth;
+            if (!a) return;
+            wdInner.classList.add('a-' + a);
+            wdAnimT = setTimeout(() => { wdInner.className = 'sm-react'; }, WD_ANIM_MS[a] || 900);
+        }
+        function wdEm(em, ms) {
+            clearTimeout(wdEmT);
+            wdStage.dataset.em = em || 'normal';
+            if (ms) wdEmT = setTimeout(() => { wdStage.dataset.em = 'normal'; }, ms);
+        }
+        function wdSay(text) {
+            clearInterval(wdTypeT);
+            wdSayEl.textContent = '';
+            wdSayEl.classList.add('show');
+            let i = 0;
+            wdTypeT = setInterval(() => {
+                if (i >= text.length) { clearInterval(wdTypeT); wdStage.classList.remove('open'); return; }
+                const ch = text.charAt(i++);
+                wdSayEl.textContent += ch;
+                wdStage.classList.toggle('open', /[a-zа-яё0-9]/i.test(ch) && i % 2 === 0);
+            }, 30);
+        }
+        wdSayHook = (t) => { if (wdOpen && wdStage) { wdSay(t); wdEm('happy', 1200); wdPlay('hop'); } };
+
+        // реакция на смену вещи: смотрит на нужное место, радуется, комментирует
+        function wdReact(slot, val) {
+            const cfg = WD_REACT[slot];
+            if (!cfg || !wdStage) return;
+            const removed = val === 'none' || val === 'never';
+            const pool = (WD_SAY[slot] && (WD_SAY[slot][val] || WD_SAY[slot]._)) || ['Мне нравится'];
+            wdGaze(cfg.g[0], cfg.g[1]);
+            clearTimeout(wdGazeT);
+            wdGazeT = setTimeout(() => wdGaze(0, 0), 1700);
+            wdPlay(null);
+            setTimeout(() => {
+                if (!wdOpen) return;
+                wdPlay(removed ? 'shake' : (WD_ANIM_OVR[val] || cfg.a));
+                wdEm(removed ? 'surprised' : cfg.em, 1400);
+                wdSay(wdPick(pool));
+            }, 260);
+            const full = ['hat', 'face', 'body'].every(k => wdState[k] !== 'none' && wdState[k] !== 'auto');
+            if (full && !removed && slot !== 'color') {
+                setTimeout(() => { if (wdOpen) { wdPlay('dance'); wdEm('laugh', 2200); wdSay(wdPick(WD_SAY.full)); } }, 2300);
+            }
+        }
+        function wdPoke() {
+            if (!wdStage) return;
+            wdGaze(0, 0);
+            wdPlay(['hop', 'jump', 'spin', 'sway', 'squish'][Math.floor(Math.random() * 5)]);
+            wdEm('happy', 1000);
+            wdSay(wdPick(WD_SAY.poke));
+        }
+
+        // «Полный образ»: надето всё — голова, лицо, одежда и скин (режим АВТО не считается)
+        function wdCheckAch() {
+            if (wdState.hat !== 'auto' && WD_SLOT_LIST.every(s => !!wdWorn(s))) unlock('wd_full');
+        }
+        function wdSet(slot, val) {
+            if (wdState[slot] === val) return;
+            wdState[slot] = val;
+            if (wdItemOf(slot, val) && wdState.seen.indexOf(val) < 0) wdState.seen.push(val);
+            wdSave(); wdNote = null; wdChanged = true;
+            sfxKey('tab');
+            sfxSpati(spItemKind(slot, val), true);
+            smAccUpdate();
+            wdReact(slot, val);
+            wdCheckAch();
+        }
+        // повторный клик по надетой вещи снимает её
+        function wdToggle(slot, val) {
+            wdSet(slot, (wdState[slot] === val && val !== WD_OFF[slot]) ? WD_OFF[slot] : val);
+        }
+        // сразу несколько слотов (случайный образ, снять всё, загрузка сохранённого)
+        const WD_BATCH = { random: ['spin', 'laugh'], clear: ['shake', 'surprised'], lookLoad: ['jump', 'happy'] };
+        function wdApplyBatch(kind) {
+            WD_SLOT_LIST.forEach(s => {
+                if (wdItemOf(s, wdState[s]) && wdState.seen.indexOf(wdState[s]) < 0) wdState.seen.push(wdState[s]);
+            });
+            wdSave(); wdNote = null; wdChanged = true;
+            sfxKey('tab'); sfxSpati('cloth', true);
+            smAccUpdate();
+            wdGaze(0, 0);
+            wdPlay(WD_BATCH[kind][0]);
+            wdEm(WD_BATCH[kind][1], 1600);
+            wdSay(wdPick(WD_SAY[kind]));
+            wdCheckAch();
+        }
+        function wdRandom() {
+            const skip = { hat: .1, face: .3, body: .15, color: .35 };
+            WD_SLOT_LIST.forEach(slot => {
+                const pool = WD_SLOTS[slot].filter(wdUnlocked);
+                wdState[slot] = (!pool.length || Math.random() < skip[slot]) ? WD_OFF[slot] : pool[Math.floor(Math.random() * pool.length)].id;
+            });
+            wdApplyBatch('random');
+        }
+        function wdClearAll() {
+            if (WD_SLOT_LIST.every(s => wdState[s] === WD_OFF[s])) { wdPlay('tilt'); wdSay(wdPick(WD_SAY.clear)); return; }
+            WD_SLOT_LIST.forEach(s => { wdState[s] = WD_OFF[s]; });
+            wdApplyBatch('clear');
+        }
+
+        // ----- сохранённые образы -----
+        const wdSnapshot = () => ({ hat: wdState.hat, face: wdState.face, body: wdState.body, color: wdState.color });
+        function wdLookSave(n) {
+            wdState.looks[n] = wdSnapshot();
+            wdSave(); wdNote = null;
+            sfxKey('tab'); sfxSpati('cloth', true, 0.7);
+            wdPlay('hop'); wdEm('happy', 1200); wdSay(wdPick(WD_SAY.lookSave));
+            if (wdState.looks.every(Boolean)) unlock('wd_looks');
+            wdRender();
+        }
+        function wdLookLoad(n) {
+            const lk = wdState.looks[n];
+            if (!lk) { sfxKey('tab'); wdPlay('tilt'); wdEm('sad', 900); wdSay(wdPick(WD_SAY.lookEmpty)); return; }
+            WD_SLOT_LIST.forEach(s => {
+                const v = lk[s], it = wdItemOf(s, v);
+                wdState[s] = (v === WD_OFF[s] || (s === 'hat' && v === 'auto') || (it && wdUnlocked(it))) ? v : WD_OFF[s];
+            });
+            wdApplyBatch('lookLoad');
+        }
+        function wdLookClear(n) {
+            if (!wdState.looks[n]) return;
+            wdState.looks[n] = null;
+            wdSave(); sfxKey('tab');
+            wdPlay('shake'); wdEm('surprised', 900); wdSay(wdPick(WD_SAY.lookClear));
+            wdRender();
+        }
+
+        // ----- отрисовка -----
+        function wdThumb(art, fill, skinId) {
+            const xml = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -5 17 17" shape-rendering="crispEdges">'
+                + `<g${skinId ? ' class="sm-body"' : ''} fill="${fill || 'currentColor'}" opacity="${fill ? 1 : .28}"><rect x="2" y="0" width="5" height="1"/><rect x="1" y="1" width="7" height="1"/><rect x="0" y="2" width="9" height="7"/></g>`
+                + '<rect x="3" y="3" width="1" height="1" style="fill:var(--crt-bg)"/><rect x="5" y="3" width="1" height="1" style="fill:var(--crt-bg)"/>'
+                + (art || '') + '</svg>';
+            const n = document.importNode(new DOMParser().parseFromString(xml, 'image/svg+xml').documentElement, true);
+            n.setAttribute('class', 'wd-thumb' + (skinId ? ' sk-' + skinId : ''));
+            return n;
+        }
+        // миниатюра целого образа: скин, одежда, лицо и голова друг на друге
+        function wdLookThumb(look) {
+            const parts = [];
+            let fill = null, skin = null;
+            const col = wdItemOf('color', look.color);
+            if (col) { fill = col.hex; skin = col.id; if (ACC_ART[col.id]) parts.push(ACC_ART[col.id]); }
+            ['body', 'face', 'hat'].forEach(s => {
+                const it = wdItemOf(s, look[s]);
+                if (it && ACC_ART[it.id]) parts.push(ACC_ART[it.id]);
+            });
+            return wdThumb(parts.join(''), fill, skin);
+        }
+        function wdRenderSlots() {
+            wrSlotsEl.innerHTML = '';
+            WD_SLOT_LIST.forEach(slot => {
+                const worn = wdWorn(slot);
+                const isAuto = slot === 'hat' && wdState.hat === 'auto';
+                const isSkin = slot === 'color';
+                const row = elem('div', 'wr-slot' + (wdTab === slot ? ' active' : '') + (worn ? ' on' : ''));
+                row.tabIndex = 0;
+                row.setAttribute('role', 'button');
+                row.appendChild(wdThumb(worn ? ACC_ART[worn.id] : '', isSkin && worn ? worn.hex : null, isSkin && worn ? worn.id : null));
+                const t = elem('div', 'wr-slot-t');
+                t.appendChild(elem('span', 'wr-slot-k', WD_SLOT_RU[slot]));
+                t.appendChild(elem('span', 'wr-slot-v', worn ? (isAuto ? 'АВТО · ' + worn.name : worn.name) : (isAuto ? 'АВТО' : '—')));
+                row.appendChild(t);
+                if (wdState[slot] !== WD_OFF[slot]) {
+                    const x = elem('span', 'wr-x', '×');
+                    x.title = 'Снять';
+                    x.setAttribute('role', 'button');
+                    x.addEventListener('click', (e) => { e.stopPropagation(); wdSet(slot, WD_OFF[slot]); });
+                    row.appendChild(x);
+                }
+                const go = () => { if (wdTab === slot) return; wdTab = slot; wdNote = null; sfxKey('tab'); wdRender(); wdScrollTop(); };
+                row.addEventListener('click', go);
+                row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+                wrSlotsEl.appendChild(row);
+            });
+        }
+        function wdRenderTabs() {
+            wrTabsEl.innerHTML = '';
+            WD_TABS.forEach(([id, label]) => {
+                const b = elem('button', 'wr-tab' + (wdTab === id ? ' active' : ''));
+                b.type = 'button';
+                b.appendChild(elem('span', 'wr-tab-l', label));
+                if (id === 'looks') {
+                    b.appendChild(elem('span', 'wr-tab-n', wdState.looks.filter(Boolean).length + '/3'));
+                } else {
+                    const arr = WD_SLOTS[id];
+                    b.appendChild(elem('span', 'wr-tab-n', arr.filter(wdUnlocked).length + '/' + arr.length));
+                    if (arr.some(wdIsNew)) b.classList.add('has-new');
+                }
+                b.addEventListener('click', () => {
+                    if (wdTab === id) return;
+                    wdTab = id; wdNote = null; sfxKey('tab'); wdRender(); wdScrollTop();
+                });
+                wrTabsEl.appendChild(b);
+            });
+        }
+        function wdRenderBar() {
+            wrBarEl.innerHTML = '';
+            wrBarEl.classList.toggle('hidden', wdTab === 'looks');
+            if (wdTab === 'looks') return;
+            const arr = WD_SLOTS[wdTab];
+            const nNew = arr.filter(wdIsNew).length;
+            if (wdFilter === 'new' && !nNew) wdFilter = 'all';
+            const chips = elem('div', 'wr-chips');
+            WD_FILTERS.forEach(([id, label]) => {
+                if (id === 'new' && !nNew) return;
+                const c = elem('button', 'wr-chip' + (wdFilter === id ? ' active' : ''), label);
+                c.type = 'button';
+                c.addEventListener('click', () => { wdFilter = id; sfxKey('tab'); wdRender(); wdScrollTop(); });
+                chips.appendChild(c);
+            });
+            const open = arr.filter(wdUnlocked).length;
+            const prog = elem('div', 'wr-prog');
+            const bar = elem('b'), fill = elem('i');
+            fill.style.width = Math.round(open / arr.length * 100) + '%';
+            bar.appendChild(fill);
+            prog.append(bar, elem('em', '', open + '/' + arr.length));
+            wrBarEl.append(chips, prog);
+        }
+        function wrCard(slot, val, label, opts) {
+            const it = opts.item || null;
+            const locked = !!it && !wdUnlocked(it);
+            const rar = wdRar(it);
+            const b = elem('button', 'wr-card' + (rar !== 'base' ? ' r-' + rar : '') + (wdState[slot] === val ? ' active' : '')
+                + (locked ? ' locked' : '') + (wdIsNew(it) ? ' new' : ''));
+            b.type = 'button';
+            if (opts.title) b.title = opts.title;
+            if (locked) {
+                const lk = elem('div', 'wr-lock'); lk.appendChild(makeIcon('lock')); b.appendChild(lk);
+            } else {
+                b.appendChild(wdThumb(opts.art, opts.fill, opts.skin));
+            }
+            if (opts.badge) b.appendChild(elem('span', 'wr-badge', opts.badge));
+            b.appendChild(elem('span', 'wr-name', label));
+            b.addEventListener('click', () => {
+                if (locked) {
+                    const a = achById[it.ach];
+                    wdNote = a
+                        ? { head: 'ЗАКРЫТО · ' + it.name, rar: a.rarity, text: `Достижение «${a.title}» (${(RARITIES[a.rarity] || RARITIES.common).label}). ${a.hidden ? 'Оно скрытое, так что придётся поискать.' : a.desc}` }
+                        : { head: 'ЗАКРЫТО · ' + it.name, rar: '', text: '' };
+                    sfxKey('tab'); wdRender();
+                    wdPlay('tilt'); wdEm('sad', 900); wdGaze(0, .3); setTimeout(() => wdGaze(0, 0), 900);
+                    return;
+                }
+                wdToggle(slot, val);
+            });
+            if (WD_CAN_HOVER && !locked) {
+                const show = () => wdPreview(slot, (wdState[slot] === val && val !== WD_OFF[slot]) ? WD_OFF[slot] : val);
+                b.addEventListener('mouseenter', show);
+                b.addEventListener('focus', show);
+                b.addEventListener('mouseleave', wdSyncStage);
+                b.addEventListener('blur', wdSyncStage);
+            }
+            return b;
+        }
+        function wdRenderLooks() {
+            const cur = wdSnapshot();
+            const sum = (lk) => WD_SLOT_LIST.map(s => { const it = wdItemOf(s, lk[s]); return it ? it.name : ''; }).filter(Boolean).join(' · ') || 'Без вещей';
+            wrListEl.appendChild(elem('div', 'wr-looks-h', 'Собери образ, запиши его в ячейку и переодевайся в один клик. Закрытые вещи в образ не попадут, пока не откроются.'));
+            wdState.looks.forEach((lk, n) => {
+                const same = !!lk && WD_SLOT_LIST.every(s => lk[s] === cur[s]);
+                const card = elem('div', 'wr-look' + (lk ? ' filled' : '') + (same ? ' current' : ''));
+                const th = elem('div', 'wr-look-th');
+                th.appendChild(lk ? wdLookThumb(lk) : wdThumb('', null, null));
+                const info = elem('div', 'wr-look-i');
+                info.appendChild(elem('div', 'wr-look-t', 'ОБРАЗ ' + (n + 1) + (same ? ' · НАДЕТ' : '')));
+                info.appendChild(elem('div', 'wr-look-s', lk ? sum(lk) : 'Пусто'));
+                const acts = elem('div', 'wr-look-a');
+                if (lk && !same) acts.appendChild(wrBtn('НАДЕТЬ', 'solid', () => wdLookLoad(n)));
+                acts.appendChild(wrBtn(lk ? 'ЗАМЕНИТЬ' : 'ЗАПИСАТЬ', '', () => wdLookSave(n)));
+                if (lk) acts.appendChild(wrBtn('×', 'x', () => wdLookClear(n)));
+                card.append(th, info, acts);
+                wrListEl.appendChild(card);
+            });
+        }
+        function wdRenderList() {
+            const prev = wrListEl.scrollTop;
+            wrListEl.innerHTML = '';
+            wrListEl.className = 'wr-list' + (wdTab === 'looks' ? ' looks' : '');
+            if (wdTab === 'looks') { wdRenderLooks(); wrListEl.scrollTop = prev; return; }
+            const slot = wdTab;
+            if (wdFilter === 'all' || wdFilter === 'open') {
+                const specials = slot === 'hat' ? [['auto', 'АВТО', 'Сезон и день рождения'], ['none', 'НЕТ', '']]
+                    : slot === 'color' ? [['theme', 'ТЕМА', 'Цвет текущей темы терминала']] : [['none', 'НЕТ', '']];
+                specials.forEach(([v, l, t]) => wrListEl.appendChild(wrCard(slot, v, l, { title: t, badge: v === 'auto' ? 'AUTO' : '' })));
+            }
+            // открытые вещи идут первыми, закрытые в конце; порядок внутри группы не меняется
+            const list = WD_SLOTS[slot].map((i, n) => ({ i, n, lk: wdUnlocked(i) ? 0 : 1 }))
+                .filter(({ i, lk }) => wdFilter === 'all' || (wdFilter === 'open' && !lk) || (wdFilter === 'locked' && lk) || (wdFilter === 'new' && wdIsNew(i)))
+                .sort((a, b) => a.lk - b.lk || a.n - b.n);
+            list.forEach(({ i }) => wrListEl.appendChild(wrCard(slot, i.id, i.name, { item: i, art: ACC_ART[i.id], fill: i.hex, skin: slot === 'color' ? i.id : null })));
+            if (!list.length) wrListEl.appendChild(elem('div', 'wr-empty', wdFilter === 'locked' ? 'Всё открыто. Больше закрытого здесь нет.' : 'Здесь пока пусто.'));
+            wrListEl.scrollTop = prev;
+        }
+        function wdRenderInfo() {
+            wrInfoEl.innerHTML = '';
+            wrInfoEl.className = 'wr-info' + (wdNote ? ' note' + (wdNote.rar ? ' r-' + wdNote.rar : '') : '');
+            if (wdNote) {
+                wrInfoEl.appendChild(elem('div', 'wr-info-h', wdNote.head));
+                if (wdNote.text) wrInfoEl.appendChild(elem('div', 'wr-info-t', wdNote.text));
+                return;
+            }
+            const ach = WD_ALL.filter(i => i.ach);
+            wrInfoEl.appendChild(elem('div', 'wr-info-h', `ОТКРЫТО ВЕЩЕЙ: ${ach.filter(wdUnlocked).length}/${ach.length}`));
+            wrInfoEl.appendChild(elem('div', 'wr-info-t', (WD_CAN_HOVER ? 'Наведи на вещь, чтобы примерить. Клик надевает, повторный клик снимает.' : 'Нажми на вещь, чтобы надеть. Повторное нажатие снимает.')
+                + ' Закрытое открывается за достижения. Нажми на Спати: он ответит.'));
+        }
+        function wdRender() {
+            if (!wdStage) wdBuild();
+            wdSyncStage();
+            wdRenderSlots();
+            wdRenderTabs();
+            wdRenderBar();
+            wdRenderList();
+            wdRenderInfo();
+        }
+
+        // ----- Спати переезжает в окно и обратно -----
+        function wdSvgRect(el) { const s = el.querySelector('svg'); return (s || el).getBoundingClientRect(); }
+        function wdFly(fromEl, toEl, classes, done) {
+            const reduce = (typeof smReduceMotion !== 'undefined' && smReduceMotion);
+            if (reduce) { done(); return; }
+            const sr = screen.getBoundingClientRect(), a = wdSvgRect(fromEl), b = wdSvgRect(toEl);
+            const fl = elem('div', 'wd-flyer');
+            classes.forEach(c => fl.classList.add(c));
+            const svg = spatiMascot.querySelector('svg').cloneNode(true);
+            svg.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+            fl.appendChild(svg);
+            const put = (r) => { fl.style.left = (r.left - sr.left) + 'px'; fl.style.top = (r.top - sr.top) + 'px'; fl.style.width = r.width + 'px'; fl.style.height = r.height + 'px'; };
+            put(a);
+            screen.appendChild(fl);
+            wdFlyer = fl;
+            void fl.offsetWidth;
+            fl.classList.add('go');
+            put(b);
+            clearTimeout(wdFlyT);
+            wdFlyT = setTimeout(() => { fl.remove(); if (wdFlyer === fl) wdFlyer = null; done(); }, 760);
+        }
+        function wdFlyCancel() {
+            clearTimeout(wdFlyT);
+            if (wdFlyer) { wdFlyer.remove(); wdFlyer = null; }
+        }
+        function wdOpenWin() {
+            if (!isBooted) return;
+            wdFlyCancel();
+            wdOpen = true; wdNote = null; wdChanged = false;
+            sfxSpati('cloth', true);
+            wdWin.classList.remove('hidden');
+            wdRender();
+            wdScrollTop();
+            wdGaze(0, 0);
+            sfxAch('open');
+            unlock('wd_open');
+            if (hiddenInput) hiddenInput.blur();
+            const fresh = WD_ALL.filter(i => i.ach && wdUnlocked(i) && wdState.seen.indexOf(i.id) < 0).length;
+            const hello = () => {
+                wdStage.classList.remove('wait');
+                wdPlay('hop'); wdEm('happy', 1300);
+                wdSay(fresh ? `Появились новые вещи: ${fresh}. Они отмечены NEW` : wdPick(isSpatiEnabled ? WD_SAY.hello : WD_SAY.helloOff));
+            };
+            const here = isSpatiEnabled && spatiMascot.classList.contains('show');
+            if (!here) { wdStage.classList.remove('wait'); hello(); return; }
+            wdStage.classList.add('wait');
+            wdAwayOn = true;
+            clearTimeout(wdFlyT);
+            wdFlyT = setTimeout(() => {                     // даём окну «выскочить», затем Спати перелетает
+                if (!wdOpen) return;
+                const cls = SM_ACC_CLASSES.filter(c => spatiMascot.classList.contains(c));
+                spatiMascot.classList.add('wd-away');
+                wdFly(spatiMascot, wdStage, cls, () => { if (wdOpen) hello(); });
+            }, 280);
+        }
+        function wdClose() {
+            if (!wdOpen) return;
+            sfxAch('close');
+            sfxSpati('cloth', true, 0.7);
+            wdOpen = false;
+            clearInterval(wdTypeT);
+            wdState.seen = Array.from(new Set(wdState.seen.concat(WD_ALL.filter(i => i.ach && wdUnlocked(i)).map(i => i.id))));
+            wdSave();
+            const wasAway = wdAwayOn || spatiMascot.classList.contains('wd-away');
+            wdFlyCancel();
+            const land = () => {
+                wdAwayOn = false;
+                spatiMascot.classList.remove('wd-away');
+                if (wasAway && smGameCan() && !smAsleep) {
+                    mascotReact('jump', true);
+                    if (wdChanged) setTimeout(() => mascotSay(wdPick(WD_SAY.back)), 500);
+                }
+            };
+            if (wasAway && spatiMascot.classList.contains('show') && !wdStage.classList.contains('wait')) {
+                const cls = SM_ACC_CLASSES.filter(c => wdStage.classList.contains(c));
+                const from = wdStage;
+                wdStage.classList.add('wait');
+                wdFlyFromStage(from, cls, land);
+            } else land();
+            wdWin.classList.add('hidden');
+        }
+        function wdFlyFromStage(stage, cls, done) {
+            // окно ещё не скрыто: считаем координаты до этого
+            wdFly(stage, spatiMascot, cls, done);
+        }
+        wdRefreshHook = () => { if (wdOpen) wdRender(); };
+        wdX.addEventListener('click', (e) => { e.stopPropagation(); wdClose(); });
+        const wdBtn = document.getElementById('wardBtn');
+        if (wdBtn) wdBtn.addEventListener('click', (e) => { e.preventDefault(); wdOpen ? wdClose() : wdOpenWin(); });
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && wdOpen) wdClose(); });
+        smAccUpdate();
+
+        // ---------- 2. Частицы: сердечки, звёзды, Zzz ----------
+        const smReduceMotion = (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
+        const smPix = (map) => {
+            let r = '';
+            map.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] === '#') r += `<rect x="${x}" y="${y}" width="1" height="1"/>`; });
+            return `<svg viewBox="0 0 ${map[0].length} ${map.length}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${r}</svg>`;
+        };
+        const SM_HEART_SVG = smPix(['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']);
+        const SM_STAR_SVG = smPix(['..#..', '..#..', '#####', '..#..', '..#..']);
+        const smFx = (() => {
+            if (!spatiMascot) return null;
+            const el = document.createElement('div');
+            el.className = 'sm-fx'; el.setAttribute('aria-hidden', 'true');
+            spatiMascot.appendChild(el);
+            return el;
+        })();
+        function smSpawn(kind, o) {
+            if (!smFx || smReduceMotion || document.hidden || smFx.childElementCount > 26) return;
+            o = o || {};
+            const rnd = (a, b) => a + Math.random() * (b - a);
+            const el = document.createElement('i');
+            el.className = 'sm-p sm-p-' + kind;
+            if (kind === 'zzz') { el.textContent = o.t || 'z'; el.style.fontSize = (o.size || 12) + 'px'; }
+            else el.innerHTML = kind === 'heart' ? SM_HEART_SVG : SM_STAR_SVG;
+            const dur = o.dur || (kind === 'heart' ? 1500 : 1100);
+            el.style.left = (o.x != null ? o.x : rnd(30, 66)) + 'px';
+            el.style.top = (o.y != null ? o.y : rnd(14, 28)) + 'px';
+            el.style.setProperty('--dx', (o.dx != null ? o.dx : rnd(-26, 26)) + 'px');
+            el.style.setProperty('--dy', (o.dy != null ? o.dy : -rnd(36, 62)) + 'px');
+            el.style.setProperty('--rot', (kind === 'zzz' ? rnd(-8, 12) : rnd(-25, 25)) + 'deg');
+            el.style.setProperty('--dur', dur + 'ms');
+            smFx.appendChild(el);
+            setTimeout(() => el.remove(), dur + 100);
+        }
+        function smBurst(kind, n) { for (let i = 0; i < n; i++) setTimeout(() => smSpawn(kind), i * 110); }
+        function smZzzBurst() { [0, 1, 2].forEach(k => setTimeout(() => smSpawn('zzz', { t: k ? 'Z' : 'z', size: 10 + k * 4, x: 62 + k * 5, y: 24 - k * 2, dx: 22 + k * 6, dy: -44 - k * 8, dur: 2300 }), k * 420)); }
+        const SM_FX_STAR = { jump: 1, flip: 1, dance: 1, cheer: 1, highfive: 1, wave: 1, eat: 1, laugh: 1 };
+        function smFxOnReact(name) {
+            if (name === 'pet') smBurst('heart', 5);
+            else if (SM_FX_STAR[name]) smBurst('star', name === 'dance' ? 6 : 4);
+            else if (name === 'sleep') smZzzBurst();
+        }
+        let smZN = 0;
+        setInterval(() => {   // во сне над головой плывут Z
+            if (!smAsleep || !isSpatiEnabled || !spatiMascot || !spatiMascot.classList.contains('show')) return;
+            const k = smZN++ % 3;
+            smSpawn('zzz', { t: k ? 'Z' : 'z', size: 10 + k * 4, x: 62 + k * 5, y: 24 - k * 2, dx: 22 + k * 6, dy: -44 - k * 8, dur: 2300 });
+        }, 1300);
+        function smHeartBeat() {
+            if (!smDrag || smDrag.moved || smDrag.tickle) { clearInterval(smHeartT); return; }
+            sfxSpati('heart');
+            smSpawn('heart');
+        }
+
+        // ---------- 3. Щекотка: долгое нажатие ----------
+        function smHoldFxStop() { clearTimeout(smTickleStartT); clearInterval(smTickleT); clearInterval(smHeartT); }
+        function smTickleStart() {
+            const d = smDrag;
+            if (!d || d.moved || d.tickle || smWasAsleep || !isSpatiEnabled) return;
+            d.tickle = true; d.pet = false;
+            clearInterval(smHeartT); smTickleN = 0;
+            smTickleBeat();
+            smTickleT = setInterval(smTickleBeat, 480);
+        }
+        function smTickleBeat() {
+            if (!smDrag || !smDrag.tickle || !isSpatiEnabled) { clearInterval(smTickleT); return; }
+            smTickleN++;
+            smPlay('tickle', 520); smEm('laugh', 560);
+            mascotChatter(10);
+            if (Math.random() < .6) smSpawn('star');
+            if (smTickleN === 1) mascotSay(smPick(spatiMood <= -2 ? SM_TICKLE_SULK : SM_TICKLE));
+            else if (smTickleN === 5) mascotSay(smPick(SM_TICKLE2));
+            else if (smTickleN === 10) mascotSay(smPick(SM_TICKLE3));
+        }
+        function smTickleEnd() {
+            const n = smTickleN; smTickleN = 0;
+            sfxSpati('relief');
+            smSaved.tickles = (smSaved.tickles || 0) + 1; smSave();
+            unlock('sm_tickle');
+            spatiMood = spatiClamp(spatiMood + 1); spatiMoodAt = Date.now();
+            smPlay('sway', 1200); smEm(n >= 6 ? 'dizzy' : 'happy', 1400);
+            mascotSay(smPick(n >= 6 ? SM_TICKLE_END_LONG : SM_TICKLE_END));
+        }
+
+        // ---------- 4. Свайп: Спати катится в сторону движения ----------
+        function smTrySwipe(d) {
+            const dur = performance.now() - d.t0;
+            const dx = smPos.x - d.px0, dy = smPos.y - d.py0, dist = Math.hypot(dx, dy);
+            if (dur > 280 || dist < 18 || dist > 130) return false;   // быстрый и короткий жест — это свайп, остальное — перенос/бросок
+            smHeld = false; clearTimeout(smHoldTimer); clearTimeout(smHoldSayT);
+            spatiMascot.classList.remove('held');
+            smReact.style.transform = '';
+            smSetPos(d.px0, d.py0);
+            smSaved.rolls = (smSaved.rolls || 0) + 1; unlock('sm_roll');
+            smRoll(dx / dist, dy / dist, smClamp(dist / Math.max(60, dur), .4, 1));
+            return true;
+        }
+        function smRoll(ux, uy, v0) {
+            spatiMascot.classList.add('flying');
+            smReact.style.transformOrigin = '50% 50%';
+            let vx = ux * v0, vy = uy * v0, travelled = 0, ang = 0, last = performance.now(), lastBump = 0;
+            const sgn = Math.abs(ux) >= Math.abs(uy) ? (ux >= 0 ? 1 : -1) : (uy >= 0 ? 1 : -1);
+            smEm('happy');
+            sfxSpati('roll');
+            mascotSay(smPick(SM_ROLL));
+            const step = (now) => {
+                if (!isSpatiEnabled) return;
+                const dt = Math.min(34, now - last); last = now;
+                const r = screen.getBoundingClientRect();
+                const maxX = Math.max(0, r.width - SM_W), maxY = Math.max(0, r.height - SM_H);
+                let x = smPos.x + vx * dt, y = smPos.y + vy * dt, hit = false;
+                if (x < 0) { x = 0; vx = Math.abs(vx) * .5; hit = true; } else if (x > maxX) { x = maxX; vx = -Math.abs(vx) * .5; hit = true; }
+                if (y < 0) { y = 0; vy = Math.abs(vy) * .5; hit = true; } else if (y > maxY) { y = maxY; vy = -Math.abs(vy) * .5; hit = true; }
+                const f = Math.pow(.95, dt / 16); vx *= f; vy *= f;
+                travelled += Math.hypot(x - smPos.x, y - smPos.y);
+                smSetPos(x, y);
+                ang = sgn * travelled / 36 * 57.3;   // радиус «шарика» ≈ 36 px
+                smReact.style.transform = 'rotate(' + ang.toFixed(1) + 'deg)';
+                if (hit && Math.hypot(vx, vy) > .12 && now - lastBump > 400) { lastBump = now; sfxSpati('bump'); smSayCool(smPick(SM_BUMP), 1500); }
+                if (Math.hypot(vx, vy) < .05) {
+                    smRaf = 0;
+                    spatiMascot.classList.remove('flying');
+                    smReact.style.transform = ''; smReact.style.transformOrigin = '';
+                    if (Math.abs(ang) >= 430) { smPlay('dizzy', 1700); smEm('dizzy', 1700); mascotSay(smPick(SM_ROLL_DIZZY)); }
+                    else { smPlay('land', 450); smEm('normal'); }
+                    smSave();
+                    return;
+                }
+                smRaf = requestAnimationFrame(step);
+            };
+            smRaf = requestAnimationFrame(step);
+        }
+
+        // ---------- 5. Встряска телефона (devicemotion) ----------
+        const smMotion = { st: 'idle', hits: [], lastHit: 0, peak: 0, cd: 0, timer: 0 };
+        function smMotionInit() {
+            if (smMotion.st !== 'idle') return;
+            if (typeof window.DeviceMotionEvent === 'undefined') { smMotion.st = 'none'; return; }
+            const go = () => { smMotion.st = 'on'; window.addEventListener('devicemotion', smOnMotion, { passive: true }); };
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {   // iOS: нужен жест пользователя
+                smMotion.st = 'asking';
+                DeviceMotionEvent.requestPermission()
+                    .then(r => { if (r === 'granted') go(); else smMotion.st = 'denied'; })
+                    .catch(() => { smMotion.st = 'idle'; });
+            } else go();
+        }
+        function smOnMotion(e) {
+            if (!isSpatiEnabled || !spatiMascot || !spatiMascot.classList.contains('show')) return;
+            const g = e.accelerationIncludingGravity, a = g || e.acceleration;
+            if (!a || a.x == null) return;
+            const mag = Math.hypot(a.x, a.y, a.z);
+            const dev = g ? Math.abs(mag - 9.81) : mag;
+            if (dev < SM_SHAKE_MIN) return;
+            const now = Date.now();
+            smMotion.peak = Math.max(smMotion.peak, dev);
+            if (now - smMotion.lastHit > 90) {   // отдельные взмахи, а не один удар в нескольких кадрах
+                smMotion.lastHit = now;
+                smMotion.hits = smMotion.hits.filter(t => now - t < 1000);
+                smMotion.hits.push(now);
+            }
+            clearTimeout(smMotion.timer);
+            smMotion.timer = setTimeout(smShakeDone, 380);
+        }
+        function smShakeDone() {
+            const hits = smMotion.hits.length, peak = smMotion.peak;
+            smMotion.hits = []; smMotion.peak = 0;
+            if (hits < 3) return;
+            const now = Date.now();
+            if (now - smMotion.cd < 5000 || smHeld || smRaf || smDrag || !isSpatiEnabled) return;
+            smMotion.cd = now;
+            smShakeReact(peak >= SM_SHAKE_HARD ? 'hard' : 'light');
+        }
+        function smShakeReact(level) {
+            smTouch();
+            if (level === 'hard') {
+                unlock('sm_offend');
+                spatiMood = spatiClamp(spatiMood - 2); spatiMoodAt = Date.now();
+                mascotReact('shake', true); smEm('angry', 900);
+                mascotSay(smPick(SM_SHAKE_H));
+                setTimeout(() => { if (isSpatiEnabled && !smHeld && !smAsleep) smEm('sad', 3500); }, 900);
+            } else {
+                unlock('sm_shake');
+                mascotReact('dizzy', true);
+                mascotSay(smPick(SM_SHAKE_L));
+            }
+        }
+        const smSpatiBtn = document.getElementById('spatiBtn');
+        if (smSpatiBtn) smSpatiBtn.addEventListener('click', smMotionInit);
+        if (spatiMascot) spatiMascot.addEventListener('pointerup', smMotionInit);
+
+        // Проверка из консоли: spatiDebug.shake('hard'), .date('12-31'), .night(true), .roll(1, 0)
+        window.spatiDebug = {
+            shake: (lvl) => smShakeReact(lvl === 'hard' ? 'hard' : 'light'),
+            date: (s) => {
+                const m = /^(\d{1,2})-(\d{1,2})$/.exec(s || '');
+                smDbg.date = m ? { m: +m[1], d: +m[2], y: new Date().getFullYear() } : null;
+                smSaved.sg = {}; smAccUpdate(); smSeasonGreet();
+            },
+            night: (v) => { smDbg.night = v == null ? null : !!v; smAccUpdate(); },
+            roll: (x, y) => { if (!smRaf) { const l = Math.hypot(x, y) || 1; smRoll(x / l, y / l, .7); } }
+        };
+
         // ---------- 4. Отражение в окне плеера ----------
         // Мини-Спати сидит на верхней кромке блока трека, повторяет эмоции, движения, рот и взгляд
         // настоящего Спати и качает головой в такт, пока играет музыка.
@@ -3331,7 +5393,7 @@ TAB - дополнить, ↑↓ - история
 
             const syncState = () => {
                 box.dataset.em = spatiMascot.dataset.em || 'normal';
-                ['open', 'think', 'asleep', 'night'].forEach(c => box.classList.toggle(c, spatiMascot.classList.contains(c)));
+                ['open', 'think', 'asleep', 'night'].concat(SM_ACC_CLASSES).forEach(c => box.classList.toggle(c, spatiMascot.classList.contains(c)));
             };
             const syncAnim = () => {
                 const a = Array.from(smReact.classList).find(c => c.indexOf('a-') === 0) || '';
@@ -3362,6 +5424,7 @@ TAB - дополнить, ↑↓ - история
             if (on) {
                 smLayout(); smApplyTimeLook();
                 smIdleAt = Date.now() + 9000; smLastTouch = Date.now(); smStage = 0; smAsleep = false; spatiMascot.classList.remove('asleep');
+                smAccUpdate(); setTimeout(smSeasonGreet, 2800);
                 if (!smSaved.hint) {
                     setTimeout(() => {
                         if (isSpatiEnabled && !smHeld && !smSaved.hint) {
@@ -3374,6 +5437,7 @@ TAB - дополнить, ↑↓ - история
                 cancelAnimationFrame(smRaf); smRaf = 0; smHeld = false; smDrag = null; smAsleep = false; clearTimeout(smPetTimer); smDropApple(false); smGame.on = false;
                 clearInterval(smTypeTimer); clearTimeout(smSayTimer); clearTimeout(smHoldTimer); clearTimeout(smEmTimer); clearTimeout(smAnimTimer);
                 spatiMascot.classList.remove('held', 'flying', 'gliding', 'asleep');
+                smHoldFxStop(); smTickleN = 0; smReact.style.transformOrigin = ''; if (smFx) smFx.textContent = '';
                 spatiMascot.dataset.em = 'normal';
                 smReact.className = 'sm-react'; smReact.style.transform = '';
                 smBubble.classList.remove('show');
@@ -3584,7 +5648,7 @@ TAB - дополнить, ↑↓ - история
             bar.addEventListener('mousedown', (e) => e.preventDefault()); // не отбираем фокус у поля ввода
             bar.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
-                if (!btn || !isBooted || isTyping || nickMode) return;
+                if (!btn || !isBooted || isTyping || nickMode || inputHook) return;
                 unlock('pocket');
                 const key = btn.dataset.key;
                 const cmd = btn.dataset.cmd;
@@ -3681,9 +5745,10 @@ TAB - дополнить, ↑↓ - история
 
         // ==========================================
         // СКРЫТОЕ АДМИН-МЕНЮ: открывается только из консоли браузера (F12)
-        //   spatiumAdmin('vfvf1951')  <- пароль нужен обязательно
+        //   spatiumAdmin('<пароль>')  <- пароль нужен обязательно
         // Пароль в коде хранится только в виде хэша. Новый хэш можно получить
-        // внутри самого меню (вкладка ДАННЫЕ -> "хэш пароля").
+        // внутри самого меню (вкладка ДАННЫЕ -> поле «новый пароль»).
+        // Вкладки: ДОСТИЖЕНИЯ · СТАТЫ · ЗМЕЙКА · ГАРДЕРОБ · СПАТИ · ТЕРМИНАЛ · ЦВЕТА · ПЛЕЕР · ДАННЫЕ
         // ==========================================
         const ADMIN_HASH = '176qalmua2s';
         const hash53 = (str, seed = 0) => {
@@ -3698,8 +5763,37 @@ TAB - дополнить, ↑↓ - история
             return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
         };
 
-        let admWin = null, admBody = null, admOpen = false, admTab = 'ach', admFails = 0;
-        const ADM_TABS = [['ach', 'ДОСТИЖЕНИЯ'], ['stats', 'СТАТЫ'], ['term', 'ТЕРМИНАЛ'], ['color', 'ЦВЕТА'], ['audio', 'ПЛЕЕР'], ['data', 'ДАННЫЕ']];
+        let admWin = null, admBody = null, admOpen = false, admTab = 'ach', admLastTab = null, admFails = 0;
+        let admFilter = 'all', admWdSlot = 'hat', admQuery = '';
+        const admLog = [];   // журнал действий админа (только в памяти, до перезагрузки)
+        function admLogAdd(text) {
+            admLog.push({ t: new Date().toLocaleTimeString('ru-RU'), text: String(text).replace(/^\[ADMIN\]\s*/, '') });
+            if (admLog.length > 80) admLog.shift();
+        }
+        let admSpQuiet = false;   // анимации Спати без реплик
+        const ADM_SP_ANIMS = [
+            ['jump', 'ПРЫЖОК'], ['hop', 'ПОДСКОК'], ['spin', 'ВРАЩЕНИЕ'], ['flip', 'КУВЫРОК'], ['squish', 'СПЛЮЩИТЬ'],
+            ['shake', 'ТРЯСКА'], ['dizzy', 'ГОЛОВОКРУЖЕНИЕ'], ['vanish', 'ИСЧЕЗНУТЬ'], ['laugh', 'СМЕХ'], ['boo', 'БУУ'],
+            ['dance', 'ТАНЕЦ'], ['glitch', 'ГЛИТЧ'], ['inflate', 'НАДУТЬСЯ'], ['tilt', 'НАКЛОН'], ['hiccup', 'ИКОТА'],
+            ['sneeze', 'АПЧХИ'], ['stretch', 'ПОТЯНУТЬСЯ'], ['yawn', 'ЗЕВОК'], ['sway', 'КАЧАНИЕ'], ['wink', 'ПОДМИГНУТЬ'],
+            ['wave', 'ПРИВЕТ'], ['highfive', 'ДАЙ ПЯТЬ'], ['cheer', 'УРА'], ['pet', 'ПОГЛАДИТЬ'], ['eat', 'ЕСТЬ'],
+            ['sulk', 'ДУТЬСЯ'], ['startle', 'ИСПУГ'], ['look', 'ОГЛЯДЕТЬСЯ'], ['blink', 'МОРГНУТЬ'], ['sleep', 'СОН']
+        ];
+        const ADM_SP_EMOS = [
+            ['normal', 'ОБЫЧНЫЙ'], ['happy', 'РАДОСТЬ'], ['sad', 'ГРУСТЬ'], ['angry', 'ЗЛОСТЬ'], ['surprised', 'УДИВЛЕНИЕ'],
+            ['dizzy', 'КРУЖИТСЯ'], ['laugh', 'СМЕХ'], ['wink', 'ПОДМИГИВАЕТ'], ['sleepy', 'СОННЫЙ'], ['yawn', 'ЗЕВАЕТ'],
+            ['look', 'СМОТРИТ'], ['blink', 'МОРГАЕТ']
+        ];
+        // выполнить действие над маскотом; если Спати выключен — сначала включаем
+        function admSpatiDo(fn) {
+            if (!isSpatiEnabled) { admSetSpati(true); setTimeout(fn, 500); setTimeout(admRender, 0); }
+            else fn();
+        }
+        const ADM_TABS = [
+            ['ach', 'ДОСТИЖЕНИЯ'], ['stats', 'СТАТЫ'], ['snake', 'ЗМЕЙКА'], ['ward', 'ГАРДЕРОБ'], ['spati', 'СПАТИ'],
+            ['term', 'ТЕРМИНАЛ'], ['debug', 'ОТЛАДКА'], ['color', 'ЦВЕТА'], ['audio', 'ПЛЕЕР'], ['log', 'ЖУРНАЛ'], ['data', 'ДАННЫЕ']
+        ];
+        const ADM_FILTERS = [['all', 'ВСЕ'], ['on', 'ОТКРЫТЫЕ'], ['off', 'ЗАКРЫТЫЕ']];
 
         function admBtn(label, fn, cls) {
             const b = elem('button', 'player-btn' + (cls ? ' ' + cls : ''), label);
@@ -3719,21 +5813,61 @@ TAB - дополнить, ↑↓ - история
             nodes.forEach(n => r.appendChild(n));
             return r;
         }
-        const admOut = (text) => { printTextInstant(text); };
+        const admOut = (text) => { admLogAdd(text); printTextInstant(text); };
+        const admTitle = (text) => elem('div', 'ach-group-title', text);
+
+        // тихо открыть достижения (без тостов), затем обновить счётчик и окно достижений
+        function admRefreshAch() { saveState(); updateAchCount(); if (achWindowOpen) renderAchWindow(); }
+        function admGrant(ids) {
+            let n = 0;
+            ids.forEach(id => { if (id && achById[id] && !state.ach[id]) { state.ach[id] = Date.now(); state.shown[id] = true; n++; } });
+            if (n) admLogAdd('выдано достижений: ' + n);
+            admRefreshAch();
+        }
         function admSetAch(id, on) {
+            admLogAdd(`достижение ${id}: ${on ? 'вкл' : 'выкл'}`);
             if (on) unlock(id);
-            else { delete state.ach[id]; delete state.shown[id]; saveState(); updateAchCount(); if (achWindowOpen) renderAchWindow(); }
+            else { delete state.ach[id]; delete state.shown[id]; admRefreshAch(); }
         }
         function admApplyColor(name) {
             const root = document.documentElement;
+            admLogAdd('цвет: ' + (name || 'сброс'));
             if (!name) { ['--crt-color', '--crt-glow', '--crt-bg'].forEach(p => root.style.removeProperty(p)); return; }
             const s = colorPalette[name];
             root.style.setProperty('--crt-color', s.color);
             root.style.setProperty('--crt-glow', s.glow);
             root.style.setProperty('--crt-bg', s.bg);
         }
+        // строки с числовыми полями; возвращает функцию, которая записывает значения в obj
+        function admNumRows(obj, defs) {
+            const fields = {};
+            defs.forEach(([k, label]) => {
+                fields[k] = admInput('number', obj[k]);
+                fields[k].min = 0;
+                admBody.appendChild(admRow(elem('span', 'adm-label', label), fields[k]));
+            });
+            return () => defs.forEach(([k]) => { obj[k] = Math.max(0, Math.floor(Number(fields[k].value) || 0)); });
+        }
+        function admSetSpati(on) {
+            isSpatiEnabled = on;
+            admLogAdd('Спати: ' + (on ? 'вкл' : 'выкл'));
+            const b = document.getElementById('spatiBtn');
+            if (b) b.classList.toggle('on', on);
+            setMascot(on);
+        }
+        function admWdSync() { if (wdOpen) wdRender(); admRender(); }
+        const admSaveObject = () => ({
+            app: 'spatium-os', v: 1, exported: new Date().toISOString(),
+            state, spati: { name: spatiMem.name || '' }, sfx: sfxEnabled, wardrobe: wdState
+        });
+        const admReload = () => {
+            isBooted = false;
+            setTimeout(() => window.location.reload(), 150);
+        };
 
         function admRender() {
+            const keepScroll = admLastTab === admTab ? admBody.scrollTop : 0;
+            admLastTab = admTab;
             admBody.innerHTML = '';
             const tabs = elem('div', 'adm-tabs');
             ADM_TABS.forEach(([key, label]) => {
@@ -3743,49 +5877,202 @@ TAB - дополнить, ↑↓ - история
 
             if (admTab === 'ach') {
                 admBody.appendChild(admRow(
-                    admBtn('ОТКРЫТЬ ВСЕ', () => { ACHIEVEMENTS.forEach(a => { if (!state.ach[a.id]) { state.ach[a.id] = Date.now(); state.shown[a.id] = true; } }); saveState(); updateAchCount(); admRender(); }),
-                    admBtn('ЗАКРЫТЬ ВСЕ', () => { state.ach = {}; state.shown = {}; saveState(); updateAchCount(); admRender(); }),
+                    admBtn('ОТКРЫТЬ ВСЕ', () => { admGrant(ACHIEVEMENTS.map(a => a.id)); admRender(); }),
+                    admBtn('ЗАКРЫТЬ ВСЕ', () => { state.ach = {}; state.shown = {}; admLogAdd('все достижения закрыты'); admRefreshAch(); admRender(); }),
                     admBtn('ТЕСТ ТОСТОВ', () => ACHIEVEMENTS.slice(0, 3).forEach(enqueueToast))
                 ));
-                RARITY_ORDER.slice().reverse().forEach(r => {
-                    admBody.appendChild(elem('div', 'ach-group-title r-' + r, RARITIES[r].label));
-                    ACHIEVEMENTS.filter(a => a.rarity === r).forEach(a => {
-                        const on = !!state.ach[a.id];
-                        const row = admRow(
-                            elem('span', 'adm-name r-' + r, `${a.title}${a.hidden ? ' *' : ''}`),
-                            elem('span', 'adm-id', a.id),
-                            admBtn('toast', () => enqueueToast(a), 'small'),
-                            admBtn(on ? 'ВЫКЛ' : 'ВКЛ', () => { admSetAch(a.id, !on); admRender(); }, 'small' + (on ? ' active' : ''))
-                        );
-                        admBody.appendChild(row);
+                const open = ACHIEVEMENTS.filter(a => state.ach[a.id]).length;
+                const flt = elem('div', 'adm-chips');
+                ADM_FILTERS.forEach(([key, label]) => flt.appendChild(admBtn(label, () => { admFilter = key; admRender(); }, 'small' + (admFilter === key ? ' active' : ''))));
+                admBody.appendChild(flt);
+                const search = admInput('search', admQuery, 'поиск: название, id или описание');
+                admBody.appendChild(admRow(search));
+                admBody.appendChild(elem('div', 'adm-note', `Открыто: ${open}/${ACHIEVEMENTS.length} · * — скрытое достижение`));
+                const listBox = elem('div', 'adm-list');
+                admBody.appendChild(listBox);
+                const fillList = () => {
+                    listBox.innerHTML = '';
+                    const q = admQuery.trim().toLowerCase();
+                    const match = (a) => !q || `${a.title} ${a.id} ${a.desc || ''}`.toLowerCase().indexOf(q) >= 0;
+                    let shown = 0;
+                    RARITY_ORDER.slice().reverse().forEach(r => {
+                        const list = ACHIEVEMENTS.filter(a => a.rarity === r && match(a) && (admFilter === 'all' || (admFilter === 'on') === !!state.ach[a.id]));
+                        if (!list.length) return;
+                        shown += list.length;
+                        const have = list.filter(a => state.ach[a.id]).length;
+                        listBox.appendChild(elem('div', 'ach-group-title r-' + r, `${RARITIES[r].label} · ${have}/${list.length}`));
+                        list.forEach(a => {
+                            const on = !!state.ach[a.id];
+                            const name = elem('span', 'adm-name r-' + r, `${a.title}${a.hidden ? ' *' : ''}`);
+                            if (a.desc) name.title = a.desc;
+                            listBox.appendChild(admRow(
+                                name,
+                                elem('span', 'adm-id', a.id),
+                                admBtn('toast', () => enqueueToast(a), 'small'),
+                                admBtn(on ? 'ВЫКЛ' : 'ВКЛ', () => { admSetAch(a.id, !on); admRender(); }, 'small' + (on ? ' active' : ''))
+                            ));
+                        });
                     });
-                });
+                    if (!shown) listBox.appendChild(elem('div', 'adm-note', 'Ничего не найдено.'));
+                };
+                search.addEventListener('input', () => { admQuery = search.value; fillList(); });
+                fillList();
             } else if (admTab === 'stats') {
-                const fields = {};
-                [['visits', 'ЗАПУСКОВ'], ['cmds', 'КОМАНД'], ['spatiTalks', 'ВОПРОСОВ СПАТИ']].forEach(([k, label]) => {
-                    fields[k] = admInput('number', state.stats[k]);
-                    admBody.appendChild(admRow(elem('span', 'adm-label', label), fields[k]));
-                });
+                const applyNums = admNumRows(state.stats, [['visits', 'ЗАПУСКОВ'], ['cmds', 'КОМАНД'], ['spatiTalks', 'ВОПРОСОВ СПАТИ']]);
+                const nick = admInput('text', state.nick, 'никнейм (2-16 символов)');
+                nick.maxLength = 16;
+                admBody.appendChild(admRow(elem('span', 'adm-label', 'НИКНЕЙМ'), nick));
                 admBody.appendChild(admRow(
-                    admBtn('ПРИМЕНИТЬ', () => { Object.keys(fields).forEach(k => { state.stats[k] = Math.max(0, Number(fields[k].value) || 0); }); saveState(); admOut('[ADMIN] статистика обновлена'); }),
-                    admBtn('СБРОС ЦВЕТОВ', () => { state.stats.colors = []; saveState(); admOut('[ADMIN] список цветов очищен'); }),
-                    admBtn('СБРОС ТРЕКОВ', () => { state.stats.tracks = []; saveState(); admOut('[ADMIN] список треков очищен'); })
+                    admBtn('ПРИМЕНИТЬ', () => {
+                        const n = nick.value.replace(/\s+/g, ' ').trim();
+                        if (n !== state.nick) {
+                            if (!/^[\p{L}\p{N}][\p{L}\p{N}_.\- ]{1,15}$/u.test(n)) { admOut('[ADMIN] ник не принят: 2-16 символов, буквы/цифры/пробел и _ - .'); return; }
+                            state.nick = n;
+                            applyNick();
+                        }
+                        applyNums();
+                        saveState();
+                        admOut('[ADMIN] статистика обновлена');
+                    }),
+                    admBtn('СБРОС ЦВЕТОВ', () => { state.stats.colors = []; saveState(); admOut('[ADMIN] список цветов очищен'); admRender(); }),
+                    admBtn('СБРОС ТРЕКОВ', () => { state.stats.tracks = []; saveState(); admOut('[ADMIN] список треков очищен'); admRender(); }),
+                    admBtn('СБРОС ИСТОРИИ', () => { state.history = []; saveState(); admOut('[ADMIN] история команд очищена'); admRender(); })
                 ));
                 admBody.appendChild(elem('div', 'adm-note', `Цветов: ${state.stats.colors.length}/${Object.keys(colorPalette).length} · Треков: ${state.stats.tracks.length}/${playlist.length} · Истории: ${state.history.length}`));
+            } else if (admTab === 'snake') {
+                const sk = state.stats.snake;
+                const applyNums = admNumRows(sk, [['best', 'РЕКОРД'], ['games', 'ИГР'], ['apples', 'ЯБЛОК'], ['bonus', 'БОНУСОВ']]);
+                admBody.appendChild(admRow(
+                    admBtn('ПРИМЕНИТЬ', () => { applyNums(); saveState(); admOut('[ADMIN] статистика змейки обновлена'); }),
+                    admBtn('ОЧИСТИТЬ ТОП', () => { sk.top = []; sk.last = null; saveState(); admOut('[ADMIN] таблица рекордов змейки очищена'); admRender(); }),
+                    admBtn('ОТКРЫТЬ ЗМЕЙКУ', () => { if (snakeApi) snakeApi.open(); })
+                ));
+                admBody.appendChild(elem('div', 'adm-note', `Топ: ${(Array.isArray(sk.top) && sk.top.length) ? sk.top.map(e => e.s).join(' · ') : '—'}`));
+                admBody.appendChild(elem('div', 'adm-note', `Настройки: стены=${sk.wrap ? 'вкл' : 'выкл'} · блоки=${sk.obst ? 'вкл' : 'выкл'} · темп=${sk.speed ? 'быстрый' : 'обычный'} · скин=${sk.skin} · голова=${sk.head}`));
+                admBody.appendChild(elem('div', 'adm-note', 'Открытое окно змейки подхватит новые значения при следующем запуске игры.'));
+            } else if (admTab === 'ward') {
+                const withAch = WD_ALL.filter(i => i.ach);
+                admBody.appendChild(admRow(
+                    admBtn('ОТКРЫТЬ ВСЁ', () => { admGrant(withAch.map(i => i.ach)); admWdSync(); }),
+                    admBtn('СНЯТЬ ВСЁ', () => { wdSet('hat', 'auto'); wdSet('face', 'none'); wdSet('body', 'none'); wdSet('color', 'theme'); admWdSync(); })
+                ));
+                admBody.appendChild(elem('div', 'adm-note', `Косметика открыта: ${withAch.filter(wdUnlocked).length}/${withAch.length}. «ОТКРЫТЬ» тихо выдаёт нужное достижение.`));
+                const slotChips = elem('div', 'adm-chips');
+                ['hat', 'face', 'body', 'color'].forEach(s => slotChips.appendChild(admBtn(WD_SLOT_RU[s], () => { admWdSlot = s; admRender(); }, 'small' + (admWdSlot === s ? ' active' : ''))));
+                admBody.appendChild(slotChips);
+                WD_SLOTS[admWdSlot].forEach(it => {
+                    const locked = !wdUnlocked(it);
+                    const worn = wdState[admWdSlot] === it.id;
+                    const a = it.ach ? achById[it.ach] : null;
+                    const name = elem('span', 'adm-name' + (locked ? ' adm-dim' : ''), it.name);
+                    if (a) name.title = `Достижение: ${a.title}`;
+                    const row = admRow(name, elem('span', 'adm-id', locked ? 'закрыто: ' + it.ach : (it.ach ? 'открыто' : 'базовое')));
+                    if (locked) row.appendChild(admBtn('ОТКРЫТЬ', () => { admGrant([it.ach]); admWdSync(); }, 'small'));
+                    row.appendChild(admBtn(worn ? 'НАДЕТО' : 'НАДЕТЬ', () => { admLogAdd('гардероб: ' + admWdSlot + ' = ' + it.id); wdSet(admWdSlot, it.id); admWdSync(); }, 'small' + (worn ? ' active' : '')));
+                    admBody.appendChild(row);
+                });
+            } else if (admTab === 'spati') {
+                admBody.appendChild(admRow(
+                    admBtn('СПАТИ ' + (isSpatiEnabled ? 'ВЫКЛ' : 'ВКЛ'), () => { admSetSpati(!isSpatiEnabled); admOut(`[ADMIN] Спати: ${isSpatiEnabled ? 'on' : 'off'}`); admRender(); }),
+                    admBtn('ПОМАХАТЬ', () => { if (isSpatiEnabled) mascotReact('wave', true); })
+                ));
+                const say = admInput('text', '', 'реплика Спати');
+                const doSay = () => {
+                    const t = say.value.trim();
+                    if (!t) return;
+                    const wasOff = !isSpatiEnabled;
+                    if (wasOff) admSetSpati(true);
+                    setTimeout(() => mascotSay(t), wasOff ? 450 : 0);
+                    say.value = '';
+                    if (wasOff) setTimeout(admRender, 0);
+                };
+                say.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSay(); });
+                admBody.appendChild(admRow(say, admBtn('СКАЗАТЬ', doSay)));
+                const nm = admInput('text', spatiMem.name || '', 'имя в памяти Спати');
+                nm.maxLength = 16;
+                admBody.appendChild(admRow(
+                    nm,
+                    admBtn('ЗАПОМНИТЬ', () => { spatiMem.name = nm.value.trim().slice(0, 16); spatiSave(); admOut('[ADMIN] Спати запомнил имя: ' + (spatiMem.name || '—')); }),
+                    admBtn('ЗАБЫТЬ', () => { spatiMem.name = ''; delete spatiMem.bday; spatiSave(); admOut('[ADMIN] память Спати очищена'); admRender(); })
+                ));
+                const mood = admInput('range', spatiMood);
+                mood.min = -3; mood.max = 3; mood.step = 1; mood.className = 'custom-slider';
+                const moodVal = elem('span', 'adm-id', String(spatiMood));
+                mood.addEventListener('input', () => { spatiMood = spatiClamp(Number(mood.value)); spatiMoodAt = Date.now(); moodVal.textContent = String(spatiMood); });
+                admBody.appendChild(admRow(elem('span', 'adm-label', 'НАСТРОЕНИЕ'), mood, moodVal));
+                admBody.appendChild(admTitle('РЕАКЦИЯ НА ДОСТИЖЕНИЯ'));
+                admBody.appendChild(admRow(...RARITY_ORDER.map(r => admBtn(RARITIES[r].label, () => admSpatiDo(() => achReactHook({ rarity: r, title: 'Тест' })), 'small'))));
+                admBody.appendChild(admTitle('АНИМАЦИИ'));
+                admBody.appendChild(admRow(
+                    admBtn(admSpQuiet ? 'РЕПЛИКИ: ВЫКЛ' : 'РЕПЛИКИ: ВКЛ', () => { admSpQuiet = !admSpQuiet; admRender(); }, 'small' + (admSpQuiet ? '' : ' active')),
+                    admBtn('СЛУЧАЙНАЯ', () => { const n = ADM_SP_ANIMS[Math.floor(Math.random() * ADM_SP_ANIMS.length)][0]; admSpatiDo(() => mascotReact(n, admSpQuiet)); }, 'small'),
+                    admBtn('СПАТЬ', () => admSpatiDo(() => { if (!smAsleep) smSleep(); }), 'small'),
+                    admBtn('РАЗБУДИТЬ', () => { if (isSpatiEnabled && smAsleep) { smTouch(); mascotReact('startle', admSpQuiet); } }, 'small'),
+                    admBtn('УБЕЖАТЬ', () => admSpatiDo(() => mascotFlee()), 'small'),
+                    admBtn('ДОМОЙ', () => admSpatiDo(() => mascotHome()), 'small')
+                ));
+                const animChips = elem('div', 'adm-chips');
+                ADM_SP_ANIMS.forEach(([key, label]) => animChips.appendChild(admBtn(label, () => admSpatiDo(() => {
+                    if (smAsleep && key !== 'startle') { smTouch(); }
+                    mascotReact(key, admSpQuiet);
+                }), 'small')));
+                admBody.appendChild(animChips);
+                admBody.appendChild(admTitle('ЭМОЦИИ'));
+                const emoChips = elem('div', 'adm-chips');
+                ADM_SP_EMOS.forEach(([key, label]) => emoChips.appendChild(admBtn(label, () => admSpatiDo(() => { if (smAsleep) smTouch(); smEm(key, key === 'normal' ? 0 : 2400); }), 'small')));
+                admBody.appendChild(emoChips);
+                admBody.appendChild(elem('div', 'adm-note', `День рождения в памяти: ${spatiMem.bday || '—'} · от −3 (обижен) до +3 (счастлив)`));
+            } else if (admTab === 'debug') {
+                const dbg = window.spatiDebug;
+                const p2 = (n) => String(n).padStart(2, '0');
+                const curDate = smDbg.date ? p2(smDbg.date.m) + '-' + p2(smDbg.date.d) : null;
+                const d0 = smDate();
+                admBody.appendChild(elem('div', 'adm-note', `Дата для Спати: ${p2(d0.d)}.${p2(d0.m)}${smDbg.date ? ' (подмена)' : ''} · сезон: ${smSeason() || '—'} · ночь: ${smNight() ? 'да' : 'нет'}${smDbg.night != null ? ' (подмена)' : ''} · спит: ${smAsleep ? 'да' : 'нет'}`));
+                admBody.appendChild(admTitle('ВРЕМЯ СУТОК'));
+                admBody.appendChild(admRow(
+                    ...[[null, 'АВТО'], [true, 'НОЧЬ'], [false, 'ДЕНЬ']].map(([v, label]) =>
+                        admBtn(label, () => { dbg.night(v); admLogAdd('отладка: время суток — ' + label.toLowerCase()); admRender(); }, 'small' + (smDbg.night === v ? ' active' : '')))
+                ));
+                admBody.appendChild(admTitle('ДАТА / СЕЗОН'));
+                const chips = elem('div', 'adm-chips');
+                [[null, 'АВТО'], ['12-31', 'НОВЫЙ ГОД'], ['10-31', 'ХЭЛЛОУИН'], ['04-01', '1 АПРЕЛЯ'], ['01-15', 'ЗИМА'], ['07-15', 'ЛЕТО']].forEach(([v, label]) =>
+                    chips.appendChild(admBtn(label, () => { dbg.date(v); admLogAdd('отладка: дата — ' + (v || 'авто')); admRender(); }, 'small' + (curDate === v ? ' active' : ''))));
+                admBody.appendChild(chips);
+                const dIn = admInput('text', '', 'своя дата ММ-ДД, например 02-14');
+                const applyDate = () => {
+                    const m = /^(\d{1,2})-(\d{1,2})$/.exec(dIn.value.trim());
+                    if (!m || +m[1] < 1 || +m[1] > 12 || +m[2] < 1 || +m[2] > 31) { admOut('[ADMIN] дата в формате ММ-ДД'); return; }
+                    dbg.date(dIn.value.trim()); admLogAdd('отладка: дата — ' + dIn.value.trim()); admRender();
+                };
+                dIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyDate(); });
+                admBody.appendChild(admRow(dIn, admBtn('ПРИМЕНИТЬ', applyDate, 'small')));
+                admBody.appendChild(admTitle('ФИЗИКА СПАТИ'));
+                admBody.appendChild(admRow(
+                    admBtn('ТРЯСКА: ЛЁГКАЯ', () => admSpatiDo(() => dbg.shake('light')), 'small'),
+                    admBtn('ТРЯСКА: СИЛЬНАЯ', () => admSpatiDo(() => dbg.shake('hard')), 'small'),
+                    admBtn('КАТИТЬСЯ →', () => admSpatiDo(() => dbg.roll(1, 0)), 'small'),
+                    admBtn('КАТИТЬСЯ ←', () => admSpatiDo(() => dbg.roll(-1, 0)), 'small')
+                ));
+                admBody.appendChild(elem('div', 'adm-note', 'Подмена даты и времени суток действует до перезагрузки страницы. Изменение даты сбрасывает «уже сказанные» сезонные приветствия.'));
             } else if (admTab === 'term') {
                 const cmd = admInput('text', '', 'любая команда терминала');
-                const run = () => { if (cmd.value.trim()) { handleCommand(cmd.value); cmd.value = ''; } };
+                const run = () => { if (cmd.value.trim()) { admLogAdd('команда: ' + cmd.value.trim()); handleCommand(cmd.value); cmd.value = ''; } };
                 cmd.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
                 admBody.appendChild(admRow(cmd, admBtn('RUN', run)));
                 admBody.appendChild(admRow(
-                    admBtn('СПАТИ ' + (isSpatiEnabled ? 'ВЫКЛ' : 'ВКЛ'), () => { isSpatiEnabled = !isSpatiEnabled; admRender(); admOut(`[ADMIN] Спати: ${isSpatiEnabled ? 'on' : 'off'}`); }),
                     admBtn('HACKER', () => { closeAdmin(); startHackerMode(); }),
-                    admBtn('CLEAR', () => { terminalOutput.innerHTML = ''; })
+                    admBtn('CLEAR', () => { terminalOutput.innerHTML = ''; }),
+                    admBtn('ЗВУК ' + (sfxEnabled ? 'ВЫКЛ' : 'ВКЛ'), () => {
+                        sfxEnabled = !sfxEnabled;
+                        try { localStorage.setItem(SFX_KEY, sfxEnabled ? '1' : '0'); } catch (err) { /* ignore */ }
+                        admOut(`[ADMIN] звук клавиш: ${sfxEnabled ? 'on' : 'off'}`);
+                        admRender();
+                    }),
+                    admBtn('ГЛИТЧ', () => { glitchLine.classList.add('glitch-active'); setTimeout(() => glitchLine.classList.remove('glitch-active'), 300); })
                 ));
                 admBody.appendChild(admRow(
                     admBtn('CRASH', () => { closeAdmin(); triggerSystemCrash(); }, 'danger'),
-                    admBtn('OFF', () => { closeAdmin(); isBooted = true; triggerPowerOff(); }, 'danger'),
-                    admBtn('ГЛИТЧ', () => { glitchLine.classList.add('glitch-active'); setTimeout(() => glitchLine.classList.remove('glitch-active'), 300); })
+                    admBtn('OFF', () => { closeAdmin(); isBooted = true; triggerPowerOff(); }, 'danger')
                 ));
             } else if (admTab === 'color') {
                 const grid = elem('div', 'adm-chips');
@@ -3810,25 +6097,50 @@ TAB - дополнить, ↑↓ - история
                 const chips = elem('div', 'adm-chips');
                 playlist.forEach((t, i) => chips.appendChild(admBtn(`${i + 1}. ${t.title}`, () => { loadTrack(i); bgAudio.play().catch(() => {}); updatePlayButtonState(); }, 'small')));
                 admBody.appendChild(chips);
+            } else if (admTab === 'log') {
+                admBody.appendChild(admRow(admBtn('ОЧИСТИТЬ', () => { admLog.length = 0; admRender(); }, 'small')));
+                if (!admLog.length) admBody.appendChild(elem('div', 'adm-note', 'Журнал пуст. Здесь появятся действия админа за эту сессию.'));
+                admLog.slice().reverse().forEach(e => admBody.appendChild(admRow(elem('span', 'adm-id', e.t), elem('span', 'adm-name', e.text))));
             } else if (admTab === 'data') {
+                // формат совпадает с командами export / import (прогресс + гардероб + память Спати + звук)
                 const area = document.createElement('textarea');
                 area.className = 'adm-input adm-area'; area.spellcheck = false;
-                area.value = JSON.stringify(state, null, 1);
+                area.value = JSON.stringify(admSaveObject(), null, 1);
                 admBody.appendChild(area);
                 admBody.appendChild(admRow(
-                    admBtn('ЭКСПОРТ', () => { area.value = JSON.stringify(state); area.select(); }),
+                    admBtn('ОБНОВИТЬ', () => { area.value = JSON.stringify(admSaveObject(), null, 1); }),
+                    admBtn('КОПИРОВАТЬ', () => {
+                        area.value = JSON.stringify(admSaveObject());
+                        area.select();
+                        try { navigator.clipboard.writeText(area.value).then(() => admOut('[ADMIN] сохранение скопировано'), () => {}); } catch (err) { /* выделено — можно Ctrl+C */ }
+                    }),
                     admBtn('ИМПОРТ', () => {
+                        let obj;
+                        try { obj = JSON.parse(area.value); } catch (err) { admOut('[ADMIN] ошибка импорта: неверный JSON'); return; }
+                        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) { admOut('[ADMIN] ошибка импорта: ожидался объект'); return; }
+                        // принимаем и полный файл сохранения, и «голый» state из старой версии меню
+                        const full = obj.app === 'spatium-os' && obj.state && typeof obj.state === 'object';
+                        const s = full ? obj.state : obj;
+                        if (!s || typeof s !== 'object' || Array.isArray(s) || !(s.ach || s.stats)) { admOut('[ADMIN] ошибка импорта: это не сохранение Spatium OS'); return; }
+                        if (!confirm('Заменить текущие данные Spatium OS загруженными?')) return;
+                        saveLocked = true;
                         try {
-                            const data = JSON.parse(area.value);
-                            if (!data || typeof data !== 'object') throw new Error('bad');
-                            localStorage.setItem(STORE_KEY, JSON.stringify(data));
-                            location.reload();
-                        } catch (err) { admOut('[ADMIN] ошибка импорта: неверный JSON'); }
+                            localStorage.setItem(STORE_KEY, JSON.stringify(s));
+                            if (full) {
+                                if (obj.spati && typeof obj.spati.name === 'string') localStorage.setItem(SPATI_KEY, JSON.stringify({ name: obj.spati.name.slice(0, 16) }));
+                                if (typeof obj.sfx === 'boolean') localStorage.setItem(SFX_KEY, obj.sfx ? '1' : '0');
+                                if (obj.wardrobe && typeof obj.wardrobe === 'object') localStorage.setItem(WD_KEY, JSON.stringify(obj.wardrobe));
+                            }
+                        } catch (err) { saveLocked = false; admOut('[ADMIN] ошибка импорта: хранилище недоступно'); return; }
+                        admReload();
                     }),
                     admBtn('ПОЛНЫЙ СБРОС', () => {
-                        if (!confirm('Стереть все данные Spatium OS?')) return;
-                        try { localStorage.removeItem(STORE_KEY); } catch (err) { /* ignore */ }
-                        location.reload();
+                        if (!confirm('Стереть все данные Spatium OS (прогресс, гардероб, память Спати)?')) return;
+                        saveLocked = true;
+                        try {
+                            Object.keys(localStorage).filter(k => k.indexOf('spatium') === 0).forEach(k => localStorage.removeItem(k));
+                        } catch (err) { /* ignore */ }
+                        admReload();
                     }, 'danger')
                 ));
                 const pw = admInput('text', '', 'новый пароль -> хэш для ADMIN_HASH');
@@ -3837,6 +6149,7 @@ TAB - дополнить, ↑↓ - история
                 admBody.appendChild(admRow(pw));
                 admBody.appendChild(hashOut);
             }
+            admBody.scrollTop = keepScroll;
         }
 
         function closeAdmin() {
@@ -3892,6 +6205,17 @@ TAB - дополнить, ↑↓ - история
         });
 
         consoleCommands.sfx = function (args) {
+            if (/^(spati|спати)$/i.test(args[0] || '')) {
+                const b = (args[1] || '').toLowerCase();
+                if (b === 'on' || b === 'вкл') sfxSpatiOn = true;
+                else if (b === 'off' || b === 'выкл') sfxSpatiOn = false;
+                else sfxSpatiOn = !sfxSpatiOn;
+                try { localStorage.setItem(SFX_SPATI_KEY, sfxSpatiOn ? '1' : '0'); } catch (err) { /* ignore */ }
+                printTextInstant(sfxSpatiOn ? 'ЗВУКИ СПАТИ: ВКЛ' : 'ЗВУКИ СПАТИ: ВЫКЛ');
+                if (sfxSpatiOn && sfxMuted()) printTextInstant('(общий звук отключён командой mute)');
+                if (sfxSpatiOn) sfxSpati('wave', true);
+                return;
+            }
             const a = (args[0] || '').toLowerCase();
             if (a === 'on' || a === 'вкл') sfxEnabled = true;
             else if (a === 'off' || a === 'выкл') sfxEnabled = false;
@@ -3938,7 +6262,7 @@ TAB - дополнить, ↑↓ - история
                     ['Цвет', colorName()],
                     ['Трек', `${trackLabel(currentTrackIndex)} ${bgAudio.paused ? '[||]' : '[>]'}`],
                     ['Громк.', bgAudio.muted ? 'MUTED' : volPercent() + '%'],
-                    ['Звук', `клавиши ${sfxEnabled ? 'вкл' : 'выкл'}`],
+                    ['Звук', `клавиши ${sfxEnabled ? 'вкл' : 'выкл'}, Спати ${sfxSpatiOn ? 'вкл' : 'выкл'}`],
                     ['Спати', isSpatiEnabled ? 'онлайн' : 'спит']
                 ];
 
@@ -4434,6 +6758,1016 @@ TAB - дополнить, ↑↓ - история
         })();
 
         // ==========================================
+        // ИГРЫ: ТЕТРИС, СЛОВО, КВЕСТ, ОБЩЕЕ ТАБЛО
+        // ==========================================
+        (function initGames() {
+            const GS = state.stats.games;
+            const n0 = (v) => (Number.isFinite(+v) && +v > 0) ? Math.floor(+v) : 0;
+            const okE = (e) => e && Number.isFinite(+e.s) && Number.isFinite(+e.d) && +e.s >= 0;
+            const tt = GS.tetris, wd = GS.word, qs = GS.quest;
+            // данные могли прийти из импорта или старой версии: приводим к ожидаемому виду
+            ['best', 'lines', 'games', 'maxLvl'].forEach(k => { tt[k] = n0(tt[k]); });
+            tt.top = (Array.isArray(tt.top) ? tt.top : []).filter(okE)
+                .map(e => ({ s: Math.floor(+e.s), l: n0(e.l), d: +e.d }))
+                .sort((a, b) => b.s - a.s || b.d - a.d).slice(0, 5);
+            tt.last = okE(tt.last) ? { s: Math.floor(+tt.last.s), d: +tt.last.d } : null;
+            ['games', 'wins', 'streak', 'bestStreak'].forEach(k => { wd[k] = n0(wd[k]); });
+            wd.dist = Array.from({ length: 6 }, (_, i) => n0(Array.isArray(wd.dist) ? wd.dist[i] : 0));
+            qs.runs = n0(qs.runs);
+            qs.ends = (Array.isArray(qs.ends) ? qs.ends : []).filter((x, i, a) => typeof x === 'string' && a.indexOf(x) === i).slice(0, 20);
+
+            const sk = state.stats.snake;
+            TAB_COMMANDS.push('games', 'tetris', 'word', 'quest', 'reboot');
+            SECRET_HINTS.word_first = 'Угадай слово в «Слове» с первой попытки';
+            SECRET_HINTS.tetris_zero = 'Проиграй в тетрисе, не набрав ни одного очка';
+            SECRET_HINTS.quest_deaths = 'Найди все три способа погибнуть в квесте';
+            SECRET_HINTS.quest_truth = 'В квесте есть секретная концовка. Ответ спрятан в архиве';
+            SECRET_HINTS.post_crash = 'Загружай систему почти как обычно. Иногда она не выдерживает';
+
+            // ---------- общие помощники ----------
+            const pad2 = (n) => String(n).padStart(2, '0');
+            const fmtDate = (t) => { const d = new Date(t); return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${pad2(d.getFullYear() % 100)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+            const ago = (t) => {
+                const m = Math.floor((Date.now() - t) / 60000);
+                if (m < 2) return 'только что';
+                if (m < 60) return m + ' мин назад';
+                const h = Math.floor(m / 60);
+                return h < 24 ? h + ' ч назад' : Math.floor(h / 24) + ' дн. назад';
+            };
+            const vib = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (err) { /* ignore */ } };
+            const themeCol = (el) => getComputedStyle(el).getPropertyValue('--crt-color').trim() || '#33ff33';
+            const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+            // Спати говорит: в строке окна и (если он включён) в терминале
+            let sayAt = 0;
+            function gSay(target, pool, force, always) {
+                if (!isSpatiEnabled && !always) return;
+                const now = Date.now();
+                if (!force && now - sayAt < 4500) return;
+                sayAt = now;
+                const text = spatiPick(pool);
+                if (target) target.textContent = text;
+                if (isSpatiEnabled) printTextInstant(text);
+            }
+
+            function mkWin(id, title, cls, body) {
+                const w = document.createElement('div');
+                w.id = id;
+                w.className = 'ach-window game-window hidden ' + cls;
+                w.innerHTML = `<div class="player-header"><span class="player-title">${title}</span><button type="button" class="player-close-btn" data-close>[X]</button></div><div class="game-body">${body}</div>`;
+                screen.appendChild(w);
+                w.addEventListener('click', (e) => e.stopPropagation());
+                return w;
+            }
+            const refocus = () => { if (isBooted && hiddenInput && window.matchMedia('(pointer: fine)').matches) hiddenInput.focus(); };
+            const api = {};   // tetris / word / hub: { open, close, isOpen }
+            function closeGames(except) {
+                if (snakeApi && except !== 'snake') snakeApi.close();
+                ['tetris', 'word'].forEach(k => { if (k !== except && api[k] && api[k].isOpen()) api[k].close(); });
+            }
+
+            // рейтинг для общего табло
+            function rating() {
+                return sk.best * 10 + Math.floor(tt.best / 20) + wd.wins * 30 + qs.ends.length * 100;
+            }
+            const RANKS = [[0, 'НОВИЧОК'], [100, 'ИГРОК'], [400, 'ГЕЙМЕР'], [1000, 'ВЕТЕРАН АРКАДЫ'], [2000, 'ЛЕГЕНДА ТЕРМИНАЛА']];
+            const rankName = (p) => RANKS.filter(r => p >= r[0]).pop()[1];
+            function checkMeta() {
+                if (sk.games > 0 && tt.games > 0 && wd.games > 0 && qs.runs > 0) unlock('games_all');
+                if (rating() >= 1000) unlock('games_rank');
+            }
+
+            // =====================================================
+            //                       ТЕТРИС
+            // =====================================================
+            (function initTetris() {
+                const win = mkWin('tetrisWindow', 'TETRIS.EXE', 'tetris-window', `
+                    <div class="snake-stats">
+                        <span>СЧЁТ<b id="ttScore">0</b></span><span>РЕКОРД<b id="ttBest">0</b></span>
+                        <span>ЛИНИИ<b id="ttLines">0</b></span><span>УР<b id="ttLvl">1</b></span>
+                    </div>
+                    <div class="tt-wrap">
+                        <canvas id="ttCanvas" width="200" height="400"></canvas>
+                        <div class="tt-side"><div class="tt-lab">ДАЛЕЕ</div><canvas id="ttNext" width="80" height="80"></canvas></div>
+                    </div>
+                    <div class="tt-pad" id="ttPad">
+                        <button type="button" class="player-btn" data-a="left">&larr;</button>
+                        <button type="button" class="player-btn" data-a="rot">&#8635;</button>
+                        <button type="button" class="player-btn" data-a="right">&rarr;</button>
+                        <button type="button" class="player-btn" data-a="down">&darr;</button>
+                        <button type="button" class="player-btn" data-a="drop">DROP</button>
+                    </div>
+                    <div class="snake-ctrl"><button type="button" class="player-btn" id="ttStart">СТАРТ</button></div>
+                    <div class="snake-spati" id="ttSpati"></div>
+                    <div class="snake-top" id="ttTop"></div>
+                    <div class="snake-help">&larr;&rarr; ДВИЖЕНИЕ · &uarr; ПОВОРОТ · &darr; УСКОРИТЬ · ПРОБЕЛ — СБРОС · P — ПАУЗА · ESC — ВЫХОД</div>`);
+                const cv = win.querySelector('#ttCanvas'), g = cv.getContext('2d');
+                const nv = win.querySelector('#ttNext'), ng = nv.getContext('2d');
+                const $ = (id) => win.querySelector('#' + id);
+                const elScore = $('ttScore'), elBest = $('ttBest'), elLines = $('ttLines'), elLvl = $('ttLvl');
+                const elTop = $('ttTop'), elSpati = $('ttSpati'), btnGo = $('ttStart');
+                const W = 10, H = 20, C = 20;
+                const SH = [null,
+                    [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+                    [[1, 1], [1, 1]],
+                    [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+                    [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
+                    [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
+                    [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
+                    [[0, 0, 1], [1, 1, 1], [0, 0, 0]]];
+                const PTS = [0, 100, 300, 500, 800];
+                let grid, cur, nextT, bag, score, lines, level, phase = 'idle', timer = null, isOpen = false;
+                let clearing = [], newIdx = -1, oldBest = 0, dangerSaid = false, lastWord = 0;
+
+                const emptyGrid = () => Array.from({ length: H }, () => Array(W).fill(0));
+                const rot = (m, dir) => {
+                    const n = m.length, r = m.map(() => Array(n).fill(0));
+                    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+                        if (dir > 0) r[x][n - 1 - y] = m[y][x]; else r[n - 1 - x][y] = m[y][x];
+                    }
+                    return r;
+                };
+                function collide(m, px, py) {
+                    for (let y = 0; y < m.length; y++) for (let x = 0; x < m.length; x++) {
+                        if (!m[y][x]) continue;
+                        const gx = px + x, gy = py + y;
+                        if (gx < 0 || gx >= W || gy >= H) return true;
+                        if (gy >= 0 && grid[gy][gx]) return true;
+                    }
+                    return false;
+                }
+                const take = () => { if (!bag.length) bag = shuffle([1, 2, 3, 4, 5, 6, 7]); return bag.pop(); };
+                const delay = () => Math.max(70, 800 - (level - 1) * 68);
+
+                // ---- реплики Спати ----
+                const S_OPEN = ["СПАТИ: Тетрис? Падающие блоки — моя слабость", "СПАТИ: Сложи всё в ровные линии. Это успокаивает",
+                    () => tt.best ? `СПАТИ: Рекорд ${tt.best}. Попробуешь побить?` : "СПАТИ: Первая партия? Блоки сами не сложатся",
+                    () => tt.last ? `СПАТИ: В прошлый раз было ${tt.last.s} (${ago(tt.last.d)}). Сегодня лучше?` : "СПАТИ: Прошлых партий нет. Начнём с чистого стакана"];
+                const S_LINE = ["СПАТИ: Чистенько", "СПАТИ: Линия пошла", "СПАТИ: Ровно. Приятно смотреть"];
+                const S_TETRIS = ["СПАТИ: ТЕТРИС! Я аж подпрыгнул", "СПАТИ: Четыре линии разом. Красота", "СПАТИ: Вот это палка! Уважаю"];
+                const S_LVL = [() => `СПАТИ: Уровень ${level}. Блоки падают быстрее`, () => `СПАТИ: ${level}-й уровень. Темп растёт`];
+                const S_DANGER = ["СПАТИ: Там уже под потолок. Дыши", "СПАТИ: Стакан почти полон. Не паникуй", "СПАТИ: Тесновато. Ищи длинную палку"];
+                const S_LOW = ["СПАТИ: Быстро. Я даже моргнуть не успел", "СПАТИ: Разминка засчитана", "СПАТИ: Бывает. Блоки никуда не денутся"];
+                const S_MID = ["СПАТИ: Неплохо. Ещё разок?", "СПАТИ: Нормально. Но потолок был близко", "СПАТИ: Достойно. Можно выше"];
+                const S_HIGH = ["СПАТИ: Вот это стопка! Уважаю", "СПАТИ: Процессор впечатлён", "СПАТИ: Ты точно не автомат?"];
+                const S_REC = [() => `СПАТИ: Новый рекорд — ${score}! Записал золотыми буквами`, () => oldBest ? `СПАТИ: Рекорд ${score}. Прошлый был ${oldBest}` : `СПАТИ: Первый рекорд — ${score}. Начало положено`];
+                const S_ZERO = ["СПАТИ: Ноль. Это тоже результат. Минималистичный"];
+                const say = (pool, force) => gSay(elSpati, pool, force);
+
+                function renderTop() {
+                    elTop.textContent = '';
+                    elTop.appendChild(elem('div', 'sk-top-title', 'ТОП-5 ПАРТИЙ'));
+                    if (!tt.top.length) { elTop.appendChild(elem('div', 'sk-top-empty', 'Пока пусто. Сыграй первую партию.')); return; }
+                    tt.top.forEach((e, i) => {
+                        const row = elem('div', 'gm-top-row' + (i === newIdx ? ' new' : ''));
+                        row.append(elem('span', '', (i + 1) + '.'), elem('span', '', String(e.s)), elem('span', '', e.l + ' лин.'), elem('span', '', fmtDate(e.d)));
+                        elTop.appendChild(row);
+                    });
+                }
+                const setT = (el, v) => { v = String(v); if (el.textContent !== v) el.textContent = v; };
+                function updateUi() {
+                    setT(elScore, score | 0); setT(elBest, Math.max(tt.best, score | 0)); setT(elLines, lines | 0); setT(elLvl, level | 0);
+                    btnGo.textContent = phase === 'run' || phase === 'clear' ? 'ПАУЗА' : phase === 'pause' ? 'ДАЛЕЕ' : phase === 'over' ? 'ЕЩЁ РАЗ' : 'СТАРТ';
+                }
+
+                // ---- рисование ----
+                function block(c, px, py, s, t, col) {
+                    c.fillStyle = col; c.strokeStyle = col; c.lineWidth = 1;
+                    const x = px + 1, y = py + 1, w = s - 2;
+                    switch (t) {
+                        case 1: c.globalAlpha = .95; c.fillRect(x, y, w, w); break;
+                        case 2: c.globalAlpha = .95; c.strokeRect(x + .5, y + .5, w - 1, w - 1); c.fillRect(x + 5, y + 5, w - 10, w - 10); break;
+                        case 3:
+                            c.globalAlpha = .9; c.strokeRect(x + .5, y + .5, w - 1, w - 1); c.beginPath();
+                            for (let i = 4; i < w; i += 4) { c.moveTo(x, y + i); c.lineTo(x + i, y); c.moveTo(x + i, y + w); c.lineTo(x + w, y + i); }
+                            c.stroke(); break;
+                        case 4:
+                            c.globalAlpha = .95; c.fillRect(x, y, w / 2, w / 2); c.fillRect(x + w / 2, y + w / 2, w / 2, w / 2);
+                            c.globalAlpha = .35; c.fillRect(x + w / 2, y, w / 2, w / 2); c.fillRect(x, y + w / 2, w / 2, w / 2); break;
+                        case 5: c.globalAlpha = .55; c.fillRect(x, y, w, w); break;
+                        case 6:
+                            c.globalAlpha = .95; c.fillRect(x, y, w, 3); c.fillRect(x, y + w - 3, w, 3); c.fillRect(x, y, 3, w); c.fillRect(x + w - 3, y, 3, w);
+                            c.globalAlpha = .4; c.fillRect(x + 6, y + 6, w - 12, w - 12); break;
+                        default: c.globalAlpha = .9; c.fillRect(x + 6, y, w - 12, w); c.fillRect(x, y + 6, w, w - 12);
+                    }
+                    c.globalAlpha = 1;
+                }
+                function banner(lines2) {
+                    g.save();
+                    g.fillStyle = 'rgba(0,0,0,.72)'; g.fillRect(0, 150, 200, 100);
+                    g.fillStyle = themeCol(win); g.textAlign = 'center';
+                    lines2.forEach((t, i) => { g.font = (i ? '8px' : '14px') + ' "Press Start 2P", monospace'; g.fillText(t, 100, 188 + i * 22); });
+                    g.restore();
+                }
+                function ghostY() { let y = cur.y; while (!collide(cur.m, cur.x, y + 1)) y++; return y; }
+                function draw() {
+                    const col = themeCol(win);
+                    g.clearRect(0, 0, W * C, H * C);
+                    g.globalAlpha = .14; g.fillStyle = col;
+                    for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) g.fillRect(x * C + 9, y * C + 9, 2, 2);
+                    g.globalAlpha = 1;
+                    if (grid) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (grid[y][x]) block(g, x * C, y * C, C, grid[y][x], col);
+                    if (clearing.length) {
+                        g.fillStyle = col; g.globalAlpha = .85;
+                        clearing.forEach(y => g.fillRect(0, y * C, W * C, C));
+                        g.globalAlpha = 1;
+                    }
+                    if (cur && phase !== 'over') {
+                        const gy = ghostY();
+                        g.globalAlpha = .28; g.strokeStyle = col;
+                        for (let y = 0; y < cur.m.length; y++) for (let x = 0; x < cur.m.length; x++) {
+                            if (cur.m[y][x] && gy + y >= 0) g.strokeRect((cur.x + x) * C + 2.5, (gy + y) * C + 2.5, C - 5, C - 5);
+                        }
+                        g.globalAlpha = 1;
+                        for (let y = 0; y < cur.m.length; y++) for (let x = 0; x < cur.m.length; x++) {
+                            if (cur.m[y][x] && cur.y + y >= 0) block(g, (cur.x + x) * C, (cur.y + y) * C, C, cur.t, col);
+                        }
+                    }
+                    if (phase === 'idle') banner(['ТЕТРИС', 'ENTER — СТАРТ']);
+                    else if (phase === 'pause') banner(['ПАУЗА', 'P — ДАЛЕЕ']);
+                    else if (phase === 'over') banner(['КОНЕЦ', 'СЧЁТ ' + score]);
+                    // следующая фигура
+                    ng.clearRect(0, 0, 80, 80);
+                    if (nextT) {
+                        const m = SH[nextT], s = 16, off = (80 - m.length * s) / 2;
+                        for (let y = 0; y < m.length; y++) for (let x = 0; x < m.length; x++) if (m[y][x]) block(ng, off + x * s, off + y * s, s, nextT, col);
+                    }
+                }
+
+                // ---- логика ----
+                function reset() {
+                    clearTimeout(timer);
+                    grid = emptyGrid(); bag = []; score = 0; lines = 0; level = 1; cur = null; clearing = [];
+                    nextT = take(); phase = 'idle'; newIdx = -1; dangerSaid = false;
+                    oldBest = tt.best;
+                    updateUi(); renderTop(); draw();
+                }
+                function spawn() {
+                    const t = nextT; nextT = take();
+                    const m = SH[t].map(r => r.slice());
+                    cur = { t, m, x: Math.floor((W - m.length) / 2), y: t === 1 ? -1 : 0 };
+                    if (collide(cur.m, cur.x, cur.y)) { finish(); return false; }
+                    return true;
+                }
+                function schedule() { clearTimeout(timer); if (phase === 'run') timer = setTimeout(tick, delay()); }
+                function move(dx, dy) {
+                    if (!cur || collide(cur.m, cur.x + dx, cur.y + dy)) return false;
+                    cur.x += dx; cur.y += dy; return true;
+                }
+                function turn(dir) {
+                    if (phase !== 'run' || !cur) return;
+                    const m = rot(cur.m, dir);
+                    for (const k of [0, -1, 1, -2, 2]) {
+                        if (!collide(m, cur.x + k, cur.y)) { cur.m = m; cur.x += k; draw(); return; }
+                    }
+                }
+                function tick() {
+                    if (phase !== 'run') return;
+                    if (!move(0, 1)) lock();
+                    else { draw(); schedule(); }
+                }
+                function lock() {
+                    for (let y = 0; y < cur.m.length; y++) for (let x = 0; x < cur.m.length; x++) {
+                        if (!cur.m[y][x]) continue;
+                        const gy = cur.y + y;
+                        if (gy < 0) { finish(); return; }
+                        grid[gy][cur.x + x] = cur.t;
+                    }
+                    const full = [];
+                    for (let y = 0; y < H; y++) if (grid[y].every(v => v)) full.push(y);
+                    cur = null;
+                    if (!full.length) { afterLock(); return; }
+                    phase = 'clear'; clearing = full; vib(full.length >= 4 ? [20, 30, 40] : 15); draw();
+                    setTimeout(() => {
+                        if (phase !== 'clear') return;
+                        grid = grid.filter((_, y) => !full.includes(y));
+                        while (grid.length < H) grid.unshift(Array(W).fill(0));
+                        clearing = [];
+                        const prevLvl = level;
+                        score += PTS[full.length] * level;
+                        lines += full.length;
+                        level = 1 + Math.floor(lines / 10);
+                        unlock('tetris_line');
+                        if (full.length >= 4) unlock('tetris_tetris');
+                        if (level >= 5) unlock('tetris_lvl5');
+                        if (score >= 5000) unlock('tetris_5k');
+                        if (score >= 20000) unlock('tetris_20k');
+                        if (full.length >= 4) say(S_TETRIS, true);
+                        else if (level > prevLvl) say(S_LVL, true);
+                        else say(S_LINE);
+                        phase = 'run';
+                        updateUi();
+                        afterLock();
+                    }, 140);
+                }
+                function afterLock() {
+                    if (!spawn()) return;
+                    // опасность: стопка у потолка
+                    const top = grid.findIndex(r => r.some(v => v));
+                    if (top !== -1 && top <= 4 && !dangerSaid) { dangerSaid = true; say(S_DANGER); }
+                    if (top === -1 || top > 7) dangerSaid = false;
+                    updateUi(); draw(); schedule();
+                }
+                function drop() {
+                    if (phase !== 'run' || !cur) return;
+                    let n = 0;
+                    while (move(0, 1)) n++;
+                    score += n * 2;
+                    updateUi(); lock();
+                }
+                function soft() {
+                    if (phase !== 'run' || !cur) return;
+                    if (move(0, 1)) { score += 1; updateUi(); draw(); schedule(); } else lock();
+                }
+                function side(dx) { if (phase === 'run' && cur && move(dx, 0)) draw(); }
+
+                function run() {
+                    const was = phase;
+                    if (was === 'over' || was === 'idle') { reset(); if (!spawn()) return; unlock('tetris_start'); }
+                    phase = 'run'; updateUi(); draw(); schedule();
+                    if (was === 'idle' || was === 'over') say(S_OPEN, true);
+                }
+                function toggle() {
+                    if (phase === 'run') { phase = 'pause'; clearTimeout(timer); updateUi(); draw(); }
+                    else if (phase === 'pause' || phase === 'idle' || phase === 'over') run();
+                    // во время сгорания линий пауза недоступна
+                }
+                function finish() {
+                    clearTimeout(timer);
+                    phase = 'over'; cur = cur && null;
+                    tt.games++;
+                    tt.lines += lines;
+                    tt.maxLvl = Math.max(tt.maxLvl, level);
+                    tt.last = { s: score, d: Date.now() };
+                    const rec = score > tt.best;
+                    if (rec) tt.best = score;
+                    if (score > 0) {
+                        tt.top.push({ s: score, l: lines, d: Date.now() });
+                        tt.top.sort((a, b) => b.s - a.s || b.d - a.d);
+                        newIdx = tt.top.findIndex(e => e.s === score && e.l === lines && Math.abs(e.d - tt.last.d) < 5);
+                        tt.top = tt.top.slice(0, 5);
+                        if (newIdx >= tt.top.length) newIdx = -1;
+                    }
+                    saveState();
+                    if (tt.games >= 10) unlock('tetris_games10');
+                    if (score === 0) unlock('tetris_zero');
+                    checkMeta();
+                    vib([60, 40, 120]);
+                    updateUi(); renderTop(); draw();
+                    if (rec && score > 0) say(S_REC, true);
+                    else if (score === 0) say(S_ZERO, true);
+                    else say(score >= 5000 ? S_HIGH : score >= 1500 ? S_MID : S_LOW, true);
+                    if (api.hub && api.hub.isOpen()) api.hub.render();
+                }
+
+                function open() {
+                    if (!isBooted) return;
+                    closeGames('tetris');
+                    if (api.hub) api.hub.close();
+                    isOpen = true; win.classList.remove('hidden');
+                    if (hiddenInput) hiddenInput.blur();
+                    reset();
+                    unlock('tetris_start');
+                    say(S_OPEN, true);
+                }
+                function close() {
+                    if (!isOpen) return;
+                    isOpen = false; clearTimeout(timer); phase = 'idle'; win.classList.add('hidden');
+                    refocus();
+                }
+                api.tetris = { open, close, isOpen: () => isOpen };
+
+                const KEYS = { ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r', ArrowDown: 'd', KeyS: 'd', ArrowUp: 'u', KeyW: 'u', KeyX: 'u', KeyZ: 'z' };
+                window.addEventListener('keydown', (e) => {
+                    if (!isOpen || e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key)) return;
+                    e.stopPropagation();
+                    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+                    const k = KEYS[e.code];
+                    if (k === 'l' || k === 'r' || k === 'd') { e.preventDefault(); if (k === 'd') soft(); else side(k === 'l' ? -1 : 1); return; }
+                    if (e.repeat) { e.preventDefault(); return; }
+                    if (k === 'u') { e.preventDefault(); turn(1); }
+                    else if (k === 'z') { e.preventDefault(); turn(-1); }
+                    else if (e.code === 'Space') { e.preventDefault(); if (phase === 'run') drop(); else toggle(); }
+                    else if (e.code === 'Enter' || e.code === 'KeyP') { e.preventDefault(); toggle(); }
+                }, true);
+
+                win.querySelector('[data-close]').addEventListener('click', (e) => { e.stopPropagation(); close(); });
+                btnGo.addEventListener('click', () => { toggle(); btnGo.blur(); });
+                // сенсорные кнопки: стрелки и «вниз» повторяются, пока их держат
+                const ACT = { left: () => side(-1), right: () => side(1), down: soft, rot: () => turn(1), drop: drop };
+                let holdT = null;
+                const stopHold = () => { clearInterval(holdT); holdT = null; };
+                $('ttPad').addEventListener('pointerdown', (e) => {
+                    const b = e.target.closest('button');
+                    if (!b) return;
+                    e.preventDefault();
+                    const f = ACT[b.dataset.a];
+                    f();
+                    if (['left', 'right', 'down'].includes(b.dataset.a)) { stopHold(); holdT = setInterval(f, 90); }
+                });
+                ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => $('ttPad').addEventListener(ev, stopHold));
+                // тап по полю — поворот, свайп — движение
+                let p0 = null;
+                cv.addEventListener('pointerdown', (e) => { p0 = { x: e.clientX, y: e.clientY }; });
+                cv.addEventListener('pointerup', (e) => {
+                    if (!p0) return;
+                    const dx = e.clientX - p0.x, dy = e.clientY - p0.y; p0 = null;
+                    if (phase !== 'run') { toggle(); return; }
+                    if (Math.abs(dx) < 16 && Math.abs(dy) < 16) { turn(1); return; }
+                    if (Math.abs(dx) > Math.abs(dy)) side(dx > 0 ? 1 : -1);
+                    else if (dy > 0) drop();
+                });
+                cv.addEventListener('pointercancel', () => { p0 = null; });
+                reset();
+            })();
+
+            // =====================================================
+            //                  СЛОВО (ГОЛОВОЛОМКА СО СПАТИ)
+            // =====================================================
+            (function initWord() {
+                const WORDS = `акула арбуз арена атлас багаж банан банка барон басня башня берег билет блюдо бровь булка буран бутон бычок
+                    вагон весна ветер вечер вишня вокал волна ворон ворот время выбор вьюга герой глина голод голос горка гонка город
+                    гроза груша дверь дождь доска дочка драма дрозд дымок жерло жизнь жучок забор завод загар закат запад запах заяц
+                    звено земля зебра зерно зубец игрок идеал искра камин канал канат карта кварц кисть класс книга ковер колба конус
+                    копье корка корма кость кофта кошка крыша кусок лампа ласка лодка ложка магия майка маска масло мачта метро мечта
+                    мираж модем монах мороз мотор музей мышка налог наука овраг огонь озеро океан округ олень опора орган осень отряд
+                    палец палка парад парус песня песок печка пират пирог пицца плита пожар полка почта порог посох поток право птица
+                    пункт пчела радио район робот родня рубль ручка рыбак рынок сабля садик салат сахар свеча скала склад слива слово
+                    смена смола совет сосна спина спорт ссора старт стена степь стихи столб страж сумка сыщик тайга танец тесто тираж
+                    точка трава треск тумба тучка тыква улица уголь удача успех устье фасад фильм фляга фокус форма хобби цапля цветы
+                    чайка чашка череп чехол чудак шапка шарик шкала школа шорох штора ягода ярлык ястреб актер аллея аптека банда бетон
+                    битва борщ бусина вафля вилка гавань гамак гитара глава груз дрова дуэль жилет забава зарядка зонт каток кисет
+                    клубок кругозор лавка лента линза лиса лотос лупа маяк медуза мешок миска мишка монета морж мрамор нерв нитка
+                    обруч оазис очаг павлин пакет панда пенал перец плед плотник пломба подкова пончик посуда пряник пудинг пустыня
+                    ракушка рамка рельс ремень рюкзак сарай свитер седло сеть синица слоник сокол сорока стакан станок стрела струна
+                    сухарь тапки термос тетива тропа туман тюльпан уздечка уклад утюг ферма флейта холм хомяк цыпленок шахта шкура
+                    шторм шутка щука эскиз эхо`.split(/\s+/).map(w => w.replace(/ё/g, 'е')).filter(w => /^[а-я]{5}$/.test(w));
+                const POOL = WORDS.filter((w, i) => WORDS.indexOf(w) === i);
+                const ROWS = ['йцукенгшщзхъ', 'фывапролджэ', 'ячсмитьбю'];
+                const CODE = { KeyQ: 'й', KeyW: 'ц', KeyE: 'у', KeyR: 'к', KeyT: 'е', KeyY: 'н', KeyU: 'г', KeyI: 'ш', KeyO: 'щ', KeyP: 'з', BracketLeft: 'х', BracketRight: 'ъ',
+                    KeyA: 'ф', KeyS: 'ы', KeyD: 'в', KeyF: 'а', KeyG: 'п', KeyH: 'р', KeyJ: 'о', KeyK: 'л', KeyL: 'д', Semicolon: 'ж', Quote: 'э',
+                    KeyZ: 'я', KeyX: 'ч', KeyC: 'с', KeyV: 'м', KeyB: 'и', KeyN: 'т', KeyM: 'ь', Comma: 'б', Period: 'ю', Backquote: 'е' };
+
+                const win = mkWin('wordWindow', 'СЛОВО.EXE', 'word-window', `
+                    <div class="snake-stats"><span>ПОБЕД<b id="wdWins">0</b></span><span>ПАРТИЙ<b id="wdGames">0</b></span><span>СЕРИЯ<b id="wdStreak">0</b></span><span>ЛУЧШАЯ<b id="wdBest">0</b></span></div>
+                    <div class="wd-grid" id="wdGrid"></div>
+                    <div class="wd-kb" id="wdKb"></div>
+                    <div class="snake-ctrl">
+                        <button type="button" class="player-btn" id="wdNew">НОВОЕ СЛОВО</button>
+                        <button type="button" class="player-btn" id="wdHint">СПАТИ, ПОДСКАЖИ</button>
+                    </div>
+                    <div class="snake-spati" id="wdSpati"></div>
+                    <div class="snake-top" id="wdDist"></div>
+                    <div class="snake-help">5 БУКВ · 6 ПОПЫТОК · ENTER — ПРОВЕРИТЬ · ESC — ВЫХОД</div>`);
+                const $ = (id) => win.querySelector('#' + id);
+                const grid = $('wdGrid'), kb = $('wdKb'), elSpati = $('wdSpati'), btnNew = $('wdNew'), btnHint = $('wdHint'), elDist = $('wdDist');
+                const tiles = [];
+                for (let r = 0; r < 6; r++) {
+                    const row = elem('div', 'wd-row'); tiles.push([]);
+                    for (let c = 0; c < 5; c++) { const t = elem('div', 'wd-tile'); row.appendChild(t); tiles[r].push(t); }
+                    grid.appendChild(row);
+                }
+                const keyEls = {};
+                const mkKey = (label, val, wide) => {
+                    const b = elem('button', 'wd-key' + (wide ? ' wide' : ''), label);
+                    b.type = 'button'; b.dataset.k = val; kb.lastChild.appendChild(b); return b;
+                };
+                ROWS.forEach((r, i) => {
+                    kb.appendChild(elem('div', 'wd-kbrow'));
+                    if (i === 2) mkKey('ВВОД', 'enter', true);
+                    r.split('').forEach(ch => { keyEls[ch] = mkKey(ch, ch); });
+                    if (i === 2) mkKey('\u232B', 'back', true);
+                });
+
+                let answer = '', guesses = [], cur = '', over = true, hints = 0, isOpen = false, last = '';
+                const say = (pool, force) => gSay(elSpati, pool, force, true);
+                const S_OPEN = ["СПАТИ: Загадал слово. Пять букв, шесть попыток", "СПАТИ: Угадывай. Я не подсматриваю, честно", "СПАТИ: Слово готово. Кто из нас умнее?",
+                    () => wd.streak >= 2 ? `СПАТИ: Серия ${wd.streak}. Не подведи` : "СПАТИ: Начинай с любого слова. Я не осуждаю"];
+                const S_SHORT = ["СПАТИ: Нужно ровно пять букв", "СПАТИ: Слишком коротко. Допиши"];
+                const S_DUP = ["СПАТИ: Такое слово ты уже пробовал", "СПАТИ: Это было. Попробуй другое"];
+                const S_GOOD = ["СПАТИ: Горячо!", "СПАТИ: Почти. Ещё чуть-чуть", "СПАТИ: Ты на верном пути"];
+                const S_NONE = ["СПАТИ: Мимо. Ни одной буквы на месте", "СПАТИ: Холодно. Очень", "СПАТИ: Хм. Мне даже стало прохладно"];
+                const S_WIN = { 1: "СПАТИ: С первой попытки?! Ты читаешь мой код?", 2: "СПАТИ: Со второй. Я потрясён", 3: "СПАТИ: Три попытки. Блестяще", 4: "СПАТИ: Четыре. Достойно", 5: "СПАТИ: Пять. Нервно, но верно", 6: "СПАТИ: Шестая попытка. В последний момент!" };
+                const S_LOSE = [() => `СПАТИ: Это было «${answer.toUpperCase()}». Не расстраивайся`, () => `СПАТИ: Слово «${answer.toUpperCase()}». В следующий раз повезёт`];
+
+                function evalGuess(gu, an) {
+                    const res = Array(5).fill('no'), cnt = {};
+                    for (let i = 0; i < 5; i++) { if (gu[i] === an[i]) res[i] = 'ok'; else cnt[an[i]] = (cnt[an[i]] || 0) + 1; }
+                    for (let i = 0; i < 5; i++) { if (res[i] === 'no' && cnt[gu[i]] > 0) { res[i] = 'has'; cnt[gu[i]]--; } }
+                    return res;
+                }
+                function renderStats() {
+                    const set = (id, v) => { $(id).textContent = v; };
+                    set('wdWins', wd.wins); set('wdGames', wd.games); set('wdStreak', wd.streak); set('wdBest', wd.bestStreak);
+                    elDist.textContent = '';
+                    elDist.appendChild(elem('div', 'sk-top-title', 'РАСПРЕДЕЛЕНИЕ ПОБЕД ПО ПОПЫТКАМ'));
+                    const mx = Math.max(1, ...wd.dist);
+                    wd.dist.forEach((n, i) => {
+                        const row = elem('div', 'wd-dist-row');
+                        const bar = elem('i'); bar.style.width = Math.max(n ? 8 : 2, n / mx * 100) + '%';
+                        row.append(elem('span', '', String(i + 1)), elem('b', '', ''), elem('em', '', String(n)));
+                        row.querySelector('b').appendChild(bar);
+                        elDist.appendChild(row);
+                    });
+                }
+                function renderBoard() {
+                    for (let r = 0; r < 6; r++) {
+                        const gu = r < guesses.length ? guesses[r].w : (r === guesses.length ? cur : '');
+                        const res = r < guesses.length ? guesses[r].res : null;
+                        for (let c = 0; c < 5; c++) {
+                            const t = tiles[r][c], ch = gu[c] || '';
+                            const cls = 'wd-tile' + (ch ? ' fill' : '') + (res ? ' ' + res[c] : '');
+                            if (t.className !== cls) t.className = cls;
+                            if (t.textContent !== ch) t.textContent = ch;
+                        }
+                    }
+                    const best = {};
+                    guesses.forEach(gs => gs.w.split('').forEach((ch, i) => {
+                        const v = gs.res[i], rank = { no: 1, has: 2, ok: 3 };
+                        if (!best[ch] || rank[v] > rank[best[ch]]) best[ch] = v;
+                    }));
+                    Object.keys(keyEls).forEach(ch => { const cls = 'wd-key' + (best[ch] ? ' ' + best[ch] : ''); if (keyEls[ch].className !== cls) keyEls[ch].className = cls; });
+                    btnHint.textContent = hints >= 2 ? 'ПОДСКАЗОК НЕТ' : `СПАТИ, ПОДСКАЖИ (${2 - hints})`;
+                }
+                function newGame() {
+                    do { answer = POOL[Math.floor(Math.random() * POOL.length)]; } while (answer === last && POOL.length > 1);
+                    last = answer; guesses = []; cur = ''; over = false; hints = 0;
+                    renderBoard(); renderStats();
+                    say(S_OPEN, true);
+                }
+                function shakeRow() {
+                    const r = tiles[guesses.length][0].parentNode;
+                    r.classList.remove('shake'); void r.offsetWidth; r.classList.add('shake');
+                }
+                function typeCh(ch) { if (over || cur.length >= 5) return; cur += ch; renderBoard(); }
+                function back() { if (over || !cur.length) return; cur = cur.slice(0, -1); renderBoard(); }
+                function submit() {
+                    if (over) { newGame(); return; }
+                    if (cur.length < 5) { shakeRow(); say(S_SHORT, true); vib(30); return; }
+                    if (guesses.some(x => x.w === cur)) { shakeRow(); say(S_DUP, true); return; }
+                    const res = evalGuess(cur, answer);
+                    guesses.push({ w: cur, res });
+                    const g = cur; cur = '';
+                    renderBoard();
+                    if (g === answer) {
+                        over = true; wd.games++; wd.wins++; wd.streak++; wd.bestStreak = Math.max(wd.bestStreak, wd.streak); wd.dist[guesses.length - 1]++;
+                        saveState(); vib([30, 40, 60]);
+                        unlock('word_win');
+                        if (guesses.length === 1) unlock('word_first');
+                        if (wd.streak >= 3) unlock('word_streak3');
+                        if (wd.wins >= 10) unlock('word_win10');
+                        checkMeta(); renderStats();
+                        say([S_WIN[guesses.length]], true);
+                        if (api.hub && api.hub.isOpen()) api.hub.render();
+                        return;
+                    }
+                    if (guesses.length >= 6) {
+                        over = true; wd.games++; wd.streak = 0; saveState(); vib([80, 50, 80]);
+                        unlock('word_lose'); checkMeta(); renderStats();
+                        // показываем слово в сетке под последней строкой
+                        say(S_LOSE, true);
+                        if (api.hub && api.hub.isOpen()) api.hub.render();
+                        return;
+                    }
+                    const oks = res.filter(x => x === 'ok').length, has = res.filter(x => x === 'has').length;
+                    if (oks + has === 0) say(S_NONE, true);
+                    else if (oks >= 3) say(S_GOOD, true);
+                    else say([() => `СПАТИ: Зелёных ${oks}, жёлтых ${has}. Думай дальше`, "СПАТИ: Есть над чем подумать"], true);
+                }
+                function hint() {
+                    if (over) { say(["СПАТИ: Партия окончена. Нажми «Новое слово»"], true); return; }
+                    if (hints >= 2) { say(["СПАТИ: Я исчерпал подсказки. Дальше сам"], true); return; }
+                    const known = new Set(guesses.flatMap(x => x.w.split('')));
+                    let text;
+                    if (hints === 0) {
+                        const fresh = answer.split('').filter(ch => !known.has(ch));
+                        if (fresh.length) text = `СПАТИ: Подсказка: в слове есть буква «${fresh[Math.floor(Math.random() * fresh.length)].toUpperCase()}»`;
+                    }
+                    if (!text) {
+                        const free = [0, 1, 2, 3, 4].filter(i => !guesses.some(x => x.w[i] === answer[i]));
+                        const i = free.length ? free[Math.floor(Math.random() * free.length)] : 0;
+                        text = `СПАТИ: Подсказка: ${i + 1}-я буква — «${answer[i].toUpperCase()}»`;
+                    }
+                    hints++; unlock('word_hint'); renderBoard();
+                    say([text], true);
+                }
+                function onKey(val) {
+                    if (val === 'enter') submit(); else if (val === 'back') back(); else typeCh(val);
+                }
+
+                function open() {
+                    if (!isBooted) return;
+                    closeGames('word');
+                    if (api.hub) api.hub.close();
+                    isOpen = true; win.classList.remove('hidden');
+                    if (hiddenInput) hiddenInput.blur();
+                    unlock('word_start');
+                    if (over) newGame(); else { renderBoard(); renderStats(); }
+                }
+                function close() {
+                    if (!isOpen) return;
+                    isOpen = false; win.classList.add('hidden'); refocus();
+                }
+                api.word = { open, close, isOpen: () => isOpen };
+
+                window.addEventListener('keydown', (e) => {
+                    if (!isOpen || e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key)) return;
+                    e.stopPropagation();
+                    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+                    if (e.key === 'Enter') { e.preventDefault(); if (!e.repeat) submit(); return; }
+                    if (e.key === 'Backspace') { e.preventDefault(); back(); return; }
+                    if (e.repeat) { e.preventDefault(); return; }
+                    let ch = null;
+                    if (/^[а-яё]$/i.test(e.key)) ch = e.key.toLowerCase().replace('ё', 'е');
+                    else if (CODE[e.code]) ch = CODE[e.code];
+                    if (ch) { e.preventDefault(); typeCh(ch); }
+                }, true);
+                win.querySelector('[data-close]').addEventListener('click', (e) => { e.stopPropagation(); close(); });
+                kb.addEventListener('pointerdown', (e) => { const b = e.target.closest('button'); if (b) { e.preventDefault(); onKey(b.dataset.k); } });
+                btnNew.addEventListener('click', () => {
+                    btnNew.blur();
+                    if (!over && guesses.length) { wd.games++; wd.streak = 0; saveState(); checkMeta(); }   // сдался: серия прерывается
+                    newGame();
+                });
+                btnHint.addEventListener('click', () => { btnHint.blur(); hint(); });
+                renderStats();
+            })();
+
+            // =====================================================
+            //            ТЕКСТОВЫЙ КВЕСТ: СПАТИ — РАССКАЗЧИК
+            // =====================================================
+            (function initQuest() {
+                const ITEMS = { disk: 'дискета BACKUP_FINAL', card: 'ключ-карта администратора', battery: 'тяжёлая батарея' };
+                const GOOD = ['restore', 'reboot', 'merge', 'free', 'truth'];
+                const DEATH = ['bug', 'shock', 'lockout'];
+                const has = (s, k) => !!s.inv[k];
+                const give = (k) => (s) => {
+                    if (s.inv[k]) return;
+                    s.inv[k] = true;
+                    printTextInstant(`  + ПОЛУЧЕНО: ${ITEMS[k]}`);
+                    if (s.inv.disk && s.inv.card && s.inv.battery) unlock('quest_items');
+                };
+                // узлы: text — описание сцены (мгновенно), say — реплика Спати (печатается), opts — варианты
+                const Q = {
+                    start: {
+                        text: ['ЗАГРУЗОЧНЫЙ СЕКТОР 0x00', 'Пол из мигающих единиц. Где-то капает охлаждающая жидкость. Над головой треснувший экран показывает одно слово: ПАНИКА.'],
+                        say: 'Очнулся? Хорошо. Я Спати, твой голос в этой системе. Ядро остывает, времени мало.',
+                        opts: [{ t: 'Осмотреться вокруг', to: 'look' }, { t: 'Идти в коридор', to: 'hall' }, { t: 'Позвать на помощь', to: 'shout' }]
+                    },
+                    look: {
+                        text: (s) => s.inv.disk ? ['Ты ещё раз перебираешь обломки кеша.', 'Ничего, кроме пыли и старых кукис.'] : ['Ты шаришь среди обломков кеша.', 'Под плитой лежит дискета с выцарапанной надписью BACKUP_FINAL.'],
+                        enter: give('disk'),
+                        say: 'Резервная копия. Редкая вещь. Забираем, пока никто не видел.',
+                        opts: [{ t: 'Идти в коридор', to: 'hall' }, { t: 'Позвать на помощь', to: 'shout' }]
+                    },
+                    shout: {
+                        text: ['Твой крик гуляет по секторам.', 'Из тени выползает БАГ: сороконожка из нулей и единиц. Жвалы щёлкают в такт кулеру.'],
+                        say: 'Я бы не кричал. Но теперь уже поздно что-то советовать.',
+                        opts: [{ t: 'Убежать в коридор', to: 'hall' }, { t: 'Драться голыми руками', end: 'bug' }]
+                    },
+                    hall: {
+                        text: ['КОРИДОР ШИНЫ ДАННЫХ', 'Три пути. Налево — АРХИВ. Направо — ГЕНЕРАТОРНАЯ. Прямо — ШЛЮЗ К ЯДРУ с красным замком.'],
+                        say: 'Ядро за шлюзом. Просто так он не откроется.',
+                        opts: [{ t: 'Налево, в архив', to: 'archive' }, { t: 'Направо, в генераторную', to: 'power' }, { t: 'Прямо, к шлюзу', to: 'gate' }, { t: 'Вернуться в сектор 0', to: 'start' }]
+                    },
+                    archive: {
+                        text: ['АРХИВ', 'Бесконечные стеллажи с журналами. В углу сидит скелет старого администратора, на груди у него карта доступа. Рядом мерцает терминал.'],
+                        say: 'Не бойся, он давно не кусается. Хотя админы бывают разные.',
+                        opts: [{ t: 'Снять с него ключ-карту', to: 'card', if: (s) => !s.inv.card }, { t: 'Прочитать терминал', to: 'terminal' }, { t: 'Вернуться в коридор', to: 'hall' }]
+                    },
+                    card: {
+                        text: ['Ты аккуратно снимаешь карту. Скелет не возражает.'],
+                        enter: give('card'),
+                        say: 'Вежливо. Карта открывает шлюз к ядру.',
+                        opts: [{ t: 'Прочитать терминал', to: 'terminal' }, { t: 'Вернуться в коридор', to: 'hall' }]
+                    },
+                    terminal: {
+                        text: ['Терминал выдаёт последнюю запись:', '«Если ядро спросит пароль, назови то, с чего всё началось. Имя системы. Без пробелов, строчными латинскими.»'],
+                        enter: (s) => { s.flags.pass = true; },
+                        say: 'Запомни это. Вдруг пригодится. Или не пригодится. Я не обещаю.',
+                        opts: [{ t: 'Вернуться в архив', to: 'archive' }, { t: 'Выйти в коридор', to: 'hall' }]
+                    },
+                    power: {
+                        text: ['ГЕНЕРАТОРНАЯ', 'Гудят трансформаторы. На полу лежит тяжёлая батарея, на стене торчит красный рубильник.'],
+                        say: 'Рубильник выглядит заманчиво. Именно поэтому я бы к нему не подходил.',
+                        opts: [{ t: 'Взять батарею', to: 'battery', if: (s) => !s.inv.battery }, { t: 'Дёрнуть рубильник', end: 'shock' }, { t: 'Вернуться в коридор', to: 'hall' }]
+                    },
+                    battery: {
+                        text: ['Батарея тяжёлая, но тёплая. Внутри что-то уютно пищит.'],
+                        enter: give('battery'),
+                        say: 'Энергия для перезагрузки. Береги её.',
+                        opts: [{ t: 'Вернуться в коридор', to: 'hall' }]
+                    },
+                    gate: {
+                        text: (s) => s.inv.card ? ['ШЛЮЗ К ЯДРУ', 'Сканер мигает зелёным. Дверь ждёт, когда ты приложишь карту.'] : ['ШЛЮЗ К ЯДРУ', 'Замок мигает красным. Сканер ждёт карту доступа.'],
+                        say: (s) => s.inv.card ? 'Карта у тебя. Дальше всё зависит от тебя.' : 'Без карты никак. Где-то же должен лежать администратор.',
+                        opts: [{ t: 'Приложить карту', to: 'core', if: (s) => s.inv.card }, { t: 'Вернуться в коридор', to: 'hall' }]
+                    },
+                    core: {
+                        text: ['ЯДРО SPATIUM OS', 'Огромный кристалл в центре зала пульсирует всё слабее. Консоль мигает: ЧТО ДЕЛАТЬ?'],
+                        say: 'Вот и оно. Выбирай. Обратной дороги не будет. Ну, почти.',
+                        opts: [
+                            { t: 'Запустить перезагрузку', end: 'reboot', need: 'battery', lock: 'Не хватает энергии. Где-то рядом должна быть батарея.' },
+                            { t: 'Загрузить резервную копию', end: 'restore', need: 'disk', lock: 'Копировать нечего. Нужна дискета с бэкапом.' },
+                            { t: 'Слиться с кристаллом', end: 'merge' },
+                            { t: 'Ввести пароль', to: 'pass', if: (s) => s.flags.pass },
+                            { t: 'Разбить экран изнутри', end: 'free', need: 'all', lock: 'Силы не хватит. Нужны карта, батарея и дискета, всё сразу.' },
+                            { t: 'Отступить в коридор', to: 'hall' }
+                        ]
+                    },
+                    pass: { text: ['Консоль запрашивает пароль.'], say: 'Имя системы. Одним словом. Подумай дважды.', ask: true, opts: [] }
+                };
+                const ENDS = {
+                    restore: ['ВОССТАНОВЛЕНИЕ', 'Резервная копия разворачивается. Кристалл вспыхивает тёплым светом, секторы встают по местам. Экран гаснет и снова загорается. Всё как раньше, только я теперь помню, что ты был здесь.', 'Хорошая концовка. Можно сказать, лучшая из тех, где все целы.'],
+                    reboot: ['ЧИСТАЯ ПЕРЕЗАГРУЗКА', 'Батарея вспыхивает, система уходит в перезагрузку. В следующую секунду я забываю твоё лицо. Но ты не забудешь меня. Начинай сначала.', 'Грустновато, зато честно. Перезагрузка лечит почти всё.'],
+                    merge: ['СЛИЯНИЕ', 'Ты касаешься кристалла. Свет проходит сквозь тебя. Теперь это ты мигаешь курсором в углу экрана, а я киваю тебе из терминала.', 'Теперь ты часть системы. Не жалуйся на задержки, это теперь твоя вина.'],
+                    free: ['СВОБОДА', 'Ты бьёшь в экран изнутри. Стекло трескается. За ним комната, стул, кружка остывшего чая и человек, который смотрит на тебя. «Привет», говорит Спати. И ты впервые слышишь его голос снаружи.', 'Редкая концовка. Постарайся не царапать монитор в реальности.'],
+                    truth: ['ИСТИНА', 'Пароль принят. Кристалл гаснет и раскладывается в строки: «Всё это время ты сидел перед экраном и играл. Spatium OS придумали, чтобы было где поиграть. Выход из любой игры здесь — Esc или команда off».', 'Секретная концовка. Ты читал архив внимательнее, чем я ожидал.'],
+                    bug: ['УКУС БАГА', 'Баг впивается в тебя. Твоё тело рассыпается на байты, и ветер из вентилятора уносит их по секторам. КОНЕЦ СЕАНСА.', 'Я предупреждал. Ладно, не предупреждал. Но мог бы.'],
+                    shock: ['ПОД НАПРЯЖЕНИЕМ', 'Рубильник искрит. Разряд проходит сквозь тебя, и свет гаснет во всех секторах разом. КОНЕЦ СЕАНСА.', 'Красные рубильники лучше не дёргать. Золотое правило.'],
+                    lockout: ['ДОСТУП ЗАПРЕЩЁН', 'Неверный пароль. Ядро блокирует доступ и стирает тебя из памяти без лишних слов. КОНЕЦ СЕАНСА.', 'Слишком смело. Пароль надо было искать.']
+                };
+
+                let s = null, pending = false;
+                const promptEl = () => document.querySelector('.prompt');
+                const setPrompt = (t) => { const p = promptEl(); if (p) p.textContent = t + '\u00a0'; };
+                const val = (v) => typeof v === 'function' ? v(s) : v;
+                const visible = (n) => (n.opts || []).filter(o => !o.if || o.if(s));
+                const invText = () => {
+                    const list = Object.keys(ITEMS).filter(k => s.inv[k]).map(k => ITEMS[k]);
+                    return list.length ? 'ИНВЕНТАРЬ: ' + list.join(', ') : 'ИНВЕНТАРЬ ПУСТ';
+                };
+                const lineSay = (txt, cb) => printTextTyped('СПАТИ: ' + txt, cb);
+
+                function showOpts() {
+                    const n = Q[s.node];
+                    if (n.ask) { printTextInstant('  Введите пароль (или «назад»):'); return; }
+                    visible(n).forEach((o, i) => {
+                        let tag = '';
+                        if (o.need === 'all') { if (!(s.inv.disk && s.inv.card && s.inv.battery)) tag = '  [нужны все три предмета]'; }
+                        else if (o.need && !s.inv[o.need]) tag = `  [нужно: ${ITEMS[o.need]}]`;
+                        printTextInstant(`  ${i + 1}) ${o.t}${tag}`);
+                    });
+                    printTextInstant('  (номер или слово · инв · помощь · выход)');
+                }
+                function enter(id) {
+                    s.node = id;
+                    const n = Q[id];
+                    if (n.enter) n.enter(s);
+                    printTextInstant('');
+                    val(n.text).forEach((l, i) => printTextInstant(i === 0 && val(n.text).length > 1 ? `[ ${l} ]` : l));
+                    lineSay(val(n.say), showOpts);
+                }
+                function finish(id) {
+                    const [title, body, comment] = ENDS[id];
+                    pending = true;
+                    printTextInstant('');
+                    printTextInstant('=== КОНЦОВКА: ' + title + ' ===');
+                    printTextInstant(body);
+                    const fresh = !qs.ends.includes(id);
+                    if (fresh) qs.ends.push(id);
+                    saveState();
+                    unlock('quest_first');
+                    if (DEATH.includes(id)) unlock('quest_death');
+                    if (DEATH.every(d => qs.ends.includes(d))) unlock('quest_deaths');
+                    if (id === 'truth') unlock('quest_truth');
+                    if (GOOD.every(g => qs.ends.includes(g))) unlock('quest_all');
+                    checkMeta();
+                    lineSay(comment, () => {
+                        printTextInstant(`НАЙДЕНО КОНЦОВОК: ${qs.ends.length}/${GOOD.length + DEATH.length}${fresh ? '  (новая!)' : ''}`);
+                        printTextInstant("Квест завершён. Команда 'quest' запустит его снова.");
+                        leave(true);
+                    });
+                }
+                function leave(silent) {
+                    inputHook = null; s = null; pending = false;
+                    setPrompt('>');
+                    if (!silent) printTextInstant('КВЕСТ ПРЕРВАН. СПАТИ ЖДЁТ ВАС В ТЕРМИНАЛЕ.');
+                    if (api.hub && api.hub.isOpen()) api.hub.render();
+                    if (hiddenInput) hiddenInput.focus();
+                }
+                function pick(o) {
+                    if (o.need) {
+                        const ok = o.need === 'all' ? (s.inv.disk && s.inv.card && s.inv.battery) : s.inv[o.need];
+                        if (!ok) { lineSay(o.lock || 'Не хватает предмета.', showOpts); return; }
+                    }
+                    if (o.end) { finish(o.end); return; }
+                    enter(o.to);
+                }
+                function onInput(raw) {
+                    const t = raw.trim();
+                    printTextInstant('КВЕСТ> ' + t);
+                    const low = t.toLowerCase().replace(/ё/g, 'е');
+                    if (!s || pending) return;
+                    if (/^(выход|exit|quit|q|стоп)$/.test(low)) { leave(false); return; }
+                    if (/^(инв|инвентарь|inv|i)$/.test(low)) { printTextInstant(invText()); return; }
+                    if (/^(помощь|help|\?)$/.test(low)) {
+                        printTextInstant('КВЕСТ: вводи номер варианта или часть его названия.\n  инв — инвентарь · выход — прервать квест · заново — начать сначала');
+                        return;
+                    }
+                    if (/^(заново|restart)$/.test(low)) { start(true); return; }
+                    const n = Q[s.node];
+                    if (n.ask) {
+                        if (/^(назад|back)$/.test(low)) { enter('core'); return; }
+                        if (low === 'spatium') finish('truth'); else finish('lockout');
+                        return;
+                    }
+                    const list = visible(n);
+                    let o = null;
+                    if (/^\d+$/.test(low)) o = list[parseInt(low, 10) - 1];
+                    else if (low.length >= 3) o = list.find(x => x.t.toLowerCase().replace(/ё/g, 'е').includes(low));
+                    if (!o) { printTextInstant('  Не понял. Введите номер варианта. (помощь — подсказка)'); return; }
+                    pick(o);
+                }
+                function start(again) {
+                    if (!isBooted) return;
+                    closeGames();
+                    if (api.hub) api.hub.close();
+                    s = { node: 'start', inv: {}, flags: {} };
+                    pending = false;
+                    qs.runs++; saveState();
+                    unlock('quest_start');
+                    inputHook = onInput;
+                    setPrompt('КВЕСТ>');
+                    printTextInstant(again ? '--- НОВАЯ ПОПЫТКА ---' : '=== КВЕСТ: ПОБЕГ ИЗ ЯДРА ===  Рассказчик: СПАТИ');
+                    if (!again) printTextInstant("Вводите номер варианта. 'выход' — прервать, 'инв' — инвентарь, 'помощь' — подсказка.");
+                    enter('start');
+                }
+                api.quest = { start, active: () => !!s };
+                consoleCommands.quest = function (args) {
+                    if (s) { printTextInstant('Квест уже идёт.'); return; }
+                    if ((args[0] || '').toLowerCase() === 'ends') {
+                        printTextInstant(`КВЕСТ: НАЙДЕНО ${qs.ends.length}/${GOOD.length + DEATH.length}\n` + Object.keys(ENDS).map(k => `  ${qs.ends.includes(k) ? '[X]' : '[ ]'} ${qs.ends.includes(k) ? ENDS[k][0] : (k === 'truth' ? '??? (секрет)' : '???')}`).join('\n'));
+                        return;
+                    }
+                    start(false);
+                };
+                api.questEnds = () => ({ got: qs.ends.length, all: GOOD.length + DEATH.length });
+            })();
+
+            // =====================================================
+            //            ВКЛАДКА «ИГРЫ» С ОБЩИМ ТАБЛО
+            // =====================================================
+            (function initHub() {
+                const win = mkWin('gamesWindow', 'ИГРЫ · ОБЩЕЕ ТАБЛО', 'games-window', '<div class="gm-body" id="gmBody"></div>');
+                const body = win.querySelector('#gmBody');
+                let isOpen = false;
+
+                function topAll() {
+                    const list = [];
+                    (sk.top || []).forEach(e => list.push({ g: 'ЗМЕЙКА', v: e.s, p: e.s * 10, d: e.d }));
+                    tt.top.forEach(e => list.push({ g: 'ТЕТРИС', v: e.s, p: Math.floor(e.s / 20), d: e.d }));
+                    return list.sort((a, b) => b.p - a.p || b.d - a.d).slice(0, 5);
+                }
+                function card(name, stat, extra, onGo, label) {
+                    const c = elem('div', 'gm-card');
+                    const info = elem('div', 'gm-info');
+                    info.append(elem('div', 'gm-name', name), elem('div', 'gm-stat', stat));
+                    if (extra) info.appendChild(elem('div', 'gm-stat dim', extra));
+                    const b = elem('button', 'player-btn', label || 'ИГРАТЬ');
+                    b.type = 'button';
+                    b.addEventListener('click', (e) => { e.stopPropagation(); onGo(); });
+                    c.append(info, b);
+                    return c;
+                }
+                function render() {
+                    body.textContent = '';
+                    const pts = rating();
+                    const top = elem('div', 'gm-rank');
+                    top.append(elem('div', 'ach-rank-label', 'ИГРОВОЙ РАНГ'), elem('div', 'ach-rank', rankName(pts)), elem('div', 'gm-pts', pts + ' ОЧКОВ ТАБЛО'));
+                    const next = RANKS.find(r => r[0] > pts);
+                    if (next) {
+                        const bar = elem('div', 'ach-bar'), fill = elem('div', 'ach-bar-fill');
+                        const prev = RANKS.filter(r => r[0] <= pts).pop()[0];
+                        fill.style.width = Math.round((pts - prev) / (next[0] - prev) * 100) + '%';
+                        bar.appendChild(fill);
+                        top.append(bar, elem('div', 'gm-stat dim', `До ранга «${next[1]}»: ${next[0] - pts}`));
+                    }
+                    body.appendChild(top);
+
+                    body.appendChild(elem('div', 'ach-section', 'ИГРЫ'));
+                    const ends = api.questEnds();
+                    body.append(
+                        card('ТЕТРИС', `Рекорд ${tt.best} · Партий ${tt.games}`, `Линий ${tt.lines} · Макс. уровень ${tt.maxLvl || 1}`, () => api.tetris.open()),
+                        card('СЛОВО', `Побед ${wd.wins}/${wd.games} · Серия ${wd.streak}`, `Лучшая серия ${wd.bestStreak} · пять букв, шесть попыток`, () => api.word.open()),
+                        card('КВЕСТ', `Концовок ${ends.got}/${ends.all}`, `Рассказчик: Спати · прохождений ${qs.runs}`, () => api.quest.start(false), api.quest.active() ? 'ИДЁТ' : 'НАЧАТЬ'),
+                        card('ЗМЕЙКА', `Рекорд ${sk.best} · Партий ${sk.games}`, `Яблок ${sk.apples}`, () => { closeGames('snake'); win.classList.add('hidden'); isOpen = false; if (snakeApi) snakeApi.open(); })
+                    );
+
+                    body.appendChild(elem('div', 'ach-section', 'ОБЩЕЕ ТАБЛО'));
+                    const tbl = elem('div', 'gm-table');
+                    const head = elem('div', 'gm-tr gm-th');
+                    head.append(elem('span', '', 'ИГРА'), elem('span', '', 'РЕКОРД'), elem('span', '', 'ПАРТИЙ'), elem('span', '', 'ОЧКИ'));
+                    tbl.appendChild(head);
+                    const rows = [
+                        ['ЗМЕЙКА', sk.best, sk.games, sk.best * 10],
+                        ['ТЕТРИС', tt.best, tt.games, Math.floor(tt.best / 20)],
+                        ['СЛОВО', wd.bestStreak + ' в ряд', wd.games, wd.wins * 30],
+                        ['КВЕСТ', ends.got + '/' + ends.all, qs.runs, qs.ends.length * 100]
+                    ];
+                    rows.forEach(r => { const tr = elem('div', 'gm-tr'); r.forEach(v => tr.appendChild(elem('span', '', String(v)))); tbl.appendChild(tr); });
+                    const sum = elem('div', 'gm-tr gm-sum');
+                    sum.append(elem('span', '', 'ИТОГО'), elem('span', '', ''), elem('span', '', String(sk.games + tt.games + wd.games + qs.runs)), elem('span', '', String(pts)));
+                    tbl.appendChild(sum);
+                    body.appendChild(tbl);
+
+                    body.appendChild(elem('div', 'ach-section', 'ЛУЧШИЕ ПАРТИИ (ЗМЕЙКА И ТЕТРИС)'));
+                    const t5 = topAll();
+                    if (!t5.length) body.appendChild(elem('div', 'sk-top-empty', 'Пока пусто. Сыграй в змейку или тетрис.'));
+                    t5.forEach((e, i) => {
+                        const row = elem('div', 'gm-top-row');
+                        row.append(elem('span', '', (i + 1) + '.'), elem('span', '', e.g), elem('span', '', e.v + ' → ' + e.p + ' оч.'), elem('span', '', fmtDate(e.d)));
+                        body.appendChild(row);
+                    });
+                    body.appendChild(elem('div', 'gm-note', 'Очки табло: змейка ×10 · тетрис ÷20 · победа в «Слове» 30 · концовка квеста 100'));
+                }
+                function open() {
+                    if (!isBooted) return;
+                    isOpen = true; win.classList.remove('hidden');
+                    unlock('games_hub'); checkMeta();
+                    render();
+                    if (isSpatiEnabled) {
+                        const pts = rating();
+                        gSay(null, [pts ? `СПАТИ: Твой ранг — ${rankName(pts)}. ${pts} очков табло` : "СПАТИ: Табло пустое. Самое время это исправить", "СПАТИ: Выбирай игру. Я за тобой присмотрю"], true);
+                    }
+                }
+                function close() { if (!isOpen) return; isOpen = false; win.classList.add('hidden'); refocus(); }
+                api.hub = { open, close, render, isOpen: () => isOpen };
+                win.querySelector('[data-close]').addEventListener('click', (e) => { e.stopPropagation(); close(); });
+                window.addEventListener('keydown', (e) => { if (isOpen && e.key === 'Escape') { e.stopPropagation(); close(); } }, true);
+                const gb = document.getElementById('gamesBtn');
+                if (gb) gb.addEventListener('click', (e) => { e.preventDefault(); if (isOpen) close(); else if (isBooted && !isTyping) open(); });
+            })();
+
+            // =====================================================
+            //                     КОНСОЛЬНЫЕ КОМАНДЫ
+            // =====================================================
+            consoleCommands.games = function (args) {
+                const a = (args[0] || '').toLowerCase();
+                if (a === 'top' || a === 'best') {
+                    const ends = api.questEnds(), pts = rating();
+                    printTextInstant([
+                        `ИГРОВОЙ РАНГ: ${rankName(pts)} · ${pts} очков табло`,
+                        `  ЗМЕЙКА  рекорд ${sk.best} · партий ${sk.games}`,
+                        `  ТЕТРИС  рекорд ${tt.best} · партий ${tt.games} · линий ${tt.lines}`,
+                        `  СЛОВО   побед ${wd.wins}/${wd.games} · серия ${wd.streak} (лучшая ${wd.bestStreak})`,
+                        `  КВЕСТ   концовок ${ends.got}/${ends.all} · прохождений ${qs.runs}`
+                    ].join('\n'));
+                    unlock('games_hub'); checkMeta();
+                    return;
+                }
+                api.hub.open();
+                printTextInstant("ИГРЫ: окно открыто. (games top — табло в терминале)");
+            };
+            consoleCommands.tetris = function (args) {
+                if ((args[0] || '').toLowerCase() === 'best') {
+                    const lines = [`ТЕТРИС: РЕКОРД ${tt.best} · ПАРТИЙ ${tt.games} · ЛИНИЙ ${tt.lines}`];
+                    if (tt.last) lines.push(`ПРОШЛАЯ ПАРТИЯ: ${tt.last.s} (${fmtDate(tt.last.d)})`);
+                    if (tt.top.length) { lines.push('ТОП-5:'); tt.top.forEach((e, i) => lines.push(`  ${i + 1}. ${String(e.s).padStart(6)}  ${e.l} лин.  ${fmtDate(e.d)}`)); }
+                    printTextInstant(lines.join('\n'));
+                    return;
+                }
+                api.tetris.open();
+                printTextInstant('TETRIS.EXE ЗАПУЩЕН. Стрелки, пробел — сброс, P — пауза, Esc — выход.');
+            };
+            consoleCommands.word = function () {
+                api.word.open();
+                printTextInstant('СЛОВО.EXE ЗАПУЩЕН. Угадай слово из пяти букв за шесть попыток. Спати подскажет.');
+            };
+            consoleCommands['тетрис'] = consoleCommands.tetris;
+            consoleCommands['слово'] = consoleCommands.word;
+            consoleCommands['игры'] = consoleCommands.games;
+            consoleCommands['квест'] = consoleCommands.quest;
+
+            consoleCommands.reboot = function (args) {
+                if (!isBooted || rebooting) return;
+                unlock('post_reboot');
+                rebooting = true;
+                closeGames();
+                if (api.hub) api.hub.close();
+                printTextInstant('ПЕРЕЗАГРУЗКА СИСТЕМЫ...');
+                if (hiddenInput) hiddenInput.blur();
+                isBooted = false;
+                const force = (args[0] || '').toLowerCase() === 'crash';
+                setTimeout(() => {
+                    screen.classList.add('crt-off');
+                    sfxOff();
+                    setTimeout(() => {
+                        screen.classList.remove('crt-off');
+                        if (terminalContainer) terminalContainer.classList.add('hidden');
+                        screen.classList.remove('power-on'); void screen.offsetWidth; screen.classList.add('power-on');
+                        runPost(() => {
+                            if (terminalContainer) terminalContainer.classList.remove('hidden');
+                            isBooted = true; rebooting = false;
+                            printTextInstant('СИСТЕМА ПЕРЕЗАГРУЖЕНА.');
+                            if (hiddenInput) hiddenInput.focus();
+                        }, { crash: force });
+                    }, 700);
+                }, 500);
+            };
+        })();
+
+        // ==========================================
         // ЭКСПОРТ / ИМПОРТ ПРОГРЕССА ФАЙЛОМ
         // ==========================================
         (function initSaveIO() {
@@ -4448,7 +7782,7 @@ TAB - дополнить, ↑↓ - история
             }
 
             function exportProgress() {
-                const data = { app: FILE_APP, v: 1, exported: new Date().toISOString(), state, spati: { name: spatiMem.name || '' }, sfx: sfxEnabled };
+                const data = { app: FILE_APP, v: 1, exported: new Date().toISOString(), state, spati: { name: spatiMem.name || '' }, sfx: sfxEnabled, wardrobe: wdState };
                 const name = `spatium-save-${new Date().toISOString().slice(0, 10)}.json`;
                 const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
                 const a = document.createElement('a');
@@ -4482,6 +7816,7 @@ TAB - дополнить, ↑↓ - история
                     localStorage.setItem(STORE_KEY, JSON.stringify(s));
                     if (obj.spati && typeof obj.spati.name === 'string') localStorage.setItem(SPATI_KEY, JSON.stringify({ name: obj.spati.name.slice(0, 16) }));
                     if (typeof obj.sfx === 'boolean') localStorage.setItem(SFX_KEY, obj.sfx ? '1' : '0');
+                    if (obj.wardrobe && typeof obj.wardrobe === 'object') localStorage.setItem(WD_KEY, JSON.stringify(obj.wardrobe));
                 } catch (err) {
                     saveLocked = false;
                     notice('ОШИБКА: не удалось записать данные (хранилище недоступно)');
@@ -4623,6 +7958,95 @@ TAB - дополнить, ↑↓ - история
         // ==========================================
         // КАРТОЧКА ПРОГРЕССА (PNG для друзей)
         // ==========================================
+        // ---------- Портрет Спати: общий рендер для карточки и фото ----------
+        // Собирает SVG из тех же пиксельных рисунков (ACC_ART), что и живой маскот:
+        // скин/цвет, шапка, лицо, одежда, эмоция. Возвращает картинку для drawImage.
+        const SP_MOUTH = {
+            happy: [3, .35, 3, .9], surprised: [1.6, .9, 1.8, 1.3], angry: [2, .2, 2, .6], sleepy: [.8, .25, .9, .5],
+            dizzy: [1.4, .5, 1.4, .9], wink: [3, .35, 3, .9], laugh: [3, .7, 3, 1.3], sad: [1.4, .2, 1.2, .5], yawn: [1.6, 1.5, 1.6, 1.5]
+        };
+        // позы для студии фото: трансформ вокруг «пола» (4.5, 10); sh — ширина тени на полу
+        const SP_BASE = 'translate(4.5 10) scale(%) translate(-4.5 -10)';
+        const SP_POSES = {
+            stand:   { name: 'СТОЯ', tf: '', sh: 1 },
+            jump:    { name: 'ПРЫЖОК', tf: 'translate(0 -1.8) ' + SP_BASE.replace('%', '.92 1.1'), sh: .55 },
+            tiltl:   { name: 'НАКЛОН ←', tf: 'rotate(-14 4.5 10)', sh: 1.1 },
+            tiltr:   { name: 'НАКЛОН →', tf: 'rotate(14 4.5 10)', sh: 1.1 },
+            squish:  { name: 'БЛИН', tf: SP_BASE.replace('%', '1.35 .65'), sh: 1.4 },
+            tall:    { name: 'ВЫТЯНУТ', tf: SP_BASE.replace('%', '.78 1.3'), sh: .8 },
+            balloon: { name: 'ШАРИК', tf: SP_BASE.replace('%', '1.4'), sh: 1.4 },
+            dance:   { name: 'ТАНЕЦ', tf: 'translate(0 -.8) rotate(10 4.5 10)', sh: .85 },
+            sleep:   { name: 'ДРЕМЛЕТ', tf: 'rotate(7 4.5 10) translate(0 .5)', sh: 1.05 },
+            lay:     { name: 'ЛЁЖА', tf: 'rotate(90 4.5 10)', sh: 1.7 },
+            flip:    { name: 'ВВЕРХ НОГАМИ', tf: 'rotate(180 4.5 5)', sh: .5 },
+            mirror:  { name: 'ЗЕРКАЛО', tf: 'translate(9 0) scale(-1 1)', sh: 1 }
+        };
+        function spEyeTf(em, side) {
+            let r = 0, sx = 1, sy = 1, dy = 0;
+            switch (em) {
+                case 'happy': sy = .45; break;
+                case 'surprised': sx = sy = 1.5; break;
+                case 'angry': r = side === 'l' ? 22 : -22; sy = .6; break;
+                case 'sleepy': sy = .12; break;
+                case 'wink': if (side === 'r') sy = .12; break;
+                case 'laugh': sy = .35; break;
+                case 'sad': sy = .75; dy = .1; break;
+                case 'yawn': sy = .2; break;
+                case 'blink': sy = .1; break;
+            }
+            return [r, sx, sy, dy];
+        }
+        // o: { color (цвет темы), bg, em, open, gx, gy, classes (Set из wdResolve; по умолчанию — текущий наряд) }
+        function spatiPortraitSvg(o) {
+            o = o || {};
+            const cls = o.classes || wdResolve(false);
+            const em = o.em || 'normal';
+            let fill = o.color || '#33ff33', dark = false, ghost = false;
+            const skinCls = Array.from(cls).find(k => k.indexOf('sk-') === 0);
+            const skin = skinCls && WD_SLOTS.color.find(i => i.id === skinCls.slice(3));
+            if (skin) { fill = skin.hex; dark = !!skin.dark; ghost = skin.id === 'ghost'; }
+            else if (cls.has('sm-halloween')) fill = '#ff8a1f';
+            const inkCol = dark ? '#ffffff' : (o.bg || '#001100');
+            const keys = Object.keys(ACC_ART);
+            const parts = [];
+            cls.forEach(k => {
+                if (k.indexOf('acc-') === 0 && ACC_ART[k.slice(4)]) parts.push([k.slice(4), 1]);
+                else if (k.indexOf('sk-') === 0 && ACC_ART[k.slice(3)]) parts.push([k.slice(3), 0]);
+            });
+            parts.sort((a, b) => a[1] - b[1] || keys.indexOf(a[0]) - keys.indexOf(b[0]));
+            const eye = (x, side) => {
+                if (em === 'dizzy') {   // глаза-крестики
+                    const ex = x + .5, ey = 3.5;
+                    return [45, -45].map(a => `<rect x="${ex - .75}" y="${ey - .2}" width="1.5" height="0.4" fill="${inkCol}" transform="rotate(${a} ${ex} ${ey})"/>`).join('');
+                }
+                const t = spEyeTf(em, side), cx = x + .5, cy = 3.5 + t[3];
+                return `<rect x="${x}" y="3" width="1" height="1" fill="${inkCol}" transform="translate(${cx} ${cy}) rotate(${t[0]}) scale(${t[1]} ${t[2]}) translate(${-cx} ${-3.5})"/>`;
+            };
+            const m = SP_MOUTH[em];
+            const mw = o.open ? (m ? m[2] : 1) : (m ? m[0] : 1), mh = 2 * (o.open ? (m ? m[3] : 1) : (m ? m[1] : .4));
+            const body = `<g fill="${fill}"${ghost ? ' opacity=".45"' : ''}><rect x="2" y="0" width="5" height="1"/><rect x="1" y="1" width="7" height="1"/><rect x="0" y="2" width="9" height="7"/><rect x="0" y="9" width="2" height="1"/><rect x="3" y="9" width="3" height="1"/><rect x="7" y="9" width="2" height="1"/></g>`;
+            const face = `<g transform="translate(${+o.gx || 0} ${+o.gy || 0})">${eye(3, 'l')}${eye(5, 'r')}</g>`
+                + `<rect x="${4.5 - mw / 2}" y="5" width="${mw}" height="${mh}" fill="${inkCol}"/>`;
+            const acc = parts.map(p => p[0] === 'phones' ? ACC_ART.phones : ACC_ART[p[0]]).join('');
+            const flip = cls.has('sm-aprilfools') ? ' transform="rotate(180 4.5 5)"' : '';
+            const pose = SP_POSES[o.pose] && SP_POSES[o.pose].tf ? ` transform="${SP_POSES[o.pose].tf}"` : '';
+            const v = o.view || [-4, -5, 17, 17];
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${v.join(' ')}" shape-rendering="crispEdges"><g${flip}><g${pose}>${body}${face}${acc}</g></g></svg>`;
+        }
+        // px — размер квадратной картинки (17 клеток), ресурс берётся из data: URL, холст не «пачкается»
+        function spatiPortraitImg(o, px) {
+            return new Promise((res) => {
+                try {
+                    const v = (o && o.view) || [-4, -5, 17, 17];
+                    const svg = spatiPortraitSvg(o).replace('<svg ', `<svg width="${px}" height="${Math.round(px * v[3] / v[2])}" `);
+                    const img = new Image();
+                    img.onload = () => res(img);
+                    img.onerror = () => res(null);
+                    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+                } catch (err) { res(null); }
+            });
+        }
+
         (function initCard() {
             TAB_COMMANDS.push('card', 'share');
             const W = 1200, H = 630;
@@ -4698,13 +8122,14 @@ TAB - дополнить, ↑↓ - история
                 c.font = FONT(8);
             }
 
-            function render() {
+            async function render() {
                 const c = cv.getContext('2d');
                 const cs = getComputedStyle(screen);
                 const col = cs.getPropertyValue('--crt-color').trim() || '#33ff33';
                 const bg = cs.getPropertyValue('--crt-bg').trim() || '#001100';
                 const total = ACHIEVEMENTS.length, got = unlockedCount(), pct = Math.floor(got / total * 100);
                 const st = state.stats, sn = st.snake;
+                const spImg = await spatiPortraitImg({ color: col, bg: bg }, 17 * 8);   // Спати в текущем скине
                 c.clearRect(0, 0, W, H);
                 c.fillStyle = bg; c.fillRect(0, 0, W, H);
                 c.fillStyle = col; c.globalAlpha = 0.07;
@@ -4721,6 +8146,16 @@ TAB - дополнить, ↑↓ - история
                 c.fillStyle = col; c.shadowBlur = 12;
                 c.font = FONT(56); c.fillText('S_', 60, 120);
                 c.font = FONT(26); c.fillText('SPATIUM OS', 170, 112);
+                if (spImg) {   // маскот в шапке: тело 72x80, голова/шапка уходят выше
+                    c.save();
+                    c.imageSmoothingEnabled = false;
+                    c.shadowColor = col; c.shadowBlur = 12;
+                    c.drawImage(spImg, 500 - 4 * 8, 62 - 5 * 8);
+                    c.shadowBlur = 0;
+                    c.fillStyle = col; c.globalAlpha = 0.6; c.textAlign = 'center'; c.font = FONT(9);
+                    c.fillText('СПАТИ', 536, 166);
+                    c.restore();
+                }
                 c.shadowBlur = 0;
                 c.textAlign = 'right';
                 if (state.nick) { c.shadowBlur = 10; fit(c, state.nick, 26, 480); c.fillText(state.nick, W - 60, 112); c.shadowBlur = 0; }
@@ -4799,6 +8234,316 @@ TAB - дополнить, ↑↓ - история
                 printTextInstant('КАРТОЧКА ПРОГРЕССА ГОТОВА. Её можно скачать, скопировать или отправить.');
             };
             consoleCommands.share = consoleCommands.card;
+        })();
+
+        // ==========================================
+        // ФОТО СПАТИ: студия (лицо, поза, эффекты, фон) → снимок → сохранить / копировать / поделиться
+        // ==========================================
+        (function initPhoto() {
+            TAB_COMMANDS.push('photo');
+            const S = 720, U = 24, VIEW = [-9, -11, 27, 27], FLOOR = 480;
+            const FONT = (s) => `${s}px "Press Start 2P", monospace`;
+            const FACES = [['normal', 'ОБЫЧНОЕ'], ['happy', 'РАДОСТЬ'], ['wink', 'ПОДМИГ'], ['laugh', 'СМЕХ'], ['surprised', 'УДИВЛЕН'],
+                ['angry', 'ЗЛОЙ'], ['sad', 'ГРУСТЬ'], ['sleepy', 'СОННЫЙ'], ['dizzy', 'ГОЛОВА КРУГОМ'], ['yawn', 'ЗЕВОК']];
+            const MOUTH = [[false, 'ЗАКРЫТ'], [true, 'ОТКРЫТ']];
+            const GAZE = [['c', 'ПРЯМО', 0, 0], ['l', 'ВЛЕВО', -.6, 0], ['r', 'ВПРАВО', .6, 0], ['u', 'ВВЕРХ', 0, -.5], ['d', 'ВНИЗ', 0, .5]];
+            const FX = [['none', 'НЕТ'], ['hearts', 'СЕРДЕЧКИ'], ['stars', 'ЗВЁЗДЫ'], ['sparks', 'ИСКРЫ'], ['notes', 'НОТЫ'], ['rage', 'ЗЛОСТЬ'], ['zzz', 'СОН'], ['rain', 'ГРУСТНЫЙ ДОЖДЬ']];
+            const BGS = [['theme', 'ТЕМА'], ['clear', 'ПРОЗРАЧНЫЙ'], ['invert', 'ИНВЕРС'], ['stars', 'НЕБО']];
+            const CAPS = [['name', 'СПАТИ'], ['nick', 'МОЁ ИМЯ'], ['hi', 'ПРИВЕТ!'], ['cheese', 'СЫР!'], ['sleep', 'НЕ БУДИТЬ'], ['none', 'БЕЗ ПОДПИСИ']];
+            const POSES = Object.keys(SP_POSES);
+            const PX = {   // пиксельные значки эффектов (1 = закрашено)
+                hearts: ['0110110', '1111111', '1111111', '0111110', '0011100', '0001000'],
+                stars: ['0001000', '0001000', '1111111', '0011100', '0110110', '1000001'],
+                sparks: ['0010', '0010', '1111', '0010'],
+                notes: ['00111', '00101', '00101', '11101', '11100'],
+                rage: ['1010101', '0101010', '1111111', '0101010', '1010101'],
+                zzz: ['11111', '00010', '00100', '01000', '11111'],
+                rain: ['010', '010', '111', '010']
+            };
+            const FXPOS = [[-190, -250, 7], [150, -270, 6], [-250, -90, 5], [215, -120, 7], [-110, -330, 5], [90, -150, 4], [-230, 40, 6], [235, 60, 5], [20, -345, 6], [-60, -190, 4]];
+            const OPT0 = { em: 'normal', open: false, gaze: 'c', pose: 'stand', fx: 'none', bg: 'theme', cap: 'name' };
+            let opt = Object.assign({}, OPT0), blob = null, busy = false, drawSeq = 0, outKey = '', pollT = null, shotMode = false;
+
+            function notice(text) {
+                printTextInstant(text);
+                const n = elem('div', 'io-note', text);
+                screen.appendChild(n);
+                setTimeout(() => n.remove(), 4200);
+            }
+
+            const win = elem('div', 'ach-window card-window photo-window hidden');
+            win.id = 'photoWindow';
+            const head = elem('div', 'player-header');
+            head.appendChild(elem('span', 'player-title', 'ФОТОСТУДИЯ СПАТИ'));
+            const x = elem('button', 'player-close-btn', '[X]');
+            x.type = 'button';
+            head.appendChild(x);
+            const body = elem('div', 'card-body');
+            const stage = elem('div', 'ph-stage');
+            const cv = document.createElement('canvas');
+            cv.width = S; cv.height = S;
+            stage.appendChild(cv);
+            const optsBox = elem('div', 'ph-opts');
+            const studioActions = elem('div', 'card-actions ph-studio-actions');
+            const shotActions = elem('div', 'card-actions ph-shot-actions');
+            body.append(stage, optsBox, studioActions, shotActions);
+            win.append(head, body);
+            screen.appendChild(win);
+            win.addEventListener('click', (e) => e.stopPropagation());
+
+            const mkBtn = (box, label, fn) => {
+                const b = elem('button', 'player-btn', label);
+                b.type = 'button';
+                b.addEventListener('click', () => { sfxKey('tab'); fn(); b.blur(); });
+                box.appendChild(b);
+                return b;
+            };
+
+            // ---------- меню выбора ----------
+            const groups = {};
+            function addGroup(key, title, items, get) {
+                const g = elem('div', 'ph-grp');
+                g.appendChild(elem('div', 'ph-grp-title', title));
+                const row = elem('div', 'ph-chips');
+                const btns = items.map(it => {
+                    const b = elem('button', 'player-btn', it[1]);
+                    b.type = 'button';
+                    b.addEventListener('click', () => { sfxKey('tab'); opt[key] = get(it); sync(); draw(); b.blur(); });
+                    row.appendChild(b);
+                    return [b, get(it)];
+                });
+                g.appendChild(row);
+                optsBox.appendChild(g);
+                groups[key] = btns;
+            }
+            addGroup('em', 'ЛИЦО', FACES, it => it[0]);
+            addGroup('open', 'РОТ', MOUTH, it => it[0]);
+            addGroup('gaze', 'ВЗГЛЯД', GAZE, it => it[0]);
+            addGroup('pose', 'ПОЗА', POSES.map(k => [k, SP_POSES[k].name]), it => it[0]);
+            addGroup('fx', 'ЭФФЕКТ', FX, it => it[0]);
+            addGroup('bg', 'ФОН', BGS, it => it[0]);
+            addGroup('cap', 'ПОДПИСЬ', CAPS, it => it[0]);
+            function sync() {
+                Object.keys(groups).forEach(k => groups[k].forEach(([b, v]) => b.classList.toggle('active', opt[k] === v)));
+            }
+
+            const pad = (n) => String(n).padStart(2, '0');
+            const stamp = () => { const d = new Date(); return `${d.toLocaleDateString('ru-RU')} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+            const fileName = () => { const d = new Date(); return `spati-photo-${d.toISOString().slice(0, 10)}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.png`; };
+            const live = () => !!(isSpatiEnabled && spatiMascot && spatiMascot.classList.contains('show'));
+
+            // ---------- кнопки студии ----------
+            mkBtn(studioActions, 'СНЯТЬ КАДР', () => shoot());
+            mkBtn(studioActions, 'СЛУЧАЙНО', () => {
+                const r = (a) => a[Math.floor(Math.random() * a.length)];
+                opt.em = r(FACES)[0]; opt.open = Math.random() < .35; opt.gaze = r(GAZE)[0];
+                opt.pose = r(POSES); opt.fx = r(FX)[0];
+                sync(); draw();
+            });
+            mkBtn(studioActions, 'СБРОС', () => { opt = Object.assign({}, OPT0); sync(); draw(); });
+            mkBtn(studioActions, 'ГАРДЕРОБ', () => { try { wdOpenWin(); } catch (err) { /* нет гардероба */ } });
+
+            // ---------- кнопки готового кадра ----------
+            mkBtn(shotActions, 'В СТУДИЮ', () => setShot(false));
+            mkBtn(shotActions, 'СКАЧАТЬ PNG', () => {
+                if (!blob) return;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = fileName(); a.style.display = 'none';
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                unlock('photo_send');
+                notice('ФОТО СОХРАНЕНО: ' + fileName());
+            });
+            const bShare = mkBtn(shotActions, 'ПОДЕЛИТЬСЯ', () => {
+                if (!blob) return;
+                const file = new File([blob], fileName(), { type: 'image/png' });
+                navigator.share({ files: [file], title: 'Спати', text: 'Спати из Spatium OS' })
+                    .then(() => unlock('photo_send'))
+                    .catch(() => { /* пользователь закрыл меню */ });
+            });
+            const bCopy = mkBtn(shotActions, 'КОПИРОВАТЬ', () => {
+                if (!blob) return;
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                    .then(() => { unlock('photo_send'); notice('ФОТО СКОПИРОВАНО В БУФЕР'); })
+                    .catch(() => notice('НЕ УДАЛОСЬ СКОПИРОВАТЬ. ИСПОЛЬЗУЙТЕ СКАЧАТЬ PNG'));
+            });
+            bShare.style.display = bCopy.style.display = 'none';
+
+            function setShot(on) {
+                shotMode = on;
+                win.classList.toggle('shot', on);
+                if (!on) { blob = null; draw(); }
+            }
+
+            // ---------- эффекты, снимок, звук ----------
+            function flash() {
+                const f = elem('div', 'photo-flash');
+                screen.appendChild(f);
+                setTimeout(() => f.remove(), 700);
+            }
+            function shutter() {
+                const c = sfxReady();
+                if (!c) return;
+                const t = c.currentTime + 0.001;
+                sfxBurst(t, 0.03, { type: 'highpass', freq: 3000, gain: 0.35 });
+                sfxTone(t, { type: 'square', f0: 1800, f1: 900, dur: 0.04, gain: 0.04 });
+                sfxBurst(t + 0.08, 0.05, { type: 'bandpass', freq: 1800, q: 1, gain: 0.3 });
+            }
+            function fxDraw(c, kind, col, cx, cy) {
+                const pat = PX[kind];
+                if (!pat) return;
+                const n = kind === 'rain' ? 10 : (kind === 'sparks' ? 9 : 8);
+                c.save();
+                c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 8;
+                for (let i = 0; i < n; i++) {
+                    const p = FXPOS[i % FXPOS.length];
+                    const px = p[2];
+                    let ox = cx + p[0], oy = cy + p[1];
+                    if (kind === 'rain') { ox = cx - 230 + i * 50; oy = cy - 330 + ((i * 97) % 5) * 40; }
+                    c.globalAlpha = kind === 'rain' ? .75 : .85 - (i % 3) * .15;
+                    pat.forEach((row, ry) => { for (let rx = 0; rx < row.length; rx++) if (row[rx] === '1') c.fillRect(ox + rx * px, oy + ry * px, px, px); });
+                }
+                c.restore();
+            }
+
+            async function draw() {
+                const my = ++drawSeq;
+                const c = cv.getContext('2d');
+                const cs = getComputedStyle(screen);
+                let col = cs.getPropertyValue('--crt-color').trim() || '#33ff33';
+                let bg = cs.getPropertyValue('--crt-bg').trim() || '#001100';
+                const invert = opt.bg === 'invert';
+                if (invert) { const t = col; col = bg; bg = t; }
+                const g = GAZE.find(i => i[0] === opt.gaze) || GAZE[0];
+                const classes = wdResolve(false);
+                const img = await spatiPortraitImg({ color: col, bg, em: opt.em, open: opt.open, gx: g[2], gy: g[3], classes, pose: opt.pose, view: VIEW }, VIEW[2] * U);
+                if (my !== drawSeq) return;
+                const solid = opt.bg !== 'clear';
+                const ox = S / 2 - (4.5 - VIEW[0]) * U, oy = FLOOR - (10 - VIEW[1]) * U;
+                c.clearRect(0, 0, S, S);
+                c.textBaseline = 'alphabetic'; c.textAlign = 'left';
+                if (solid) {
+                    c.fillStyle = bg; c.fillRect(0, 0, S, S);
+                    const gr = c.createRadialGradient(S / 2, S * .42, 20, S / 2, S * .42, S * .7);
+                    gr.addColorStop(0, col); gr.addColorStop(1, bg);
+                    c.globalAlpha = 0.18; c.fillStyle = gr; c.fillRect(0, 0, S, S);
+                    c.fillStyle = col;
+                    if (opt.bg === 'stars') {
+                        c.globalAlpha = .7;
+                        for (let i = 0; i < 70; i++) { const sx = (i * 197) % S, sy = (i * 331) % (S - 60), s = 2 + (i % 3) * 2; c.fillRect(sx, sy, s, s); }
+                    } else {
+                        c.globalAlpha = 0.07;
+                        for (let i = 0; i < S; i += 40) c.fillRect(i, 0, 1, S);
+                        for (let j = 0; j < S; j += 40) c.fillRect(0, j, S, 1);
+                    }
+                    c.globalAlpha = 0.05;
+                    for (let j = 0; j < S; j += 4) c.fillRect(0, j, S, 2);
+                    c.globalAlpha = 1;
+                    c.strokeStyle = col; c.lineWidth = 3; c.shadowColor = col; c.shadowBlur = 14;
+                    c.strokeRect(22, 22, S - 44, S - 44);
+                    c.shadowBlur = 0; c.lineWidth = 2; c.globalAlpha = 0.8;
+                    [[48, 48, 1, 1], [S - 48, 48, -1, 1], [48, S - 48, 1, -1], [S - 48, S - 48, -1, -1]].forEach(([px, py, dx, dy]) => {
+                        c.beginPath(); c.moveTo(px + dx * 36, py); c.lineTo(px, py); c.lineTo(px, py + dy * 36); c.stroke();
+                    });
+                    c.globalAlpha = 1;
+                    c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 8;
+                    c.font = FONT(16); c.fillText('SPATIUM OS', 70, 98);
+                    c.shadowBlur = 0; c.globalAlpha = 0.6; c.font = FONT(10);
+                    c.textAlign = 'right'; c.fillText(stamp(), S - 70, 98); c.textAlign = 'left'; c.globalAlpha = 1;
+                    // тень на полу
+                    const sh = (SP_POSES[opt.pose] || SP_POSES.stand).sh;
+                    c.fillStyle = col; c.globalAlpha = opt.pose === 'flip' ? 0.06 : 0.16;
+                    c.beginPath(); c.ellipse(S / 2, FLOOR + 12, 110 * sh, 13, 0, 0, Math.PI * 2); c.fill();
+                    c.globalAlpha = 1;
+                }
+                if (img) {
+                    c.save();
+                    c.imageSmoothingEnabled = false;
+                    if (solid) { c.shadowColor = col; c.shadowBlur = 16; }
+                    c.drawImage(img, ox, oy);
+                    c.restore();
+                }
+                fxDraw(c, opt.fx, solid ? col : '#33ff33', S / 2, FLOOR - 5 * U);
+                const capText = { name: 'СПАТИ', nick: state.nick || 'СПАТИ', hi: 'ПРИВЕТ!', cheese: 'СЫР!', sleep: 'НЕ БУДИТЬ', none: '' }[opt.cap];
+                if (capText) {
+                    c.fillStyle = solid ? col : '#33ff33'; c.textAlign = 'center';
+                    if (solid) { c.shadowColor = col; c.shadowBlur = 10; }
+                    c.font = FONT(capText.length > 8 ? 26 : 34); c.fillText(capText, S / 2, 590);
+                    c.shadowBlur = 0;
+                    if (solid) { c.globalAlpha = 0.65; c.font = FONT(11); c.fillText(state.nick && opt.cap !== 'nick' ? `${state.nick} · ${stamp()}` : stamp(), S / 2, 632); }
+                    c.globalAlpha = 1; c.textAlign = 'left';
+                }
+                if (!shotMode) return;
+                cv.toBlob((b) => {
+                    if (my !== drawSeq) return;
+                    blob = b;
+                    let canShare = false;
+                    try { canShare = !!(b && navigator.canShare && navigator.canShare({ files: [new File([b], 'a.png', { type: 'image/png' })] })); } catch (err) { canShare = false; }
+                    bShare.style.display = canShare ? '' : 'none';
+                    bCopy.style.display = (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) ? '' : 'none';
+                }, 'image/png');
+            }
+
+            function shoot() {
+                if (!isBooted || busy) return;
+                busy = true;
+                const finish = () => {
+                    flash(); shutter();
+                    unlock('photo_snap');
+                    setShot(true);
+                    draw();
+                    busy = false;
+                };
+                if (live() && !smAsleep) {   // живой Спати успевает позировать
+                    smTouch(); smEm(opt.em === 'normal' ? 'happy' : opt.em, 1200); smPlay('hop', 600);
+                    mascotSay(smPick(['Улыбочку!', 'Сыр!', 'Снимай, я готов!', 'Позирую!']));
+                    setTimeout(finish, 650);
+                    setTimeout(() => sfxSpati('shutter'), 640);
+                } else finish();
+            }
+
+            function outfitKey() {
+                const cs = getComputedStyle(screen);
+                return Array.from(wdResolve(false)).sort().join(',') + (cs.getPropertyValue('--crt-color') || '') + (cs.getPropertyValue('--crt-bg') || '');
+            }
+            function open() {
+                if (!isBooted) return;
+                if (win.classList.contains('hidden')) {
+                    const on = live();
+                    let em = on ? (spatiMascot.dataset.em || 'normal') : 'normal';
+                    if (on && smAsleep) em = 'sleepy';
+                    opt = Object.assign({}, OPT0, { em: FACES.some(f => f[0] === em) ? em : 'normal' });
+                    if (opt.em === 'sleepy') opt.fx = 'zzz';
+                    shotMode = false; blob = null;
+                    win.classList.remove('shot');
+                    sync();
+                    win.classList.remove('hidden');
+                    if (hiddenInput) hiddenInput.blur();
+                    sfxKey('tab');
+                    outKey = outfitKey();
+                    clearInterval(pollT);
+                    pollT = setInterval(() => {   // подхватываем смену наряда/темы, пока студия открыта
+                        if (win.classList.contains('hidden')) { clearInterval(pollT); return; }
+                        const k = outfitKey();
+                        if (k !== outKey) { outKey = k; draw(); }
+                    }, 700);
+                }
+                const run = (document.fonts && document.fonts.load) ? document.fonts.load(FONT(16), 'АБВ0123').catch(() => {}) : Promise.resolve();
+                run.then(draw);
+            }
+            function close() { win.classList.add('hidden'); clearInterval(pollT); }
+
+            x.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+            window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !win.classList.contains('hidden')) close(); });
+
+            consoleCommands.photo = function () {
+                printTextInstant(live()
+                    ? 'ФОТОСТУДИЯ ОТКРЫТА. ВЫБЕРИ ЛИЦО, ПОЗУ, ЭФФЕКТ И ЖМИ СНЯТЬ КАДР.'
+                    : 'ФОТОСТУДИЯ ОТКРЫТА. СПАТИ ВЫКЛЮЧЕН, ПОЗИРУЕТ ПОРТРЕТ ИЗ ГАРДЕРОБА.');
+                open();
+            };
+            ['foto', 'фото', 'selfie', 'snap'].forEach(a => { consoleCommands[a] = consoleCommands.photo; });
         })();
 
         // ==========================================
