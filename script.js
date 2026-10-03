@@ -1290,97 +1290,216 @@
             return box;
         }
 
-        function progressRow(label, got, total, valueText) {
-            const row = elem('div', 'ach-prow');
-            row.appendChild(elem('span', 'ach-prow-label', label));
-            const bar = elem('div', 'ach-bar');
-            const fill = elem('div', 'ach-bar-fill');
-            fill.style.width = (total ? Math.round(got / total * 100) : 0) + '%';
-            bar.appendChild(fill);
-            row.appendChild(bar);
-            row.appendChild(elem('span', 'ach-prow-val', valueText || `${got}/${total}`));
-            return row;
+        // ======================================================================
+        // МЕНЮ ДОСТИЖЕНИЙ (v2): три вкладки, цели, поиск, фильтры, раскрывающиеся карточки
+        // ======================================================================
+        let achCat = 'all', achRar = 'all', achQuery = '', achOpenId = null;
+        let amResults = null;
+        const AM_SECRET = '__secret';
+        const AM_TABS = [['stats', 'ОБЗОР'], ['all', 'КОЛЛЕКЦИЯ'], ['info', 'ДАННЫЕ']];
+        const AM_SORTS = [['cat', 'РАЗДЕЛЫ'], ['near', 'БЛИЖАЙШИЕ'], ['rar', 'РЕДКИЕ'], ['rar_up', 'ОБЫЧНЫЕ'], ['date', 'НОВЫЕ'], ['abc', 'А–Я']];
+
+        const amDone = (a) => !!state.ach[a.id];
+        const amSecret = (a) => !!a.hidden && !amDone(a);
+        const amNorm = (s) => String(s).toLowerCase().replace(/ё/g, 'е');
+
+        function amProg(a) {
+            if (amDone(a) || amSecret(a)) return null;
+            try {
+                const p = achProgress(a);
+                if (p && p.need > 0) {
+                    const cur = Math.max(0, Math.min(p.cur, p.need));
+                    return { cur, need: p.need, ratio: cur / p.need, left: () => p.left(Math.max(1, p.need - cur)) };
+                }
+            } catch (e) { /* счётчик ещё не готов */ }
+            return null;
         }
 
-        function kvRow(key, value) {
-            const row = elem('div', 'ach-kv');
-            row.appendChild(elem('span', '', key));
-            row.appendChild(elem('span', '', String(value)));
-            return row;
+        function amMeter(got, total, cls) {
+            const m = elem('div', 'am-meter' + (cls ? ' ' + cls : ''));
+            const f = elem('i');
+            f.style.width = (total ? got / total * 100 : 0).toFixed(1) + '%';
+            m.appendChild(f);
+            return m;
         }
 
-        function renderAchStats() {
-            const total = ACHIEVEMENTS.length;
-            const got = unlockedCount();
-            const pct = Math.floor(got / total * 100);
+        function amResetFilters() { achFilter = 'all'; achCat = 'all'; achRar = 'all'; achQuery = ''; }
 
-            const top = elem('div', 'ach-top');
-            top.appendChild(iconBox(got === total ? 'trophy' : 'star', 'big'));
-            const topText = elem('div', 'ach-top-text');
-            if (state.nick) topText.appendChild(elem('div', 'ach-nick', state.nick));
-            topText.appendChild(elem('div', 'ach-rank-label', 'ЗВАНИЕ'));
-            topText.appendChild(elem('div', 'ach-rank', rankFor(pct)));
-            top.appendChild(topText);
-            achBody.appendChild(top);
+        function amGo(view, set, focusOpen) {
+            sfxKey('tab');
+            if (set) set();
+            achView = view;
+            renderAchWindow();
+            achBody.scrollTop = 0;
+            if (focusOpen) {
+                const c = achBody.querySelector('.am-card.open');
+                if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center' });
+            }
+        }
 
-            achBody.appendChild(progressRow('ОБЩИЙ ПРОГРЕСС', got, total, `${pct}%`));
+        function amTabs() {
+            const bar = elem('div', 'am-tabs');
+            bar.setAttribute('role', 'tablist');
+            AM_TABS.forEach(([key, label]) => {
+                const b = elem('button', 'am-tab' + (achView === key ? ' active' : ''), label);
+                b.type = 'button';
+                b.setAttribute('role', 'tab');
+                b.setAttribute('aria-selected', achView === key ? 'true' : 'false');
+                b.addEventListener('click', () => { if (achView !== key) amGo(key); });
+                bar.appendChild(b);
+            });
+            return bar;
+        }
 
-            achBody.appendChild(elem('div', 'ach-section', 'ПО РАЗДЕЛАМ'));
+        function amTile(label, got, total, cls, onClick) {
+            const t = elem('button', 'am-tile' + (cls ? ' ' + cls : '') + (total && got === total ? ' full' : ''));
+            t.type = 'button';
+            const top = elem('div', 'am-tile-top');
+            top.append(elem('span', '', label), elem('span', '', `${got}/${total}`));
+            t.append(top, amMeter(got, total));
+            t.addEventListener('click', onClick);
+            return t;
+        }
+
+        function amHead(root, text) { root.appendChild(elem('div', 'am-h', text)); }
+
+        // ---------- вкладка ОБЗОР ----------
+        function renderAchStats(root) {
+            const total = ACHIEVEMENTS.length, got = unlockedCount();
+            const pct = total ? Math.floor(got / total * 100) : 0;
+
+            const hero = elem('section', 'am-hero');
+            hero.appendChild(iconBox(got === total ? 'trophy' : 'star', 'big'));
+            const mid = elem('div', 'am-hero-text');
+            if (state.nick) mid.appendChild(elem('div', 'am-nick', state.nick));
+            mid.appendChild(elem('div', 'am-kicker', 'ЗВАНИЕ'));
+            mid.appendChild(elem('div', 'am-rank', rankFor(pct)));
+            hero.appendChild(mid);
+            const num = elem('div', 'am-hero-num');
+            num.append(elem('b', '', pct + '%'), elem('span', '', `${got} / ${total}`));
+            hero.appendChild(num);
+
+            const track = elem('div', 'am-rankbar');
+            track.appendChild(amMeter(got, total));
+            RANKS.slice(1).forEach(([min]) => {
+                const t = elem('i', 'am-tick' + (pct >= min ? ' on' : ''));
+                t.style.left = min + '%';
+                track.appendChild(t);
+            });
+            hero.appendChild(track);
+
+            const next = RANKS.find(([min]) => min > pct);
+            let nextText = 'Высшее звание получено';
+            if (next) {
+                const need = Math.max(1, Math.ceil(next[0] / 100 * total) - got);
+                nextText = `До звания «${next[1]}»: ещё ${need} ${smPl(need, 'достижение', 'достижения', 'достижений')}`;
+            }
+            hero.appendChild(elem('div', 'am-next', nextText));
+            root.appendChild(hero);
+
+            // ближайшие цели
+            amHead(root, 'БЛИЖАЙШИЕ ЦЕЛИ');
+            const goals = ACHIEVEMENTS.map(a => ({ a, p: amProg(a) })).filter(x => x.p && x.p.ratio > 0)
+                .sort((x, y) => y.p.ratio - x.p.ratio).slice(0, 4);
+            if (!goals.length) {
+                root.appendChild(elem('div', 'am-empty', 'Пока нет целей с прогрессом. Пользуйся системой, и они появятся здесь.'));
+            } else {
+                const list = elem('div', 'am-goals');
+                goals.forEach(({ a, p }) => {
+                    const g = elem('button', 'am-goal r-' + a.rarity);
+                    g.type = 'button';
+                    g.appendChild(iconBox(a.icon, 'small'));
+                    const tx = elem('div', 'am-goal-text');
+                    const row = elem('div', 'am-goal-top');
+                    row.append(elem('span', 'am-goal-title', a.title), elem('span', 'am-goal-val', `${p.cur}/${p.need}`));
+                    tx.append(row, amMeter(p.cur, p.need, 'thin'), elem('div', 'am-goal-left', p.left()));
+                    g.appendChild(tx);
+                    g.addEventListener('click', () => amGo('all', () => { amResetFilters(); achCat = a.cat; achOpenId = a.id; }, true));
+                    list.appendChild(g);
+                });
+                root.appendChild(list);
+            }
+
+            // редкость
+            amHead(root, 'ПО РЕДКОСТИ');
+            const rt = elem('div', 'am-tiles am-tiles-rar');
+            RARITY_ORDER.slice().reverse().forEach(r => {
+                const list = ACHIEVEMENTS.filter(a => a.rarity === r);
+                rt.appendChild(amTile(RARITIES[r].label, list.filter(amDone).length, list.length, 'r-' + r,
+                    () => amGo('all', () => { amResetFilters(); achRar = r; })));
+            });
+            root.appendChild(rt);
+
+            // разделы
+            amHead(root, 'ПО РАЗДЕЛАМ');
+            const ct = elem('div', 'am-tiles');
             ACH_CATS.forEach(cat => {
                 const list = ACHIEVEMENTS.filter(a => a.cat === cat);
-                achBody.appendChild(progressRow(cat, list.filter(a => state.ach[a.id]).length, list.length));
+                ct.appendChild(amTile(cat, list.filter(amDone).length, list.length, '',
+                    () => amGo('all', () => { amResetFilters(); achCat = cat; })));
             });
             const secrets = ACHIEVEMENTS.filter(a => a.hidden);
-            achBody.appendChild(progressRow('СКРЫТЫЕ', secrets.filter(a => state.ach[a.id]).length, secrets.length));
+            ct.appendChild(amTile('СКРЫТЫЕ', secrets.filter(amDone).length, secrets.length, 'secret',
+                () => amGo('all', () => { amResetFilters(); achCat = AM_SECRET; })));
+            root.appendChild(ct);
 
-            achBody.appendChild(elem('div', 'ach-section', 'ПО РЕДКОСТИ'));
-            RARITY_ORDER.forEach(r => {
-                const list = ACHIEVEMENTS.filter(a => a.rarity === r);
-                const row = progressRow(RARITIES[r].label, list.filter(a => state.ach[a.id]).length, list.length);
-                row.classList.add('rar', 'r-' + r);
-                achBody.appendChild(row);
-            });
-
-            achBody.appendChild(elem('div', 'ach-section', 'СТАТИСТИКА'));
-            const grid = elem('div', 'ach-stats');
-            const st = state.stats;
-            grid.appendChild(kvRow('ЗАПУСКОВ', st.visits));
-            grid.appendChild(kvRow('КОМАНД', st.cmds));
-            grid.appendChild(kvRow('ЦВЕТОВ', `${st.colors.length}/${Object.keys(colorPalette).length}`));
-            grid.appendChild(kvRow('ТРЕКОВ', `${st.tracks.length}/${playlist.length}`));
-            grid.appendChild(kvRow('ВОПРОСОВ СПАТИ', st.spatiTalks));
-            grid.appendChild(kvRow('РЕКОРД ЗМЕЙКИ', st.snake.best));
-            grid.appendChild(kvRow('С НАМИ С', st.first ? fmtDate(st.first) : '-'));
-            achBody.appendChild(grid);
-
-            achBody.appendChild(elem('div', 'ach-section', 'ПОСЛЕДНИЕ ОТКРЫТЫЕ'));
-            const recent = ACHIEVEMENTS.filter(a => state.ach[a.id])
-                .sort((a, b) => state.ach[b.id] - state.ach[a.id]).slice(0, 3);
+            // последние
+            amHead(root, 'ПОСЛЕДНИЕ ОТКРЫТЫЕ');
+            const recent = ACHIEVEMENTS.filter(amDone).sort((a, b) => state.ach[b.id] - state.ach[a.id]).slice(0, 4);
             if (!recent.length) {
-                achBody.appendChild(elem('div', 'ach-empty', 'Пока пусто. Выполни любую команду.'));
+                root.appendChild(elem('div', 'am-empty', 'Пока пусто. Выполни любую команду.'));
+            } else {
+                const rl = elem('div', 'am-recent');
+                recent.forEach(a => {
+                    const it = elem('div', 'am-recent-item r-' + a.rarity);
+                    it.appendChild(iconBox(a.icon, 'small'));
+                    const tx = elem('div', 'am-recent-text');
+                    tx.append(elem('div', 'am-recent-title', a.title), elem('div', 'am-recent-date', fmtDate(state.ach[a.id])));
+                    it.appendChild(tx);
+                    rl.appendChild(it);
+                });
+                root.appendChild(rl);
             }
-            recent.forEach(a => {
-                const item = elem('div', 'ach-recent-item r-' + a.rarity);
-                item.appendChild(iconBox(a.icon, 'small'));
-                const text = elem('div', 'ach-card-text');
-                text.appendChild(elem('div', 'ach-card-title', a.title));
-                text.appendChild(elem('div', 'ach-card-date', fmtDate(state.ach[a.id])));
-                item.appendChild(text);
-                achBody.appendChild(item);
-            });
 
-            const allBtn = elem('button', 'player-btn ach-all-btn', 'ВСЕ ДОСТИЖЕНИЯ >');
-            allBtn.type = 'button';
-            allBtn.addEventListener('click', () => { sfxKey('tab'); achView = 'all'; renderAchWindow(); achBody.scrollTop = 0; });
-            achBody.appendChild(allBtn);
-            const io = elem('div', 'ach-toolbar');
+            const all = elem('button', 'player-btn am-open-all', 'ОТКРЫТЬ КОЛЛЕКЦИЮ >');
+            all.type = 'button';
+            all.addEventListener('click', () => amGo('all'));
+            root.appendChild(all);
+
+            const io = elem('div', 'am-actions');
             [['ЭКСПОРТ', 'export'], ['ИМПОРТ', 'import'], ['КАРТОЧКА', 'card']].forEach(([label, key]) => {
                 const b = elem('button', 'player-btn', label);
                 b.type = 'button';
                 b.addEventListener('click', () => { sfxKey('tab'); consoleCommands[key](); });
                 io.appendChild(b);
             });
-            achBody.appendChild(io);
+            root.appendChild(io);
+        }
+
+        // ---------- вкладка ДАННЫЕ ----------
+        function amKv(key, value) {
+            const row = elem('div', 'ach-kv');
+            row.append(elem('span', '', key), elem('span', '', String(value)));
+            return row;
+        }
+        function renderAchInfo(root) {
+            const st = state.stats;
+            const secrets = ACHIEVEMENTS.filter(a => a.hidden);
+            const legends = ACHIEVEMENTS.filter(a => a.rarity === 'legendary');
+            amHead(root, 'СТАТИСТИКА');
+            const grid = elem('div', 'ach-stats');
+            [
+                ['ЗАПУСКОВ', st.visits],
+                ['КОМАНД', st.cmds],
+                ['ЦВЕТОВ', `${st.colors.length}/${Object.keys(colorPalette).length}`],
+                ['ТРЕКОВ', `${st.tracks.length}/${playlist.length}`],
+                ['ВОПРОСОВ СПАТИ', st.spatiTalks],
+                ['РЕКОРД ЗМЕЙКИ', st.snake.best],
+                ['СКРЫТЫХ ОТКРЫТО', `${secrets.filter(amDone).length}/${secrets.length}`],
+                ['ЛЕГЕНДАРНЫХ', `${legends.filter(amDone).length}/${legends.length}`],
+                ['С НАМИ С', st.first ? fmtDate(st.first) : '-']
+            ].forEach(([k, v]) => grid.appendChild(amKv(k, v)));
+            root.appendChild(grid);
         }
 
         const SECRET_HINTS = {
@@ -1408,36 +1527,104 @@
             "sm_tickle": "Зажми палец на Спати и не отпускай",
             "sm_roll": "Быстро смахни Спати свайпом по экрану"
         };
-        function achCard(a) {
-            const done = !!state.ach[a.id];
-            const secret = a.hidden && !done;
-            const card = elem('div', 'ach-card ' + (done ? 'done' : 'locked') + (secret ? '' : ' r-' + a.rarity));
-            card.appendChild(iconBox(done ? a.icon : 'lock'));
-            const text = elem('div', 'ach-card-text');
-            text.appendChild(elem('div', 'ach-card-title', secret ? '???' : a.title));
-            text.appendChild(elem('div', 'ach-card-desc', secret ? 'Скрытое достижение' : a.desc));
-            if (!done && !secret) {
-                try {
-                    const pr = achProgress(a);
-                    if (pr && pr.need > 0) {
-                        const cur = Math.max(0, Math.min(pr.cur, pr.need));
-                        const bar = elem('div', 'ach-prog');
-                        const fill = elem('i');
-                        fill.style.width = (cur / pr.need * 100).toFixed(1) + '%';
-                        bar.appendChild(fill);
-                        text.append(bar, elem('div', 'ach-prog-label', `${cur}/${pr.need}`));
-                    }
-                } catch (e) { /* счётчик ещё не готов */ }
+
+        // ---------- вкладка КОЛЛЕКЦИЯ ----------
+        function amChipRow(label, items, cur, pick) {
+            const row = elem('div', 'am-row');
+            row.appendChild(elem('span', 'am-row-label', label));
+            const chips = elem('div', 'am-chips');
+            items.forEach(([key, text, cls], i) => {
+                const b = elem('button', 'am-chip' + (cls ? ' ' + cls : '') + (cur === key ? ' active' : ''), text);
+                b.type = 'button';
+                b.addEventListener('click', () => { sfxAch('pick', i); pick(key); renderAchWindow(); });
+                chips.appendChild(b);
+            });
+            row.appendChild(chips);
+            return row;
+        }
+
+        function amMatches(a) {
+            if (achFilter !== 'all' && (achFilter === 'done') !== amDone(a)) return false;
+            if (achCat === AM_SECRET ? !a.hidden : (achCat !== 'all' && a.cat !== achCat)) return false;
+            if (achRar !== 'all' && a.rarity !== achRar) return false;
+            const q = amNorm(achQuery).trim();
+            if (q) {
+                if (amSecret(a)) return false;
+                const hay = amNorm(a.title + ' ' + a.desc + ' ' + a.cat);
+                return q.split(/\s+/).every(w => hay.includes(w));
             }
-            if (!secret) text.appendChild(elem('div', 'ach-card-rarity', RARITIES[a.rarity].label));
-            if (done) text.appendChild(elem('div', 'ach-card-date', fmtDate(state.ach[a.id])));
-            card.appendChild(text);
-            if (secret) {
-                card.classList.add('has-hint');
-                const hint = elem('div', 'ach-card-hint hidden', 'ПОДСКАЗКА: ' + (SECRET_HINTS[a.id] || 'Пробуй необычные команды'));
-                text.appendChild(hint);
-                card.addEventListener('click', () => hint.classList.toggle('hidden'));
+            return true;
+        }
+
+        function amGroups() {
+            const rarGroup = (r) => ({ name: RARITIES[r].label, cls: 'r-' + r, all: ACHIEVEMENTS.filter(a => a.rarity === r) });
+            const byDate = (x, y) => state.ach[y.id] - state.ach[x.id];
+            if (achSort === 'rar') return RARITY_ORDER.slice().reverse().map(rarGroup);
+            if (achSort === 'rar_up') return RARITY_ORDER.map(rarGroup);
+            if (achSort === 'date') {
+                return [
+                    { name: 'НЕДАВНО ОТКРЫТЫЕ', cls: '', all: ACHIEVEMENTS.filter(amDone).sort(byDate) },
+                    { name: 'ЕЩЁ НЕ ОТКРЫТЫЕ', cls: '', all: ACHIEVEMENTS.filter(a => !amDone(a)) }
+                ];
             }
+            if (achSort === 'abc') {
+                const byTitle = (x, y) => x.title.localeCompare(y.title, 'ru');
+                const open = ACHIEVEMENTS.filter(a => !amSecret(a)).sort(byTitle);
+                return [{ name: 'А — Я', cls: '', all: open.concat(ACHIEVEMENTS.filter(amSecret)) }]; // скрытые не раскрываем
+            }
+            if (achSort === 'near') {
+                const locked = ACHIEVEMENTS.filter(a => !amDone(a));
+                const withP = locked.map(a => ({ a, p: amProg(a) })).filter(x => x.p).sort((x, y) => y.p.ratio - x.p.ratio).map(x => x.a);
+                const rest = locked.filter(a => !withP.includes(a));
+                return [
+                    { name: 'БЛИЖАЙШИЕ К ОТКРЫТИЮ', cls: '', all: withP },
+                    { name: 'ОСТАЛЬНЫЕ ЗАКРЫТЫЕ', cls: '', all: rest },
+                    { name: 'ОТКРЫТЫЕ', cls: '', all: ACHIEVEMENTS.filter(amDone).sort(byDate) }
+                ];
+            }
+            return ACH_CATS.map(cat => ({ name: cat, cls: '', all: ACHIEVEMENTS.filter(a => a.cat === cat) }));
+        }
+
+        function amCard(a) {
+            const done = amDone(a), secret = amSecret(a), pr = amProg(a);
+            const card = elem('article', 'am-card ' + (done ? 'done' : 'locked') + (secret ? '' : ' r-' + a.rarity) + (achOpenId === a.id ? ' open' : ''));
+            card.tabIndex = 0;
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-expanded', achOpenId === a.id ? 'true' : 'false');
+
+            const main = elem('div', 'am-card-main');
+            main.appendChild(iconBox(done ? a.icon : 'lock'));
+            const text = elem('div', 'am-card-text');
+            text.appendChild(elem('div', 'am-card-title', secret ? '???' : a.title));
+            text.appendChild(elem('div', 'am-card-desc', secret ? 'Скрытое достижение' : a.desc));
+            if (pr) {
+                text.appendChild(amMeter(pr.cur, pr.need, 'thin'));
+                text.appendChild(elem('div', 'am-card-prog', `${pr.cur} / ${pr.need}`));
+            }
+            if (!secret) text.appendChild(elem('div', 'am-card-rar', RARITIES[a.rarity].label));
+            main.appendChild(text);
+            card.appendChild(main);
+
+            const det = elem('div', 'am-card-detail');
+            if (done) det.appendChild(elem('div', 'am-d', 'ОТКРЫТО: ' + fmtDate(state.ach[a.id])));
+            else if (secret) det.appendChild(elem('div', 'am-d hint', 'ПОДСКАЗКА: ' + (SECRET_HINTS[a.id] || 'Пробуй необычные команды')));
+            else if (pr) det.appendChild(elem('div', 'am-d', 'ЦЕЛЬ: ' + pr.left()));
+            else det.appendChild(elem('div', 'am-d', 'ЕЩЁ НЕ ОТКРЫТО'));
+            det.appendChild(elem('div', 'am-d dim', 'РАЗДЕЛ: ' + a.cat));
+            card.appendChild(det);
+
+            const toggle = () => {
+                const was = card.classList.contains('open');
+                if (amResults) amResults.querySelectorAll('.am-card.open').forEach(c => { c.classList.remove('open'); c.setAttribute('aria-expanded', 'false'); });
+                achOpenId = null;
+                if (!was) { card.classList.add('open'); card.setAttribute('aria-expanded', 'true'); achOpenId = a.id; }
+                mascotAchHover(a, true);
+            };
+            card.addEventListener('click', toggle);
+            card.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+            });
             // Спати комментирует достижение: наведи курсор (на телефоне — тапни)
             card.addEventListener('pointerenter', (e) => {
                 if (e.pointerType && e.pointerType !== 'mouse') return;
@@ -1445,87 +1632,90 @@
                 card._smT = setTimeout(() => mascotAchHover(a, false), 380);
             });
             card.addEventListener('pointerleave', () => clearTimeout(card._smT));
-            card.addEventListener('click', () => mascotAchHover(a, true));
             return card;
         }
 
-        // Сортировки списка достижений: по разделам, по редкости (в обе стороны), по дате, по алфавиту
-        function buildAchGroups() {
-            const done = (a) => !!state.ach[a.id];
-            const rarGroup = (r) => ({ name: RARITIES[r].label, cls: 'r-' + r, all: ACHIEVEMENTS.filter(a => a.rarity === r) });
-            if (achSort === 'rar') return RARITY_ORDER.slice().reverse().map(rarGroup);
-            if (achSort === 'rar_up') return RARITY_ORDER.map(rarGroup);
-            if (achSort === 'date') {
-                return [
-                    { name: 'НЕДАВНО ОТКРЫТЫЕ', cls: '', all: ACHIEVEMENTS.filter(done).sort((a, b) => state.ach[b.id] - state.ach[a.id]) },
-                    { name: 'ЕЩЁ НЕ ОТКРЫТЫЕ', cls: '', all: ACHIEVEMENTS.filter(a => !done(a)) }
-                ];
+        function renderAchItems() {
+            if (!amResults) return;
+            amResults.innerHTML = '';
+            const groups = amGroups().map(g => ({ g, list: g.all.filter(amMatches) })).filter(x => x.list.length);
+            const shown = groups.reduce((n, x) => n + x.list.length, 0);
+            const filtered = achFilter !== 'all' || achCat !== 'all' || achRar !== 'all' || achQuery.trim() !== '';
+
+            const info = elem('div', 'am-count');
+            info.appendChild(elem('span', '', `ПОКАЗАНО ${shown} ИЗ ${ACHIEVEMENTS.length}`));
+            if (filtered) {
+                const rb = elem('button', 'am-reset', 'СБРОСИТЬ');
+                rb.type = 'button';
+                rb.addEventListener('click', () => { sfxAch('close'); amResetFilters(); renderAchWindow(); });
+                info.appendChild(rb);
             }
-            if (achSort === 'abc') {
-                const byTitle = (a, b) => a.title.localeCompare(b.title, 'ru');
-                const open = ACHIEVEMENTS.filter(a => !(a.hidden && !done(a))).sort(byTitle);
-                const secret = ACHIEVEMENTS.filter(a => a.hidden && !done(a)); // скрытые не раскрываем и ставим в конец
-                return [{ name: 'А — Я', cls: '', all: open.concat(secret) }];
-            }
-            return ACH_CATS.map(cat => ({ name: cat, cls: '', all: ACHIEVEMENTS.filter(a => a.cat === cat) }));
+            amResults.appendChild(info);
+
+            if (!shown) { amResults.appendChild(elem('div', 'am-empty', 'Ничего не найдено. Измени запрос или сбрось фильтры.')); return; }
+            groups.forEach(({ g, list }) => {
+                const title = elem('div', 'ach-group-title ' + g.cls);
+                title.append(elem('span', '', g.name), elem('span', '', `${list.filter(amDone).length}/${list.length}`));
+                amResults.appendChild(title);
+                const grid = elem('div', 'am-list');
+                list.forEach(a => grid.appendChild(amCard(a)));
+                amResults.appendChild(grid);
+            });
         }
 
-        function renderAchList() {
-            const bar = elem('div', 'ach-toolbar');
-            const back = elem('button', 'player-btn', '< НАЗАД');
-            back.type = 'button';
-            back.addEventListener('click', () => { sfxKey('tab'); achView = 'stats'; renderAchWindow(); achBody.scrollTop = 0; });
-            bar.appendChild(back);
-            bar.appendChild(elem('span', 'spacer'));
-            [['all', 'ВСЕ'], ['done', 'ОТКРЫТЫЕ'], ['locked', 'ЗАКРЫТЫЕ']].forEach(([key, label], i) => {
-                const b = elem('button', 'player-btn' + (achFilter === key ? ' active' : ''), label);
-                b.type = 'button';
-                b.addEventListener('click', () => { sfxAch('pick', i); achFilter = key; renderAchWindow(); });
-                bar.appendChild(b);
+        function renderAchList(root) {
+            const search = elem('input', 'am-search');
+            search.type = 'search';
+            search.placeholder = 'поиск по названию и условию…';
+            search.value = achQuery;
+            search.autocomplete = 'off';
+            search.spellcheck = false;
+            search.setAttribute('autocapitalize', 'off');
+            search.setAttribute('autocorrect', 'off');
+            search.setAttribute('enterkeyhint', 'search');
+            search.addEventListener('input', () => { achQuery = search.value; renderAchItems(); });
+            search.addEventListener('keydown', (e) => {
+                e.stopPropagation(); // клавиши поиска не должны уходить в терминал
+                if (e.key === 'Escape') {
+                    if (achQuery) { search.value = ''; achQuery = ''; renderAchItems(); } else closeAchWindow();
+                } else if (e.key === 'Enter') search.blur();
             });
-            achBody.appendChild(bar);
+            root.appendChild(search);
 
-            const sortBar = elem('div', 'ach-toolbar');
-            sortBar.appendChild(elem('span', 'ach-sort-label', 'СОРТИРОВКА:'));
-            const sortBtns = elem('div', 'ach-sort-btns'); // кнопки сгруппированы и выровнены вправо
-            [['cat', 'ПО РАЗДЕЛАМ'], ['rar', 'ПО РЕДКОСТИ'], ['rar_up', 'ОТ ОБЫЧНЫХ'], ['date', 'ПО ДАТЕ'], ['abc', 'А–Я']].forEach(([key, label], i) => {
-                const b = elem('button', 'player-btn' + (achSort === key ? ' active' : ''), label);
-                b.type = 'button';
-                b.addEventListener('click', () => { sfxAch('pick', i); achSort = key; renderAchWindow(); });
-                sortBtns.appendChild(b);
-            });
-            sortBar.appendChild(sortBtns);
-            achBody.appendChild(sortBar);
+            const done = ACHIEVEMENTS.filter(amDone).length, total = ACHIEVEMENTS.length;
+            root.appendChild(amChipRow('СТАТУС', [['all', `ВСЕ ${total}`], ['done', `ОТКРЫТЫЕ ${done}`], ['locked', `ЗАКРЫТЫЕ ${total - done}`]], achFilter, (k) => { achFilter = k; }));
+            root.appendChild(amChipRow('РАЗДЕЛ', [['all', 'ВСЕ']].concat(ACH_CATS.map(c => [c, c]), [[AM_SECRET, 'СКРЫТЫЕ']]), achCat, (k) => { achCat = k; }));
+            root.appendChild(amChipRow('РЕДКОСТЬ', [['all', 'ВСЕ']].concat(RARITY_ORDER.map(r => [r, RARITIES[r].label, 'r-' + r])), achRar, (k) => { achRar = k; }));
+            root.appendChild(amChipRow('ПОРЯДОК', AM_SORTS, achSort, (k) => { achSort = k; }));
 
-            const passes = (a) => achFilter === 'all' || (achFilter === 'done') === !!state.ach[a.id];
-            const groups = buildAchGroups();
-            let shown = 0;
-            groups.forEach(g => {
-                const list = g.all.filter(passes);
-                if (!list.length) return;
-                shown += list.length;
-                const title = elem('div', 'ach-group-title ' + g.cls);
-                title.appendChild(elem('span', '', g.name));
-                title.appendChild(elem('span', '', `${g.all.filter(a => state.ach[a.id]).length}/${g.all.length}`));
-                achBody.appendChild(title);
-                const grid = elem('div', 'ach-grid');
-                list.forEach(a => grid.appendChild(achCard(a)));
-                achBody.appendChild(grid);
-            });
-            if (!shown) achBody.appendChild(elem('div', 'ach-empty', 'Здесь пока ничего нет.'));
+            amResults = elem('div', 'am-results');
+            root.appendChild(amResults);
+            renderAchItems();
         }
 
         function renderAchWindow() {
             if (!achBody) return;
+            // пока человек печатает в поиске, не пересобираем окно целиком (иначе пропадёт фокус)
+            const ae = document.activeElement;
+            if (achView === 'all' && amResults && ae && ae.classList && ae.classList.contains('am-search') && achBody.contains(ae)) { renderAchItems(); return; }
+            if (!AM_TABS.some(t => t[0] === achView)) achView = 'stats';
             const prev = achBody.scrollTop;
             achBody.innerHTML = '';
-            if (achView === 'all') renderAchList(); else renderAchStats();
+            amResults = null;
+            achBody.appendChild(amTabs());
+            const root = elem('div', 'am-content am-v-' + achView);
+            achBody.appendChild(root);
+            if (achView === 'all') renderAchList(root);
+            else if (achView === 'info') renderAchInfo(root);
+            else renderAchStats(root);
             achBody.scrollTop = prev;
         }
 
         function openAchWindow(view) {
             if (!achWindow || !isBooted) return;
             achView = view || 'stats';
+            achOpenId = null;
+            if (achView === 'all') amResetFilters();
             achWindowOpen = true;
             achWindow.classList.remove('hidden');
             renderAchWindow();
@@ -2153,6 +2343,7 @@
                 if (e.key === 'Escape') closeAdmin();
                 return; // не перехватываем ввод внутри админ-меню
             }
+            if (e.target && e.target.classList && e.target.classList.contains('am-search')) return;
             trackKonami(e.key);
             if (e.key === 'Escape' && achWindowOpen) {
                 closeAchWindow();
@@ -2463,6 +2654,7 @@ TAB - дополнить, ↑↓ - история
                 }, 750);
             } else {
                 unlock('spati_off');
+                if (wdOpen) wdClose();
                 printTextTyped("[СПАТИ ДЕАКТИВИРОВАН]");
             }
         }
@@ -2835,7 +3027,7 @@ TAB - дополнить, ↑↓ - история
                     return ['СПАТИ: Выключаю систему. Было приятно', triggerPowerOff];
                 }
                 if (/(^| )(выключись|отключись|замолчи|помолчи|заткнись|умолкни|усни|засыпай|иди спать|вырубись|тихо|спи)( |$)/.test(q)) {
-                    isSpatiEnabled = false; unlock('spati_off'); { const b = document.getElementById('spatiBtn'); if (b) b.classList.remove('on'); } setMascot(false);
+                    isSpatiEnabled = false; unlock('spati_off'); { const b = document.getElementById('spatiBtn'); if (b) b.classList.remove('on'); } if (wdOpen) wdClose(); setMascot(false);
                     return 'СПАТИ: Ухожу в сон. Разбудишь кнопкой СПАТИ';
                 }
             },
@@ -3119,6 +3311,7 @@ TAB - дополнить, ↑↓ - история
             sfxSpati(on ? 'on' : 'off');
             spatiMascot.classList.toggle('show', !!on);
             document.body.classList.toggle('spati-on', !!on);
+            { const wb = document.getElementById('wardBtn'); if (wb) wb.classList.toggle('locked', !on); }
             if (!on) { spatiMascot.classList.remove('open', 'think'); clearTimeout(mouthTimer); clearTimeout(thinkTimer); }
             mascotToggle(!!on);
         }
@@ -5105,6 +5298,14 @@ TAB - дополнить, ↑↓ - история
         }
         function wdOpenWin() {
             if (!isBooted) return;
+            if (!isSpatiEnabled) {                       // без Спати гардероб закрыт
+                if (wdOpen) wdClose();
+                sfxAch('close');
+                const n = elem('div', 'io-note', 'ГАРДЕРОБ ЗАКРЫТ: СНАЧАЛА ВКЛЮЧИ СПАТИ (КНОПКА СПАТИ СВЕРХУ)');
+                screen.appendChild(n);
+                setTimeout(() => n.remove(), 3200);
+                return;
+            }
             wdFlyCancel();
             wdOpen = true; wdNote = null; wdChanged = false;
             sfxSpati('cloth', true);
@@ -5166,6 +5367,7 @@ TAB - дополнить, ↑↓ - история
         wdRefreshHook = () => { if (wdOpen) wdRender(); };
         wdX.addEventListener('click', (e) => { e.stopPropagation(); wdClose(); });
         const wdBtn = document.getElementById('wardBtn');
+        if (wdBtn) wdBtn.classList.toggle('locked', !isSpatiEnabled);
         if (wdBtn) wdBtn.addEventListener('click', (e) => { e.preventDefault(); wdOpen ? wdClose() : wdOpenWin(); });
         window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && wdOpen) wdClose(); });
         smAccUpdate();
@@ -5871,6 +6073,7 @@ TAB - дополнить, ↑↓ - история
         function admSetSpati(on) {
             isSpatiEnabled = on;
             admLogAdd('Спати: ' + (on ? 'вкл' : 'выкл'));
+            if (!on && wdOpen) wdClose();
             const b = document.getElementById('spatiBtn');
             if (b) b.classList.toggle('on', on);
             setMascot(on);

@@ -248,3 +248,32 @@
 @media (prefers-reduced-motion: reduce) {
     .ach-window, .music-player-modal, .adm-window { animation: none !important; }
 }
+
+/* ---------- меню достижений v2: телефон ---------- */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+    #achWindow .ach-body { padding: 0; }
+    .am-tab { min-height: var(--m-tap); font-size: 8px; padding: 10px 2px; touch-action: manipulation; }
+    .am-content { padding: 10px; }
+    .am-hero { grid-template-columns: auto minmax(0, 1fr); padding: 12px; }
+    .am-hero-num { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; text-align: left; }
+    .am-hero-num span { margin-top: 0; }
+    .am-goals, .am-recent, .am-list { grid-template-columns: 1fr; }
+    .am-tiles { grid-template-columns: 1fr 1fr; }
+    .am-tiles-rar { grid-template-columns: 1fr 1fr; }
+    .am-tile { padding: 12px 10px; touch-action: manipulation; }
+    .am-goal { padding: 11px 9px; touch-action: manipulation; }
+    .am-search { min-height: var(--m-tap); font-size: 16px; }
+    .am-row { flex-direction: column; gap: 4px; }
+    .am-row-label { flex: none; padding-top: 0; }
+    .am-chips { flex-wrap: nowrap; overflow-x: auto; width: 100%; padding-bottom: 4px; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+    .am-chips::-webkit-scrollbar { height: 0; }
+    .am-chip { min-height: 38px; padding: 0 12px; touch-action: manipulation; }
+    .am-reset { min-height: 36px; padding: 0 12px; touch-action: manipulation; }
+    .am-card-main { padding: 11px 10px; }
+    .am-card-title { font-size: 14px; }
+    .am-card-desc { font-size: 13px; }
+    .am-actions .player-btn { flex: 1 1 calc(33% - 8px); min-width: 0; padding: 8px 4px; }
+}
+@media (max-width: 700px) and (min-width: 420px), (max-height: 500px) and (pointer: coarse) {
+    .am-goals, .am-recent { grid-template-columns: 1fr 1fr; }
+}
