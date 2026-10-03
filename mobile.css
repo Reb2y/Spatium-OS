@@ -1,0 +1,248 @@
+/* =====================================================================
+   Spatium OS: мобильная версия
+   Подключается после style.css. Действует на телефонах (узкий экран)
+   и на телефонах в альбомной ориентации.
+   ===================================================================== */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+
+    :root { --m-gap: 8px; --m-tap: 44px; }
+
+    /* ---------- каркас ---------- */
+    .crt-screen { align-items: stretch; box-shadow: inset 0 0 40px rgba(0,0,0,.8); }
+    .crt-screen.shake { animation: none; }            /* тряска от каждого тапа раздражает */
+    .vignette { box-shadow: inset 0 0 60px rgba(0,0,0,.8); border-radius: 0; }
+    .terminal-container {
+        width: 100%; height: 100%; max-width: none; gap: var(--m-gap);
+        padding: 6px 6px 0; text-shadow: none;
+    }
+    .workspace { gap: 0; }
+    .sidebar { display: none; }
+
+    /* ---------- верхняя панель: 2 строки ---------- */
+    .menubar {
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+        padding: 6px; border-left-width: 3px; align-items: stretch;
+    }
+    .menubar-title, .signal { display: none; }
+    .menubar-right { display: contents; }
+    .logo-wrapper {
+        order: 0; grid-column: 1; align-self: center; justify-self: start;
+        font-size: 22px; padding: 0 4px; min-height: var(--m-tap); display: flex; align-items: center;
+    }
+    .logo-wrapper:hover { transform: none; }
+    .user-btn { order: 1; grid-column: 2 / 4; max-width: none; justify-content: center; }
+    #sysClock { order: 2; grid-column: 4; display: flex; align-items: center; justify-content: center; font-size: 12px; padding: 0 4px; }
+    .spati-btn  { order: 3; }
+    .wardrobe-btn { order: 4; }
+    .games-btn  { order: 5; }
+    #achBtn     { order: 6; }
+    .menubar .ach-btn {
+        justify-content: center; min-height: var(--m-tap); padding: 4px 2px;
+        font-size: 10px; letter-spacing: 0; min-width: 0; touch-action: manipulation;
+    }
+    .menubar .ach-btn:not(.user-btn) { border-color: var(--dim2); }
+    .menubar .ach-btn:active { background: var(--crt-color); color: var(--crt-bg); }
+    #achBtn { gap: 5px; }
+
+    /* ---------- терминал ---------- */
+    .window { border-width: 1px; box-shadow: 0 0 12px var(--crt-glow), inset 0 0 20px rgba(0,0,0,.5); }
+    .window::before, .window::after { display: none; }
+    .window-bar { display: none; }
+    .terminal-output {
+        padding: 10px 10px 4px; font-size: 14.5px; line-height: 1.5;
+        -webkit-overflow-scrolling: touch;
+    }
+    .terminal-output::-webkit-scrollbar { width: 0; }
+    .system-msg { font-size: 13px; }
+    .nf { gap: 4px 14px; font-size: 12px; }
+    body.spati-on:not(.sm-moved) .terminal-output { padding-right: 80px; }
+
+    /* ---------- строка ввода ---------- */
+    .input-line {
+        padding: 0 12px; min-height: 52px; font-size: 16px;
+        border-top: 1px solid var(--crt-color); background: color-mix(in srgb, var(--crt-color) 9%, var(--crt-bg));
+        cursor: text;
+    }
+    .input-wrapper { flex: 1; min-width: 0; overflow: hidden; }
+    #commandInputText { white-space: pre; overflow: hidden; }
+    #commandInputText:empty::before {
+        content: 'введите команду…'; opacity: .35; font-weight: 400;
+    }
+    .terminal-cursor { height: 20px; width: 9px; }
+
+    /* ---------- быстрые клавиши ---------- */
+    .quick-keys {
+        display: flex; gap: 6px; padding: 6px 6px calc(6px + 0px); flex: none;
+        scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+        background: color-mix(in srgb, var(--crt-bg) 85%, #000); border-top: 1px solid var(--dim2);
+    }
+    .quick-keys button {
+        flex: 0 0 auto; min-width: var(--m-tap); min-height: var(--m-tap); padding: 0 14px;
+        font-size: 10px; scroll-snap-align: start; touch-action: manipulation;
+        background: var(--dim); border-color: var(--dim2);
+    }
+    .quick-keys button[data-key="enter"] {
+        background: var(--crt-color); color: var(--crt-bg); border-color: var(--crt-color);
+        text-shadow: none; font-size: 15px; min-width: 56px;
+    }
+    .quick-keys button:active { background: var(--crt-color); color: var(--crt-bg); }
+    .qk-sep { flex: 0 0 1px; }
+
+    /* ---------- все окна — полноэкранные шторки ---------- */
+    .ach-window, .music-player-modal, .adm-window {
+        position: absolute !important;
+        left: 0 !important; right: 0 !important;
+        top: calc(env(safe-area-inset-top, 0px) + 6px) !important; bottom: 0 !important;
+        width: auto !important; max-width: none !important;
+        height: auto !important; max-height: none !important;
+        margin: 0 !important; transform: none !important;
+        border-width: 1px 0 0 0; border-radius: 14px 14px 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 0 0 100vmax rgba(0,0,0,.55), 0 -4px 24px var(--crt-glow);
+        animation: mSheetUp .22s ease-out !important;
+        overflow: hidden;
+    }
+    .music-player-modal:not(.hidden) { display: flex; flex-direction: column; }
+    .player-header {
+        flex: none; padding: 8px 8px 8px 14px; font-size: 10px;
+        cursor: default; touch-action: auto; border-radius: 13px 13px 0 0;
+        position: relative;
+    }
+    .player-header::before {                       /* «ручка» шторки */
+        content: ''; position: absolute; left: 50%; top: 4px; width: 36px; height: 3px;
+        margin-left: -18px; background: var(--crt-bg); opacity: .45;
+    }
+    .player-close-btn {
+        min-width: 48px; min-height: 40px; font-size: 14px; border: 1px solid var(--crt-bg);
+        touch-action: manipulation;
+    }
+    .player-close-btn:active { background: var(--crt-bg); color: var(--crt-color); }
+    .ach-body, .player-body, .snake-body, .game-body, .gm-body, .card-body {
+        flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain; padding: 12px;
+    }
+    .win-drag { opacity: 1; }
+
+    /* кнопки: удобная зона нажатия */
+    .player-btn, .wr-btn { min-height: var(--m-tap); touch-action: manipulation; }
+    .player-btn { font-size: 10px; }
+    .custom-slider { height: 16px; }
+    .custom-slider::-webkit-slider-thumb { width: 22px; height: 34px; }
+    .custom-slider::-moz-range-thumb { width: 22px; height: 34px; }
+
+    /* ---------- плеер ---------- */
+    .player-body { display: flex; flex-direction: column; }
+    .playlist-container { max-height: none; flex: 1 1 auto; min-height: 90px; }
+    .playlist-item { padding: 12px 10px; font-size: 14px; }
+    .track-name { font-size: 15px; }
+    .player-controls { gap: 10px; }
+    .volume-container { gap: 12px; }
+    .mute-btn { min-width: 64px; }
+
+    /* ---------- достижения ---------- */
+    .ach-prow { grid-template-columns: 92px 1fr 46px; gap: 8px; font-size: 11px; }
+    .ach-stats { grid-template-columns: 1fr 1fr; gap: 2px 14px; }
+    .ach-grid { grid-template-columns: 1fr; gap: 8px; }
+    .ach-card { padding: 10px; }
+    .ach-card-title { font-size: 14px; }
+    .ach-card-desc { font-size: 13px; }
+    .ach-toolbar { gap: 6px; }
+    .ach-toolbar .player-btn { padding: 8px 10px; flex: 1 1 auto; }
+    .ach-sort-label { width: 100%; }
+    .ach-sort-btns { justify-content: stretch; width: 100%; }
+    .ach-sort-btns .player-btn { flex: 1 1 auto; }
+    .ach-all-btn { padding: 14px 6px; }
+
+    /* ---------- уведомления ---------- */
+    .ach-toast-stack {
+        top: calc(env(safe-area-inset-top, 0px) + 6px); left: 50%; right: auto; transform: translateX(-50%);
+        width: calc(100% - 16px); max-width: 360px; gap: 6px;
+    }
+    .ach-toast { padding: 9px 10px; gap: 10px; }
+    .ach-toast.r-legendary { padding: 11px 10px; }
+    .ach-icon-box { flex-basis: 38px; width: 38px; height: 38px; padding: 6px; }
+    .ach-name { font-size: 10px; }
+    .ach-toast.r-legendary .ach-name { font-size: 11px; }
+    .ach-desc { font-size: 12px; margin-top: 4px; }
+    .io-note { bottom: 130px; font-size: 12px; }
+
+    /* ---------- игры ---------- */
+    .snake-window, .game-window, .games-window, .card-window, .photo-window, .wardrobe-window { width: auto !important; }
+    #skCanvas { width: min(100%, 46dvh); }
+    .snake-pad { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, 54px); gap: 8px; max-width: 280px; margin: 10px auto 0; }
+    .snake-pad .player-btn { font-size: 18px; }
+    .snake-opts .player-btn { min-height: 40px; font-size: 8px; }
+    .snake-help, .snake-top { font-size: 10px; }
+    #ttCanvas { height: min(46dvh, 420px); }
+    .tt-pad { gap: 8px; }
+    .tt-pad .player-btn { padding: 14px 0; font-size: 15px; }
+    .wd-grid { width: min(100%, 270px); }
+    .wd-key { padding: 14px 0; font-size: 13px; }
+    .wd-key.wide { font-size: 9px; }
+    .gm-card .player-btn { flex-basis: 96px; }
+    .gm-tr { font-size: 12px; }
+
+    /* ---------- карточка и фото ---------- */
+    .card-actions { gap: 8px; }
+    .card-actions .player-btn { flex: 1 1 calc(50% - 8px); min-width: 0; }
+    .photo-window .ph-stage { position: static; }
+    .photo-window .ph-stage canvas { width: min(100%, 320px); }
+    .photo-window .ph-chips .player-btn { min-height: 38px; padding: 6px 9px; font-size: 9px; }
+
+    /* ---------- гардероб ---------- */
+    .wr-card { min-height: 108px; }
+    .wr-chip { padding: 8px 10px; font-size: 8px; }
+    .wr-slot { min-height: 50px; }
+    .wr-tab { padding: 12px 2px 10px; }
+
+    /* ---------- Спати ---------- */
+    .spati-mascot { width: 72px; height: 78px; }
+    .sm-react { inset: 8px; }
+    .sm-bubble { max-width: min(210px, 62vw); font-size: 12px; }
+    .sm-bubble.whisper { max-width: min(170px, 55vw); }
+    .pm-spati { right: 4px; top: 2px; }
+
+    /* ---------- BIOS ---------- */
+    .post-screen { padding: 16px 14px; font-size: 11px; line-height: 1.6; }
+    .post-line { white-space: pre-wrap; max-width: none; }
+    .start-text { font-size: 15px; line-height: 2.1; letter-spacing: 1px; }
+    .logo-loader { font-size: 64px; }
+
+    /* ---------- админ-меню ---------- */
+    .adm-window .player-btn { min-height: 38px; }
+    .adm-row { gap: 6px; }
+    .adm-label { flex-basis: 100%; }
+}
+
+/* ---------- телефон в альбомной ориентации: компактная шапка ---------- */
+@media (max-height: 500px) and (orientation: landscape) and (pointer: coarse),
+       (max-width: 700px) and (max-height: 500px) {
+    .terminal-container { gap: 4px; padding: 4px 6px 0; }
+    .menubar { display: flex; gap: 6px; padding: 3px 6px; }
+    .menubar-right { display: flex; align-items: stretch; gap: 6px; margin-left: auto; min-width: 0; }
+    .logo-wrapper { min-height: 36px; font-size: 18px; }
+    .user-btn { max-width: 90px; }
+    #sysClock { padding: 0 8px; }
+    .menubar .ach-btn { min-height: 36px; padding: 2px 8px; }
+    .quick-keys { padding: 4px 6px; }
+    .quick-keys button { min-height: 36px; }
+    .input-line { min-height: 40px; }
+    .terminal-output { font-size: 13px; padding: 6px 10px 2px; }
+    .ach-window, .music-player-modal, .adm-window { top: 0 !important; border-radius: 0; }
+    .player-header { border-radius: 0; padding-top: 4px; padding-bottom: 4px; }
+    .player-header::before { display: none; }
+    .player-close-btn { min-height: 32px; }
+    #skCanvas { width: min(100%, 62dvh); }
+    #ttCanvas { height: min(58dvh, 300px); }
+    .wr-body { grid-template-columns: 220px minmax(0, 1fr) !important; grid-template-rows: none !important; }
+    .wr-side { display: flex !important; flex-direction: column; overflow-y: auto !important; border-right: 1px solid var(--dim2) !important; border-bottom: 0 !important; }
+    .wr-stage { height: 120px !important; }
+}
+
+@keyframes mSheetUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ach-window, .music-player-modal, .adm-window { animation: none !important; }
+}

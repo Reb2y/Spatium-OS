@@ -3140,7 +3140,8 @@ TAB - дополнить, ↑↓ - история
         const smBubble = document.getElementById('spatiBubble');
         const smGaze = document.getElementById('smGaze');
         const SM_KEY = 'spatium_mascot_v1';
-        const SM_W = 96, SM_H = 104;
+        const MOBILE_UI = window.matchMedia ? window.matchMedia('(max-width: 700px), (max-height: 500px) and (pointer: coarse)') : { matches: false };
+        const SM_W = MOBILE_UI.matches ? 72 : 96, SM_H = MOBILE_UI.matches ? 78 : 104;
         let smPos = { x: 0, y: 0 }, smMoved = false, smHeld = false, smRaf = 0;
         let smSaved = { fx: 0, fy: 0, hint: 0, clicks: 0, m: 0 };
         let smEmTimer = null, smAnimTimer = null, smSayTimer = null, smTypeTimer = null, smHoldTimer = null;
@@ -5648,7 +5649,15 @@ TAB - дополнить, ↑↓ - история
             bar.addEventListener('mousedown', (e) => e.preventDefault()); // не отбираем фокус у поля ввода
             bar.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
-                if (!btn || !isBooted || isTyping || nickMode || inputHook) return;
+                if (!btn || !isBooted) return;
+                if (btn.dataset.key === 'enter') {
+                    if (hiddenInput) {
+                        hiddenInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+                        hiddenInput.focus();
+                    }
+                    return;
+                }
+                if (isTyping || nickMode || inputHook) return;
                 unlock('pocket');
                 const key = btn.dataset.key;
                 const cmd = btn.dataset.cmd;
@@ -7896,6 +7905,7 @@ TAB - дополнить, ↑↓ - история
                 front(w);
                 const head = e.target.closest('.player-header');
                 if (!head || e.target.closest('button') || e.button > 0) return;
+                if (window.matchMedia && window.matchMedia('(max-width: 700px), (max-height: 500px) and (pointer: coarse)').matches) return;
                 const wr = w.getBoundingClientRect();
                 drag = { w, head, id: e.pointerId, dx: e.clientX - wr.left, dy: e.clientY - wr.top, sx: e.clientX, sy: e.clientY, moved: false };
                 try { head.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }

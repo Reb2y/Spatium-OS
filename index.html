@@ -16,6 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="mobile.css">
 </head>
 <body>
     <div class="crt-screen power-on" id="screen">
@@ -78,11 +79,13 @@
                         </div>
                     </div>
                     <div class="quick-keys" id="quickKeys">
+                        <button type="button" data-key="enter" aria-label="Выполнить">&crarr;</button>
                         <button type="button" data-key="tab">TAB</button>
                         <button type="button" data-key="up">&uarr;</button>
                         <button type="button" data-key="down">&darr;</button>
                         <span class="qk-sep"></span>
                         <button type="button" data-cmd="help">help</button>
+                        <button type="button" data-cmd="games">games</button>
                         <button type="button" data-cmd="ach">ach</button>
                         <button type="button" data-cmd="snake">snake</button>
                         <button type="button" data-cmd="play">play</button>
